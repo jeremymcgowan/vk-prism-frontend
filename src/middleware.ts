@@ -2,12 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // 1. Create the initial response container
   let supabaseResponse = NextResponse.next({
     request,
   })
 
-  // 2. Initialize the Supabase client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -29,40 +27,21 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 3. Retrieve the user identity (this modifies cookies if the session is dead/logged out)
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // 🔒 Guard Rail A: Unauthenticated user trying to access the dashboard
+  // 🔒 One-Way Security Gate: If an unauthenticated user tries to access the dashboard, bounce them to root
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
-    const response = NextResponse.redirect(url)
-    
-    // 👑 CRITICAL FIX: Forward Supabase's cookie updates/deletions to the redirect response
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      response.cookies.set(cookie.name, cookie.value, cookie)
-    })
-    return response
-  }
-
-  // 🔒 Guard Rail B: Authenticated user trying to look at the login screen
-  if (user && request.nextUrl.pathname === '/') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    const response = NextResponse.redirect(url)
-    
-    // 👑 CRITICAL FIX: Forward Supabase's cookie updates/deletions to the redirect response
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      response.cookies.set(cookie.name, cookie.value, cookie)
-    })
-    return response
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse
 }
 
-export const config {
-  matcher: ['/dashboard/:path*', '/'],
+export const config = {
+  // Only watch the dashboard routes. Completely ignore the root login page to prevent loops.
+  matcher: ['/dashboard/:path*'],
 }
