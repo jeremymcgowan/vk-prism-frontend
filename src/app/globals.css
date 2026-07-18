@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --color-vk-gold: #C5A059;       /* Exact Premium Metallic Gold from vkpartners.co */
+  --color-vk-gold-dim: #8B7325;   /* Accent Shadow Gold */
+  --color-vk-pure-black: #000000; /* Deep Void Background */
+  --color-vk-surface-dark: #0A0A0A;
+  --color-vk-surface-light: #111111;
+  --color-vk-border: #1F1F1F;
+  --color-vk-muted: #A0A0A0;
+  
+  --font-heading: var(--font-cinzel), serif;
+  --font-body: var(--font-inter), sans-serif;
+}
+
+/* ENFORCE UNCOMPROMISING GEOMETRIC SHARP EDGES GLOBALLY */
+@layer base {
+  * {
+    border-radius: 0px !important;
+    box-sizing: border-box;
+  }
+  
+  body {
+    background-color: #000000;
+    color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+  }
+}
