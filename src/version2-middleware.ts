@@ -2,12 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // 1. Create the initial response container
   let supabaseResponse = NextResponse.next({
     request,
   })
 
-  // 2. Initialize the Supabase client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -17,7 +15,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -29,40 +27,28 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 3. Retrieve the user identity (this modifies cookies if the session is dead/logged out)
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // 🔒 Guard Rail A: Unauthenticated user trying to access the dashboard
+  // Guard rails: Redirect unauthenticated users trying to hit the dashboard back to the root login interface
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
-    const response = NextResponse.redirect(url)
-    
-    // 👑 CRITICAL FIX: Forward Supabase's cookie updates/deletions to the redirect response
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      response.cookies.set(cookie.name, cookie.value, cookie)
-    })
-    return response
+    return NextResponse.redirect(url)
   }
 
-  // 🔒 Guard Rail B: Authenticated user trying to look at the login screen
+  // Redirect authenticated users away from the root screen straight into the operational dashboard
   if (user && request.nextUrl.pathname === '/') {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
-    const response = NextResponse.redirect(url)
-    
-    // 👑 CRITICAL FIX: Forward Supabase's cookie updates/deletions to the redirect response
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      response.cookies.set(cookie.name, cookie.value, cookie)
-    })
-    return response
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse
 }
 
-export const config {
+export const config = {
+  // Watches all nested dashboard routes and intercepts requests on the root URL
   matcher: ['/dashboard/:path*', '/'],
 }
