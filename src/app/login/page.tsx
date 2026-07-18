@@ -90,16 +90,16 @@ export default function LoginPage() {
           <div className="mb-3 flex h-16 w-16 items-center justify-center">
             {/* Direct Brand Logo Integration Channel */}
             <img 
-              src="https://vkpartners.co/logo.png" 
+              src="https://vkpartners.co/knight-only.png" 
               alt="V&K Partners Official Knight Crest" 
-              className="h-full w-full object-contain filter drop-shadow-[0_0_15px_rgba(197,168,128,0.2)] animate-pulse"
+              className="h-full w-full object-contain filter drop-shadow-[0_0_15px_rgba(197,168,128,0.2)] "
               onError={(e) => {
                 // Failure mitigation handler: falls back to local file if path differs
                 e.currentTarget.src = "/logo.png"
               }}
             />
           </div>
-          <span className="text-[10px] font-medium tracking-[0.3em] text-[#A39074] uppercase">Vanderbilt & Knight</span>
+          <span className="text-sm font-medium tracking-[0.2em] text-[#A39074] uppercase">V&K Partners</span>
           <h1 className="mt-1.5 font-[family-name:var(--font-cinzel)] text-xl font-semibold tracking-widest text-white uppercase">Prism Core Auth</h1>
           <div className="mt-4 h-[1px] w-12 bg-gradient-to-r from-transparent via-[#C5A880]/30 to-transparent" />
         </div>
