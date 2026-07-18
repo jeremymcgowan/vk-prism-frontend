@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  // Step 1: Verify Credentials
+  // Step 1: Verify Core Identity Credentials
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -46,7 +46,7 @@ export default function LoginPage() {
     }
   }
 
-  // Step 2: Verify Cryptographic MFA Challenge
+  // Step 2: Verify Multi-Factor Cryptographic Factor Token
   const handleVerifyMfa = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -62,7 +62,7 @@ export default function LoginPage() {
     const activeFactor = factors?.all[0]
 
     if (!activeFactor) {
-      setError('ERR: No active Multi-Factor authentication factor found.')
+      setError('ERR: No active Multi-Factor authentication factor discovered.')
       setLoading(false)
       return
     }
@@ -83,23 +83,29 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen w-screen items-center justify-center bg-[#050507] text-[#E4E4E7] font-[family-name:var(--font-inter)] antialiased">
-      <div className="w-full max-w-md rounded-md border border-[#1C1A16]/40 bg-[#0A0A0C] p-10 shadow-[0_10px_40px_rgba(0,0,0,0.7)]">
+      <div className="w-full max-w-md rounded-md border border-[#1C1A16]/40 bg-[#0A0A0C] p-10 shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
         
         {/* Master Brand Crest & Editorial Typography Header */}
         <div className="mb-10 flex flex-col items-center justify-center text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#C5A880]/20 bg-gradient-to-b from-[#161410] to-[#0A0A0C] p-3 shadow-[0_0_20px_rgba(197,168,128,0.05)]">
-            {/* Fine-lined Traditional Guard Shield Crest Logo */}
-            <svg className="h-full w-full text-[#C5A880]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-            </svg>
+          <div className="mb-3 flex h-16 w-16 items-center justify-center">
+            {/* Direct Brand Logo Integration Channel */}
+            <img 
+              src="https://vkpartners.co/logo.png" 
+              alt="V&K Partners Official Knight Crest" 
+              className="h-full w-full object-contain filter drop-shadow-[0_0_15px_rgba(197,168,128,0.2)] animate-pulse"
+              onError={(e) => {
+                // Failure mitigation handler: falls back to local file if path differs
+                e.currentTarget.src = "/logo.png"
+              }}
+            />
           </div>
           <span className="text-[10px] font-medium tracking-[0.3em] text-[#A39074] uppercase">Vanderbilt & Knight</span>
-          <h1 className="mt-2 font-[family-name:var(--font-cinzel)] text-xl font-semibold tracking-widest text-white uppercase">Prism Core Auth</h1>
+          <h1 className="mt-1.5 font-[family-name:var(--font-cinzel)] text-xl font-semibold tracking-widest text-white uppercase">Prism Core Auth</h1>
           <div className="mt-4 h-[1px] w-12 bg-gradient-to-r from-transparent via-[#C5A880]/30 to-transparent" />
         </div>
 
         {step === 'credentials' ? (
-          /* Step 1: Core Credentials Form */
+          /* Step 1: Primary Credentials Layout Form */
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-[11px] font-medium tracking-widest text-[#A1A1AA] uppercase mb-2">Email</label>
@@ -140,7 +146,7 @@ export default function LoginPage() {
             </button>
           </form>
         ) : (
-          /* Step 2: Multi-Factor Authentication Form */
+          /* Step 2: Multi-Factor Authentication Challenge Form */
           <form onSubmit={handleVerifyMfa} className="space-y-6">
             <div>
               <div className="mb-2 flex items-center justify-between">
@@ -171,7 +177,7 @@ export default function LoginPage() {
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full rounded bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#050507] hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_25px_rgba(197,168,128,0.15)]"
+                className="w-full rounded bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#05070A] hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_25px_rgba(197,168,128,0.15)]"
               >
                 {loading ? 'Validating Factor...' : 'Verify Security Token'}
               </button>
