@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  // Step 1: Verify Primary Email & Password
+  // Step 1: Verify Credentials
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -24,7 +24,7 @@ export default function LoginPage() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
+    const { error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
@@ -35,21 +35,18 @@ export default function LoginPage() {
       return
     }
 
-    // Check if Supabase requires an outstanding MFA challenge factor
     const { data: factors, error: factorError } = await supabase.auth.mfa.listFactors()
     
     if (!factorError && factors?.all && factors.all.length > 0) {
-      // User has MFA enabled, advance view layout to the MFA challenge input screen
       setStep('mfa')
       setLoading(false)
     } else {
-      // No MFA factor pinned to account, transition directly to console cockpit
       router.push('/dashboard')
       router.refresh()
     }
   }
 
-  // Step 2: Challenge Verification Code Submission
+  // Step 2: Verify Cryptographic MFA Challenge
   const handleVerifyMfa = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -62,17 +59,16 @@ export default function LoginPage() {
     )
 
     const { data: factors } = await supabase.auth.mfa.listFactors()
-    const escalatedFactor = factors?.all[0]
+    const activeFactor = factors?.all[0]
 
-    if (!escalatedFactor) {
-      setError('ERR: No active Multi-Factor target discovered on account schema.')
+    if (!activeFactor) {
+      setError('ERR: No active Multi-Factor authentication factor found.')
       setLoading(false)
       return
     }
 
-    // Submit the 6-digit challenge token to Supabase
     const { error: mfaError } = await supabase.auth.mfa.challengeAndVerify({
-      factorId: escalatedFactor.id,
+      factorId: activeFactor.id,
       code: mfaCode,
     })
 
@@ -86,71 +82,70 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-screen items-center justify-center bg-obsidian-bg text-terminal-text font-mono antialiased">
-      <div className="w-full max-w-md rounded-md border border-obsidian-border bg-obsidian-card p-8 shadow-2xl">
+    <div className="flex min-h-screen w-screen items-center justify-center bg-[#050507] text-[#E4E4E7] font-[family-name:var(--font-inter)] antialiased">
+      <div className="w-full max-w-md rounded-md border border-[#1C1A16]/40 bg-[#0A0A0C] p-10 shadow-[0_10px_40px_rgba(0,0,0,0.7)]">
         
-        {/* Unified Pulsing Antique Gold Logo Block & Header */}
-        <div className="mb-8 flex flex-col items-center justify-center space-y-3 text-center">
-          {/* Brand Icon SVG Wrapper */}
-          <div className="flex h-10 w-10 items-center justify-center rounded border border-brand-bronze/30 bg-neutral-900/40 p-2 shadow-[0_0_15px_rgba(197,168,128,0.05)]">
-            <svg className="h-full w-full text-brand-gold animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-5.25v9" />
+        {/* Master Brand Crest & Editorial Typography Header */}
+        <div className="mb-10 flex flex-col items-center justify-center text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#C5A880]/20 bg-gradient-to-b from-[#161410] to-[#0A0A0C] p-3 shadow-[0_0_20px_rgba(197,168,128,0.05)]">
+            {/* Fine-lined Traditional Guard Shield Crest Logo */}
+            <svg className="h-full w-full text-[#C5A880]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
             </svg>
           </div>
-          <div>
-            <span className="block text-[10px] font-bold tracking-widest text-terminal-gray uppercase">V&K Partners</span>
-            <h1 className="mt-1 text-sm font-bold tracking-widest text-white uppercase">Prism Core Auth</h1>
-          </div>
+          <span className="text-[10px] font-medium tracking-[0.3em] text-[#A39074] uppercase">Vanderbilt & Knight</span>
+          <h1 className="mt-2 font-[family-name:var(--font-cinzel)] text-xl font-semibold tracking-widest text-white uppercase">Prism Core Auth</h1>
+          <div className="mt-4 h-[1px] w-12 bg-gradient-to-r from-transparent via-[#C5A880]/30 to-transparent" />
         </div>
 
         {step === 'credentials' ? (
-          /* Step 1: Core Credentials Layout Form */
-          <form onSubmit={handleLogin} className="space-y-5">
+          /* Step 1: Core Credentials Form */
+          <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label className="block text-[10px] uppercase tracking-widest text-neutral-400 mb-2">Email</label>
+              <label className="block text-[11px] font-medium tracking-widest text-[#A1A1AA] uppercase mb-2">Email</label>
               <input 
                 type="email" 
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md border border-neutral-800 bg-neutral-900/50 px-3 py-2.5 text-xs text-white placeholder-neutral-600 focus:border-brand-gold/50 focus:ring-1 focus:ring-brand-gold/20 focus:outline-none transition-all tracking-wide"
+                className="w-full rounded border border-[#27272A] bg-[#121215] px-4 py-3 text-sm text-white placeholder-neutral-600 focus:border-[#C5A880]/40 focus:ring-1 focus:ring-[#C5A880]/10 focus:outline-none transition-all tracking-wide"
                 placeholder="admin@vkpartners.co"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] uppercase tracking-widest text-neutral-400 mb-2">Password</label>
+              <label className="block text-[11px] font-medium tracking-widest text-[#A1A1AA] uppercase mb-2">Password</label>
               <input 
                 type="password" 
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-md border border-neutral-800 bg-neutral-900/50 px-3 py-2.5 text-xs text-white placeholder-neutral-600 focus:border-brand-gold/50 focus:ring-1 focus:ring-brand-gold/20 focus:outline-none transition-all tracking-wide"
+                className="w-full rounded border border-[#27272A] bg-[#121215] px-4 py-3 text-sm text-white placeholder-neutral-600 focus:border-[#C5A880]/40 focus:ring-1 focus:ring-[#C5A880]/10 focus:outline-none transition-all tracking-wide"
                 placeholder="••••••••"
               />
             </div>
 
             {error && (
-              <div className="rounded border border-red-900/50 bg-red-950/20 px-3 py-2 text-[11px] text-red-400">
-                ERR: {error}
+              <div className="rounded border border-red-900/30 bg-red-950/10 px-4 py-2.5 text-xs text-red-400 font-mono">
+                SIGN_IN_ERROR // {error}
               </div>
             )}
 
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full rounded-md bg-gradient-to-r from-brand-bronze via-brand-gold to-brand-darkgold py-3 text-xs font-bold uppercase tracking-widest text-obsidian-bg hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_15px_rgba(154,123,86,0.1)]"
+              className="w-full rounded bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#050507] hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_25px_rgba(197,168,128,0.15)]"
             >
-              {loading ? 'Verifying Telemetry...' : 'Establish Secure Link'}
+              {loading ? 'Verifying Credentials...' : 'Establish Secure Link'}
             </button>
           </form>
         ) : (
-          /* Step 2: Multi-Factor Authentication Prompt Form */
-          <form onSubmit={handleVerifyMfa} className="space-y-5 animate-fadeIn">
+          /* Step 2: Multi-Factor Authentication Form */
+          <form onSubmit={handleVerifyMfa} className="space-y-6">
             <div>
-              <div className="mb-1 flex items-center justify-between">
-                <label className="block text-[10px] uppercase tracking-widest text-neutral-400">MFA Verification Code</label>
-                <span className="text-[9px] text-brand-gold font-bold uppercase tracking-wider">Escalated Security Required</span>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block text-[11px] font-medium tracking-widest text-[#A1A1AA] uppercase">MFA Security Token</label>
+                <span className="text-[9px] font-bold tracking-wider text-[#C5A880] uppercase">Escalated Protocol</span>
               </div>
               <input 
                 type="text" 
@@ -158,35 +153,35 @@ export default function LoginPage() {
                 maxLength={6}
                 value={mfaCode}
                 onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
-                className="w-full text-center tracking-[0.5em] font-bold rounded-md border border-brand-gold/30 bg-neutral-900/50 px-3 py-3 text-base text-brand-gold placeholder-neutral-700 focus:border-brand-gold focus:ring-1 focus:ring-brand-gold/20 focus:outline-none transition-all"
+                className="w-full text-center tracking-[0.6em] font-semibold rounded border border-[#C5A880]/30 bg-[#121215] px-4 py-3 text-lg text-[#C5A880] placeholder-neutral-800 focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880]/10 focus:outline-none transition-all"
                 placeholder="000000"
               />
-              <p className="mt-2 text-[10px] text-neutral-500 leading-normal">
-                Input the 6-digit code from your linked authenticator node to unlock access parameters.
+              <p className="mt-2 text-center text-[11px] text-neutral-500 leading-normal">
+                Input the 6-digit cryptographic challenge factor to verify terminal clearance.
               </p>
             </div>
 
             {error && (
-              <div className="rounded border border-red-900/50 bg-red-950/20 px-3 py-2 text-[11px] text-red-400">
-                ERR: {error}
+              <div className="rounded border border-red-900/30 bg-red-950/10 px-4 py-2.5 text-xs text-red-400 font-mono">
+                MFA_VERIFY_ERROR // {error}
               </div>
             )}
 
-            <div className="flex flex-col space-y-3">
+            <div className="flex flex-col space-y-4">
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full rounded-md bg-gradient-to-r from-brand-bronze via-brand-gold to-brand-darkgold py-3 text-xs font-bold uppercase tracking-widest text-obsidian-bg hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_15px_rgba(154,123,86,0.1)]"
+                className="w-full rounded bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#050507] hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_25px_rgba(197,168,128,0.15)]"
               >
-                {loading ? 'Validating Token...' : 'Verify Cryptographic Key'}
+                {loading ? 'Validating Factor...' : 'Verify Security Token'}
               </button>
               
               <button
                 type="button"
                 onClick={() => { setStep('credentials'); setError(null); }}
-                className="text-center text-[10px] uppercase tracking-wider text-neutral-500 hover:text-neutral-300 transition-colors pt-1 cursor-pointer"
+                className="text-center text-[11px] uppercase tracking-widest text-neutral-500 hover:text-neutral-300 transition-colors pt-1 cursor-pointer"
               >
-                Return to Credentials
+                Cancel Validation
               </button>
             </div>
           </form>
