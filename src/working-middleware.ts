@@ -31,15 +31,15 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Guard rails: Redirect unauthenticated users trying to hit the dashboard back to the root login interface
+  // Guard rails: Redirect unauthenticated users trying to hit the dashboard back to login
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from the root screen straight into the operational dashboard
-  if (user && request.nextUrl.pathname === '/') {
+  // Redirect authenticated users away from login straight to ecosystem overview
+  if (user && request.nextUrl.pathname.startsWith('/login')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
@@ -49,6 +49,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Watches all nested dashboard routes and intercepts requests on the root URL
-  matcher: ['/dashboard/:path*', '/'],
+  matcher: ['/dashboard/:path*', '/login'],
 }
