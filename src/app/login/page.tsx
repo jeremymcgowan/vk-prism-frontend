@@ -99,7 +99,7 @@ export default function LoginPage() {
               }}
             />
           </div>
-          <span className="text-sm font-medium tracking-[0.2em] text-[#A39074] uppercase">V&K Partners</span>
+          <span className="text-base font-medium tracking-[0.2em] text-[#C5A880] uppercase">V&K Partners</span>
           <h1 className="mt-1.5 font-[family-name:var(--font-cinzel)] text-xl font-semibold tracking-widest text-white uppercase">Prism Core Login</h1>
           <div className="mt-4 h-[1px] w-12 bg-gradient-to-r from-transparent via-[#C5A880]/30 to-transparent" />
         </div>
