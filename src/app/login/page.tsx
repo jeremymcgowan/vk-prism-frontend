@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client' // Ensure you have a client initialization utility or use standard supabase-js client layout
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -16,7 +15,6 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    // Quick client instantiation fallback logic
     const { createBrowserClient } = await import('@supabase/ssr')
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,11 +36,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-screen items-center justify-center bg-[#0A0A0C] text-[#E4E4E7] antialiased">
+    <div className="flex min-h-screen w-screen items-center justify-center bg-[#0A0A0C] text-[#E4E4E7] font-sans antialiased">
       <div className="w-full max-w-md rounded-lg border border-[#1F1F23] bg-[#0E0E11] p-8 shadow-2xl">
-        <div className="mb-8 text-center">
-          <span className="font-mono text-xs font-bold tracking-widest text-[#71717A]">V&K PARTNERS</span>
-          <h1 className="mt-2 font-mono text-xl font-bold tracking-tight text-white">PRISM CORE AUTH</h1>
+        
+        {/* Unified Pulsing Logo & Corporate Header */}
+        <div className="mb-8 flex flex-col items-center justify-center space-y-3 text-center">
+          <div className="h-6 w-6 bg-gradient-to-tr from-cyan-500 to-purple-600 rounded-sm animate-pulse" />
+          <div>
+            <span className="block font-mono text-[10px] font-bold tracking-widest text-[#71717A] uppercase">V&K Partners</span>
+            <h1 className="mt-1 font-mono text-lg font-bold tracking-tight text-white uppercase">Prism Core Auth</h1>
+          </div>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
@@ -53,7 +56,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-[#27272A] bg-[#141417] px-3 py-2 text-sm text-white placeholder-[#52525B] focus:border-purple-500 focus:outline-none transition-all"
+              className="w-full rounded-md border border-[#27272A] bg-[#141417] px-3 py-2.5 text-sm text-white placeholder-[#52525B] focus:border-purple-500 focus:outline-none transition-all font-sans"
               placeholder="admin@vkpartners.co"
             />
           </div>
@@ -65,7 +68,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-[#27272A] bg-[#141417] px-3 py-2 text-sm text-white placeholder-[#52525B] focus:border-purple-500 focus:outline-none transition-all"
+              className="w-full rounded-md border border-[#27272A] bg-[#141417] px-3 py-2.5 text-sm text-white placeholder-[#52525B] focus:border-purple-500 focus:outline-none transition-all font-sans"
               placeholder="••••••••"
             />
           </div>
@@ -79,7 +82,7 @@ export default function LoginPage() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full rounded-md bg-gradient-to-r from-cyan-600 to-purple-600 py-2.5 text-xs font-mono font-bold uppercase tracking-wider text-white hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-50"
+            className="w-full rounded-md bg-gradient-to-r from-cyan-600 to-purple-600 py-3 text-xs font-mono font-bold uppercase tracking-wider text-white hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer"
           >
             {loading ? 'Verifying Telemetry...' : 'Establish Secure Link'}
           </button>
