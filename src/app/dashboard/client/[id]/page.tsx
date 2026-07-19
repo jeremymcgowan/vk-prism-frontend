@@ -7,17 +7,24 @@ import { Cinzel } from 'next/font/google'
 // 🎨 Inject V&K Brand Font for Headers
 const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '600', '700'] })
 
-export default async function ClientDossier({ params }: { params: { id: string } }) {
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default async function ClientDossier({ params }: PageProps) {
+  // 🐛 FIX 1: Await params to safely extract the client UUID in Next.js 15
+  const resolvedParams = await params
+  const clientId = resolvedParams.id
+
+  // 🐛 FIX 2: Await cookies and use getAll() to perfectly match your master auth standards
   const cookieStore = await cookies()
-  
-  // Initialize Server-Side Supabase Client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
       },
     }
@@ -36,11 +43,12 @@ export default async function ClientDossier({ params }: { params: { id: string }
       *,
       crm_contacts (*)
     `)
-    .eq('id', params.id)
+    .eq('id', clientId)
     .single()
 
   // Throw Secure 404 if invalid ID or error
   if (error || !entity) {
+    console.error("Database fetch rejection:", error)
     notFound()
   }
 
@@ -53,7 +61,7 @@ export default async function ClientDossier({ params }: { params: { id: string }
         {/* 🧭 TOP NAVIGATION BAR */}
         <div className="flex items-center justify-between border-b border-zinc-900 pb-4 text-xs font-mono text-zinc-500 tracking-wider">
           <div className="flex items-center space-x-4">
-            <Link href="/dashboard" className="hover:text-amber-400 transition-colors bg-zinc-900/50 px-3 py-1.5 rounded border border-zinc-800">
+            <Link href="/dashboard?id=1" className="hover:text-amber-400 transition-colors bg-zinc-900/50 px-3 py-1.5 rounded border border-zinc-800">
               ← RETURN TO CRM CORE
             </Link>
             <span>/ DOSSIER / {entity.id}</span>
@@ -68,7 +76,7 @@ export default async function ClientDossier({ params }: { params: { id: string }
         <div className="border border-zinc-900 rounded-xl bg-zinc-950/40 p-8 flex justify-between items-start">
           <div className="space-y-4">
             <div>
-              {/* ✨ CINZEL APPLIED TO HEADER ONLY */}
+              {/* ✨ CINZEL BRAND HEADER */}
               <h1 className={`text-5xl font-bold text-zinc-100 tracking-tight mb-2 ${cinzel.className}`}>
                 {entity.display_name}
               </h1>
