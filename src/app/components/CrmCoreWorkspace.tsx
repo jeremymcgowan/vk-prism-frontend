@@ -267,7 +267,7 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
                 return (
                   <tr 
                     key={entity.id} 
-                    onClick={() => window.location.href = `/dashboard/client/${entity.id}`}
+                    onClick={() => router.push(`/dashboard/client/${entity.id}`)}
                     className="border-b border-zinc-900/50 hover:bg-zinc-900/30 cursor-pointer transition-colors"
                   >
                     <td className="p-4 font-semibold text-zinc-200">{entity.display_name}</td>
