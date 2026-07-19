@@ -32,7 +32,7 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
         {/* GOLD EXECUTION BUTTON */}
         <button 
           onClick={() => setIsFormOpen(!isFormOpen)}
-          className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold tracking-widest rounded shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all"
+          className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-zinc-800 text-xs font-bold tracking-widest rounded transition-all"
         >
           {isFormOpen ? 'CLOSE PANEL' : '+ ADD CLIENT'}
         </button>
