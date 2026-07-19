@@ -4,6 +4,11 @@ import { useState, useMemo } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 
+// 🧠 REAL-TIME CAPITALIZATION ENGINE (Preserves trailing spacing fields cleanly while typing)
+const capitalizeWords = (str: string) => {
+  return str.replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+};
+
 export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }) {
   const router = useRouter()
   
@@ -185,8 +190,8 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
           <form className="grid grid-cols-2 gap-6">
             <div className="space-y-4">
               <h4 className="text-[10px] font-mono text-zinc-500 tracking-wider">ENTITY INFRASTRUCTURE</h4>
-              <input type="text" placeholder="Display Name (e.g. Acme Corp)" value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
-              <input type="text" placeholder="Legal Name (e.g. Acme Corporation, LLC)" value={formData.legalName} onChange={e => setFormData({...formData, legalName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+              <input type="text" placeholder="Display Name (e.g. Acme Corp)" value={formData.displayName} onChange={e => setFormData({...formData, displayName: capitalizeWords(e.target.value)})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+              <input type="text" placeholder="Legal Name (e.g. Acme Corporation, LLC)" value={formData.legalName} onChange={e => setFormData({...formData, legalName: capitalizeWords(e.target.value)})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               <input type="text" placeholder="Corporate Website" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               
               <select 
@@ -204,8 +209,8 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
             <div className="space-y-4">
               <h4 className="text-[10px] font-mono text-zinc-500 tracking-wider">PRIMARY STAKEHOLDER</h4>
               <div className="flex space-x-3">
-                <input type="text" placeholder="First Name" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
-                <input type="text" placeholder="Last Name" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+                <input type="text" placeholder="First Name" value={formData.firstName} onChange={e => setFormData({...formData, firstName: capitalizeWords(e.target.value)})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+                <input type="text" placeholder="Last Name" value={formData.lastName} onChange={e => setFormData({...formData, lastName: capitalizeWords(e.target.value)})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               </div>
               <input type="email" placeholder="Direct Email Address" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               
