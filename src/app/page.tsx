@@ -1,6 +1,28 @@
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-export default function RootPage() {
-  // Instantly push root traffic to dashboard, triggering the middleware auth wall
-  redirect('/dashboard')
+export default async function RootPage() {
+  const cookieStore = await cookies()
+  
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // If authenticated, step directly into dashboard panels, otherwise send to login
+  if (user) {
+    redirect('/dashboard')
+  } else {
+    redirect('/login')
+  }
 }

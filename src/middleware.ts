@@ -31,10 +31,10 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // 🔒 One-Way Security Gate: If an unauthenticated user tries to access the dashboard, bounce them to root
+  // 🔒 One-Way Security Gate: If an unauthenticated user tries to access the dashboard, send them to /login
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
@@ -42,6 +42,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Only watch the dashboard routes. Completely ignore the root login page to prevent loops.
   matcher: ['/dashboard/:path*'],
 }
