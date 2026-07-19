@@ -1,11 +1,29 @@
 "use client"
 
 import { useState, useMemo } from 'react'
+import { createBrowserClient } from '@supabase/ssr'
+import { useRouter } from 'next/navigation'
 
 export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }) {
+  const router = useRouter()
+  
+  // UI State
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isFocused, setIsFocused] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Form State
+  const [formData, setFormData] = useState({
+    displayName: '', legalName: '', website: '',
+    firstName: '', lastName: '', email: '', phone: ''
+  })
+
+  // Initialize secure browser client for DB writes
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   // 🔍 OMNI-SEARCH LOGIC
   const filteredData = useMemo(() => {
@@ -14,7 +32,6 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
     const query = searchQuery.toLowerCase()
     return initialData.filter((entity) => {
       const primaryContact = entity.crm_contacts?.find((c: any) => c.is_primary_contact) || entity.crm_contacts?.[0]
-      
       const matchCompany = entity.display_name?.toLowerCase().includes(query)
       const matchFirstName = primaryContact?.first_name?.toLowerCase().includes(query)
       const matchLastName = primaryContact?.last_name?.toLowerCase().includes(query)
@@ -24,12 +41,70 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
     })
   }, [searchQuery, initialData])
 
+  // 🚀 DUAL-INGESTION EXECUTION PROTOCOL
+  const handleIngestion = async () => {
+    try {
+      setIsSubmitting(true)
+      
+      // 1. Get the current active session/tenant
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Unauthorized: No active session.")
+      const activeTenantId = user.id
+
+      // 2. Insert Corporate Entity Shell
+      const { data: newEntity, error: entityError } = await supabase
+        .from('crm_entities')
+        .insert({
+          tenant_id: activeTenantId,
+          type: 'client', // Replace with exact enum if your DB requires
+          status: 'lead',
+          display_name: formData.displayName,
+          legal_name: formData.legalName,
+          website: formData.website
+        })
+        .select('id')
+        .single()
+
+      if (entityError) throw entityError
+
+      // 3. Insert Primary Stakeholder (Linked to new Entity)
+      if (formData.firstName || formData.lastName) {
+        const { error: contactError } = await supabase
+          .from('crm_contacts')
+          .insert({
+            tenant_id: activeTenantId,
+            entity_id: newEntity.id,
+            is_primary_contact: true,
+            first_name: formData.firstName || 'Unknown',
+            last_name: formData.lastName || '',
+            email: formData.email,
+            phone: formData.phone
+          })
+          
+        if (contactError) throw contactError
+      }
+
+      // 4. Success Reset
+      setFormData({ displayName: '', legalName: '', website: '', firstName: '', lastName: '', email: '', phone: '' })
+      setIsFormOpen(false)
+      
+      // Refresh the server data to show the new row instantly
+      router.refresh()
+
+    } catch (error) {
+      console.error("Ingestion Error:", error)
+      alert("Database insertion failed. Check console for structural errors.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* 🎛️ ACTION HEADER */}
       <div className="flex items-center space-x-4 relative">
         
-        {/* GOLD EXECUTION BUTTON */}
+        {/* GOLD EXECUTION BUTTON - COLOR FIXED */}
         <button 
           onClick={() => setIsFormOpen(!isFormOpen)}
           className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-zinc-800 text-xs font-bold tracking-widest rounded transition-all"
@@ -73,22 +148,27 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
           <form className="grid grid-cols-2 gap-6">
             <div className="space-y-4">
               <h4 className="text-[10px] font-mono text-zinc-500 tracking-wider">ENTITY INFRASTRUCTURE</h4>
-              <input type="text" placeholder="Display Name (e.g. Acme Corp)" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200" />
-              <input type="text" placeholder="Legal Name (e.g. Acme Corporation, LLC)" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200" />
-              <input type="text" placeholder="Corporate Website" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200" />
+              <input type="text" placeholder="Display Name (e.g. Acme Corp)" value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+              <input type="text" placeholder="Legal Name (e.g. Acme Corporation, LLC)" value={formData.legalName} onChange={e => setFormData({...formData, legalName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+              <input type="text" placeholder="Corporate Website" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
             </div>
             <div className="space-y-4">
               <h4 className="text-[10px] font-mono text-zinc-500 tracking-wider">PRIMARY STAKEHOLDER</h4>
               <div className="flex space-x-3">
-                <input type="text" placeholder="First Name" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200" />
-                <input type="text" placeholder="Last Name" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200" />
+                <input type="text" placeholder="First Name" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+                <input type="text" placeholder="Last Name" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               </div>
-              <input type="email" placeholder="Direct Email Address" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200" />
-              <input type="tel" placeholder="Direct Phone Line" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200" />
+              <input type="email" placeholder="Direct Email Address" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+              <input type="tel" placeholder="Direct Phone Line" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
             </div>
-            <div className="col-span-2 pt-2">
-              <button type="button" className="px-6 py-2 bg-zinc-100 hover:bg-white text-black text-xs font-bold tracking-wider rounded transition-colors">
-                EXECUTE DUAL-INGESTION PROTOCOL
+            <div className="col-span-2 pt-2 flex justify-end">
+              <button 
+                type="button" 
+                onClick={handleIngestion}
+                disabled={isSubmitting || !formData.displayName}
+                className="px-6 py-2 bg-zinc-100 hover:bg-white text-black text-xs font-bold tracking-wider rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'INGESTING...' : 'EXECUTE DUAL-INGESTION PROTOCOL'}
               </button>
             </div>
           </form>
@@ -124,12 +204,12 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
                     <td className="p-4 font-mono text-zinc-500">{contact?.phone || '—'}</td>
                     <td className="p-4 font-mono text-zinc-500">{contact?.phone || '—'} <span className="text-[9px] text-zinc-700">(Linked)</span></td>
                     <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded border text-[10px] font-mono font-bold ${
+                      <span className={`px-2 py-0.5 rounded border text-[10px] font-mono font-bold uppercase ${
                         entity.status === 'active' ? 'bg-emerald-950/50 border-emerald-900 text-emerald-400' :
                         entity.status === 'lead' ? 'bg-amber-950/50 border-amber-900 text-amber-400' :
                         'bg-zinc-900 border-zinc-800 text-zinc-500'
                       }`}>
-                        {entity.status?.toUpperCase() || 'UNKNOWN'}
+                        {entity.status || 'UNKNOWN'}
                       </span>
                     </td>
                   </tr>
