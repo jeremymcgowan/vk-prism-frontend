@@ -1,5 +1,5 @@
-import { Cinzel } from 'next/font/google'
-const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '600', '700'] })
+import { Lora } from 'next/font/google'
+const lora = Lora({ subsets: ['latin'], weight: ['400', '600', '700'] })
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
@@ -15,7 +15,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const resolvedParams = await searchParams
   const activeId = resolvedParams?.id ?? '0'
 
-  // 🐛 FIX: Added await to cookies() to prevent Vercel build failures
+  // Open secure server-side database channel matching your middleware standards
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,7 +40,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // 1. FETCH CRM CORE WITH RELATIONAL JOINS (View ID: 1)
   let crmData: any[] = []
   if (activeId === '1') {
-    // 🔗 This pulls the entity AND its attached contacts in one query.
     const { data } = await supabase
       .from('crm_entities')
       .select(`
@@ -114,9 +113,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       {/* 🖥️ DYNAMIC CONTENT VIEW PANE */}
       <main className="flex-1 flex flex-col bg-zinc-950/20">
         <header className="h-16 border-b border-zinc-900 px-8 flex items-center justify-between">
-          <div className="text-xs font-mono text-zinc-500 tracking-wider">
-            {/* Omni-search handled inside the CRM Core Client Component to prevent cluttering global header */}
-          </div>
+          <div className="text-xs font-mono text-zinc-500 tracking-wider"></div>
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-[10px] font-mono tracking-widest text-emerald-500 font-bold">TELEMETRY CONNECTED</span>
@@ -128,8 +125,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {/* VIEW 0: ECOSYSTEM OVERVIEW */}
           {activeId === '0' && (
              <div className="space-y-6 max-w-4xl">
-             {/* ✨ CINZEL APPLIED */}
-             <h2 className={`text-3xl font-bold tracking-tight text-zinc-100 ${cinzel.className}`}>ECOSYSTEM OVERVIEW</h2>
+             {/* 🌿 LORA APPLIED */}
+             <h2 className={`text-3xl font-bold tracking-tight text-zinc-100 ${lora.className}`}>ECOSYSTEM OVERVIEW</h2>
              <p className="text-sm text-zinc-400 leading-relaxed">Welcome to the V&K Prism master operations terminal. Live database telemetries and CRM views are synchronized.</p>
              <div className="grid grid-cols-3 gap-4 pt-4">
                <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40"><h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">OPERATIONAL STATUS</h3><p className="text-xs text-zinc-500 leading-normal">System parameters verified. Core analytical functions running standard network telemetry.</p></div>
@@ -139,11 +136,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
            </div>
           )}
 
-          {/* VIEW 1: CRM CORE (Injected Client Component) */}
+          {/* VIEW 1: CRM CORE */}
           {activeId === '1' && (
             <div className="space-y-6">
-              {/* ✨ CINZEL APPLIED */}
-              <h2 className={`text-3xl font-bold tracking-tight text-zinc-100 mb-6 ${cinzel.className}`}>CRM CORE</h2>
+              {/* 🌿 LORA APPLIED */}
+              <h2 className={`text-3xl font-bold tracking-tight text-zinc-100 mb-6 ${lora.className}`}>CRM CORE</h2>
               <CrmCoreWorkspace initialData={crmData} />
             </div>
           )}
@@ -151,8 +148,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {/* VIEW 2: PROPOSALS & BILLING */}
           {activeId === '2' && (
             <div className="space-y-6">
-              {/* ✨ CINZEL APPLIED */}
-              <h2 className={`text-3xl font-bold tracking-tight text-zinc-100 mb-6 ${cinzel.className}`}>PROPOSALS & BILLING</h2>
+              {/* 🌿 LORA APPLIED */}
+              <h2 className={`text-3xl font-bold tracking-tight text-zinc-100 mb-6 ${lora.className}`}>PROPOSALS & BILLING</h2>
               {billingData.length === 0 ? (
                 <div className="p-8 border border-dashed border-zinc-900 rounded-xl text-center text-xs text-zinc-500 font-mono">No active invoices or proposals recorded inside proposals_billing.</div>
               ) : (
@@ -174,8 +171,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {activeId === '3' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-6">
-                {/* ✨ CINZEL APPLIED */}
-                <h2 className={`text-3xl font-bold tracking-tight text-zinc-100 ${cinzel.className}`}>COGNITIVE CALENDAR</h2>
+                {/* 🌿 LORA APPLIED */}
+                <h2 className={`text-3xl font-bold tracking-tight text-zinc-100 ${lora.className}`}>COGNITIVE CALENDAR</h2>
                 
                 <a 
                   href="/api/calendar/feed" 

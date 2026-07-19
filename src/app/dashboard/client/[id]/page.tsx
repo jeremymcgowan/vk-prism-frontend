@@ -2,21 +2,19 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Cinzel } from 'next/font/google'
+import { Lora } from 'next/font/google'
 
-// 🎨 Inject V&K Brand Font for Headers
-const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '600', '700'] })
+// 🌿 Inject balanced premium font for headers
+const lora = Lora({ subsets: ['latin'], weight: ['400', '600', '700'] })
 
 interface PageProps {
   params: Promise<{ id: string }>
 }
 
 export default async function ClientDossier({ params }: PageProps) {
-  // 🐛 FIX 1: Await params to safely extract the client UUID in Next.js 15
   const resolvedParams = await params
   const clientId = resolvedParams.id
 
-  // 🐛 FIX 2: Await cookies and use getAll() to perfectly match your master auth standards
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,7 +44,6 @@ export default async function ClientDossier({ params }: PageProps) {
     .eq('id', clientId)
     .single()
 
-  // Throw Secure 404 if invalid ID or error
   if (error || !entity) {
     console.error("Database fetch rejection:", error)
     notFound()
@@ -76,8 +73,8 @@ export default async function ClientDossier({ params }: PageProps) {
         <div className="border border-zinc-900 rounded-xl bg-zinc-950/40 p-8 flex justify-between items-start">
           <div className="space-y-4">
             <div>
-              {/* ✨ CINZEL BRAND HEADER */}
-              <h1 className={`text-5xl font-bold text-zinc-100 tracking-tight mb-2 ${cinzel.className}`}>
+              {/* 🌿 LORA APPLIED HERE - Perfectly balanced text */}
+              <h1 className={`text-4xl font-bold text-zinc-100 tracking-tight mb-2 ${lora.className}`}>
                 {entity.display_name}
               </h1>
               <p className="text-zinc-500 font-mono text-sm">{entity.legal_name || entity.display_name}</p>
