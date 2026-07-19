@@ -2,7 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import LogoutButton from '../components/LogoutButton'
-import CrmCoreWorkspace from '../components/CrmCoreWorkspace'
 
 interface PageProps {
   searchParams: Promise<{ id?: string }> | { id?: string }
@@ -35,23 +34,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // If they signed in via Google, grab their actual name, otherwise fall back to their email prefix
   const userDisplayName = user?.user_metadata?.full_name || userEmail.split('@')[0]
 
-  // 1. FETCH CRM CORE WITH RELATIONAL JOINS (View ID: 1)
+  // 1. FETCH CRM ENTITIES (View ID: 1)
   let crmData: any[] = []
   if (activeId === '1') {
-    // 🔗 This pulls the entity AND its attached contacts in one query.
-    const { data } = await supabase
-      .from('crm_entities')
-      .select(`
-        *,
-        crm_contacts (
-          first_name,
-          last_name,
-          email,
-          phone,
-          is_primary_contact
-        )
-      `)
-      .order('created_at', { ascending: false })
+    const { data } = await supabase.from('crm_entities').select('*').order('created_at', { ascending: false })
     crmData = data || []
   }
 
@@ -88,7 +74,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               <span>🎛️</span> <span>ECOSYSTEM OVERVIEW</span>
             </Link>
             <Link href="/dashboard?id=1" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded text-xs font-semibold tracking-wider transition ${activeId === '1' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-400 hover:text-zinc-200'}`}>
-              <span>🏢</span> <span>CRM CORE</span>
+              <span>🏢</span> <span>CRM ENTITIES</span>
             </Link>
             <Link href="/dashboard?id=2" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded text-xs font-semibold tracking-wider transition ${activeId === '2' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-400 hover:text-zinc-200'}`}>
               <span>💳</span> <span>PROPOSALS & BILLING</span>
@@ -99,7 +85,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           </nav>
         </div>
 
-        {/* 👤 LIVE PROFILE FOOTER */}
+        {/* 👤 LIVE PROFILE FOOTER — DYNAMICALLY POPULATED */}
         <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-900 flex items-center justify-between gap-3 overflow-hidden">
           <div className="min-w-0 flex-1">
             <div className="text-xs font-bold text-zinc-200 truncate capitalize">{userDisplayName}</div>
@@ -113,7 +99,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <main className="flex-1 flex flex-col bg-zinc-950/20">
         <header className="h-16 border-b border-zinc-900 px-8 flex items-center justify-between">
           <div className="text-xs font-mono text-zinc-500 tracking-wider">
-            {/* Omni-search handled inside the CRM Core Client Component to prevent cluttering global header */}
+            SEARCH ENTITIES, TASKS, OR INVOICES (CTRL+K)...
           </div>
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -125,22 +111,35 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           
           {/* VIEW 0: ECOSYSTEM OVERVIEW */}
           {activeId === '0' && (
-             <div className="space-y-6 max-w-4xl">
-             <h2 className="text-2xl font-bold tracking-tight font-serif text-zinc-100">ECOSYSTEM OVERVIEW</h2>
-             <p className="text-sm text-zinc-400 leading-relaxed">Welcome to the V&K Prism master operations terminal. Live database telemetries and CRM views are synchronized.</p>
-             <div className="grid grid-cols-3 gap-4 pt-4">
-               <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40"><h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">OPERATIONAL STATUS</h3><p className="text-xs text-zinc-500 leading-normal">System parameters verified. Core analytical functions running standard network telemetry.</p></div>
-               <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40"><h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">COMPLIANCE LOGS</h3><p className="text-xs text-zinc-500 leading-normal">Intake queues mapped. Client onboarding structures configured for deep corporate entity evaluations.</p></div>
-               <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40"><h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">REVENUE STREAMS</h3><p className="text-xs text-zinc-500 leading-normal">Financial ledger initialized. Core payment processors stand ready to distribute billing metrics.</p></div>
-             </div>
-           </div>
+            <div className="space-y-6 max-w-4xl">
+              <h2 className="text-2xl font-bold tracking-tight font-serif text-zinc-100">ECOSYSTEM OVERVIEW</h2>
+              <p className="text-sm text-zinc-400 leading-relaxed">Welcome to the V&K Prism master operations terminal. Live database telemetries and CRM views are synchronized.</p>
+              <div className="grid grid-cols-3 gap-4 pt-4">
+                <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40"><h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">OPERATIONAL STATUS</h3><p className="text-xs text-zinc-500 leading-normal">System parameters verified. Core analytical functions running standard network telemetry.</p></div>
+                <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40"><h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">COMPLIANCE LOGS</h3><p className="text-xs text-zinc-500 leading-normal">Intake queues mapped. Client onboarding structures configured for deep corporate entity evaluations.</p></div>
+                <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40"><h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">REVENUE STREAMS</h3><p className="text-xs text-zinc-500 leading-normal">Financial ledger initialized. Core payment processors stand ready to distribute billing metrics.</p></div>
+              </div>
+            </div>
           )}
 
-          {/* VIEW 1: CRM CORE (Injected Client Component) */}
+          {/* VIEW 1: CRM ENTITIES */}
           {activeId === '1' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold tracking-tight font-serif text-zinc-100 mb-6">CRM CORE</h2>
-              <CrmCoreWorkspace initialData={crmData} />
+              <h2 className="text-2xl font-bold tracking-tight font-serif text-zinc-100">CRM ENTITIES</h2>
+              {crmData.length === 0 ? (
+                <div className="p-8 border border-dashed border-zinc-900 rounded-xl text-center text-xs text-zinc-500 font-mono">No client records found inside crm_entities. Standing by for ingestion.</div>
+              ) : (
+                <div className="border border-zinc-900 rounded-xl overflow-hidden bg-zinc-950/40">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead><tr className="border-b border-zinc-900 bg-zinc-900/20 text-zinc-400 font-bold font-mono"><th className="p-3">COMPANY NAME</th><th className="p-3">CONTACT</th><th className="p-3">EMAIL ADDRESS</th><th className="p-3">STATUS</th></tr></thead>
+                    <tbody>
+                      {crmData.map((row) => (
+                        <tr key={row.id} className="border-b border-zinc-900/50 hover:bg-zinc-900/10"><td className="p-3 font-semibold text-zinc-200">{row.company_name}</td><td className="p-3 text-zinc-400">{row.contact_name}</td><td className="p-3 font-mono text-zinc-400">{row.email}</td><td className="p-3"><span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] text-amber-400 font-mono font-bold">{row.status?.toUpperCase()}</span></td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
