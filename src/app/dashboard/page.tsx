@@ -8,7 +8,7 @@ import CrmCoreWorkspace from '@/app/components/CrmCoreWorkspace'
 const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '600', '700'] })
 
 export default async function DashboardPage() {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   
   // Initialize Server-Side Supabase Client
   const supabase = createServerClient(
