@@ -5,6 +5,9 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import LogoutButton from '../components/LogoutButton'
 
+// ⚡ FORCE LIVE-FIRE DYNAMIC TELEMETRY (Bypasses Next.js caching completely)
+export const dynamic = 'force-dynamic'
+
 interface AdminPageProps {
   searchParams: Promise<{ tab?: string }> | { tab?: string }
 }
@@ -30,9 +33,8 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
 
   // 👤 ROLE VERIFICATION: Fetch session and validate security authorization tokens
   const { data: { user } } = await supabase.auth.getUser()
-  const userRole = user?.app_metadata?.role ?? 'CLIENT_STAFF'
 
-  // 📡 LIVE TELEMETRY QUERY ENGINE (Sequential Promise Executions)
+  // 📡 LIVE TELEMETRY QUERY ENGINE
   
   // 1. Fetch live CRM Entities for the Global Ledger and counts
   const { data: liveEntities } = await supabase
@@ -66,10 +68,11 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
   // Calculate total system revenue dynamically across all billing profiles
   const totalRevenue = billingLines.reduce((sum, item) => sum + Number(item.amount || 0), 0)
   
-  // Dynamic calculation filters based on standard structural organization types
-  const directTenantsCount = entities.filter(e => e.type === 'DIRECT_CLIENT' || e.structural_type === 'DIRECT_CLIENT' || !e.type).length
-  const downstreamNodesCount = entities.filter(e => e.type === 'DOWNSTREAM_NODE' || e.structural_type === 'DOWNSTREAM_NODE').length
-  const activeAllianceHooks = referrals.length
+  // Dynamic calculation filters mapped perfectly to your 4 core operational channels
+  const customerCount = entities.filter(e => e.type === 'CUSTOMER').length
+  const contractorCount = entities.filter(e => e.type === 'CONTRACTOR').length
+  const vendorCount = entities.filter(e => e.type === 'VENDOR').length
+  const employeeCount = entities.filter(e => e.type === 'EMPLOYEE').length
 
   return (
     <div className="flex flex-col md:flex-row min-h-dvh bg-black text-white font-sans antialiased select-none overflow-x-hidden">
@@ -124,23 +127,23 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
               <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 ${lora.className}`}>Ecosystem Intelligence</h2>
               <p className="text-xs text-zinc-400 leading-relaxed">Omniscient telemetry tracking direct client networks and downstream asset structural parameters.</p>
               
-              {/* Dynamic Live Analytics Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Dynamic Live 4-Channel Analytics Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950">
-                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Total System Revenue</h4>
-                  <p className="text-2xl font-mono text-emerald-400">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Total Customers</h4>
+                  <p className="text-2xl font-mono text-amber-400">{customerCount}</p>
                 </div>
                 <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950">
-                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Direct Tenants</h4>
-                  <p className="text-2xl font-mono text-zinc-200">{directTenantsCount} Firms</p>
+                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Contractors</h4>
+                  <p className="text-2xl font-mono text-zinc-200">{contractorCount}</p>
                 </div>
                 <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950">
-                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Downstream Nodes</h4>
-                  <p className="text-2xl font-mono text-zinc-400">{downstreamNodesCount} Entities</p>
+                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Verified Vendors</h4>
+                  <p className="text-2xl font-mono text-sky-400">{vendorCount}</p>
                 </div>
                 <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950">
-                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Active Alliance Hooks</h4>
-                  <p className="text-2xl font-mono text-amber-400">{activeAllianceHooks} Links</p>
+                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Internal Employees</h4>
+                  <p className="text-2xl font-mono text-purple-400">{employeeCount}</p>
                 </div>
               </div>
 
@@ -155,27 +158,36 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
                       <thead>
                         <tr className="border-b border-zinc-900 bg-zinc-900/30 text-zinc-400 font-bold font-mono">
                           <th className="p-3">ENTITY NAME</th>
-                          <th className="p-3">STRUCTURAL STATUS</th>
+                          <th className="p-3">STRUCTURAL TYPE</th>
                           <th className="p-3">SECTOR / INDUSTRY</th>
                           <th className="p-3">TELEMETRY TIMESTAMP</th>
-                          <th className="p-3">FINANCIAL PARITY</th>
+                          <th className="p-3">ONBOARDING STATUS</th>
                         </tr>
                       </thead>
                       <tbody>
                         {entities.map((entity) => (
                           <tr key={entity.id} className="border-b border-zinc-900/40 hover:bg-zinc-900/10">
-                            <td className="p-3 font-semibold text-zinc-200">{entity.name || entity.company_name || 'Unnamed Shell'}</td>
+                            <td className="p-3 font-semibold text-zinc-200">
+                              {entity.legal_name || entity.display_name || 'Unnamed Shell'}
+                            </td>
                             <td className="p-3">
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-mono ${entity.type === 'DOWNSTREAM_NODE' ? 'bg-zinc-950 text-zinc-500 border border-zinc-900' : 'bg-zinc-900 text-amber-400 border border-zinc-800'}`}>
-                                {entity.type || 'DIRECT_CLIENT'}
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-mono tracking-wider border ${
+                                entity.type === 'CUSTOMER' ? 'bg-zinc-900 text-amber-400 border-zinc-800' :
+                                entity.type === 'VENDOR' ? 'bg-zinc-900 text-sky-400 border-zinc-800' :
+                                entity.type === 'EMPLOYEE' ? 'bg-zinc-900 text-purple-400 border-zinc-800' :
+                                'bg-zinc-950 text-zinc-500 border-zinc-900'
+                              }`}>
+                                {entity.type || 'UNKNOWN'}
                               </span>
                             </td>
-                            <td className="p-3 font-mono text-zinc-400">{entity.industry || entity.sector || 'GENERAL_ENTERPRISE'}</td>
+                            <td className="p-3 font-mono text-zinc-400">{entity.industry || 'GENERAL_ENTERPRISE'}</td>
                             <td className="p-3 text-zinc-500 font-mono">
                               {entity.created_at ? new Date(entity.created_at).toLocaleDateString() : 'N/A'}
                             </td>
-                            <td className="p-3 font-mono text-emerald-500">
-                              ${Number(entity.revenue || entity.estimated_value || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            <td className="p-3">
+                              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-300 font-mono uppercase">
+                                {entity.status || entity.sales_lead_status || 'NEW'}
+                              </span>
                             </td>
                           </tr>
                         ))}
@@ -214,7 +226,7 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
                       {systemUsers.map((profile) => (
                         <tr key={profile.id} className="border-b border-zinc-900/40 hover:bg-zinc-900/10">
                           <td className="p-3">
-                            <div className="font-semibold text-zinc-200">{profile.full_name || profile.name || 'Anonymous User'}</div>
+                            <div className="font-semibold text-zinc-200">{profile.full_name || 'Anonymous User'}</div>
                             <div className="text-[10px] text-zinc-500 font-mono">{profile.email || 'no-email-recorded'}</div>
                           </td>
                           <td className="p-3 font-mono text-zinc-400 text-[11px]">{profile.role || 'CLIENT_STAFF'}</td>
