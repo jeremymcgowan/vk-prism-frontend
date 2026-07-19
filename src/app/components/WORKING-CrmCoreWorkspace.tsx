@@ -14,13 +14,14 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [validationError, setValidationError] = useState('')
 
-  // Form State
+  // Form State (Now includes default type and status)
   const [formData, setFormData] = useState({
     displayName: '', legalName: '', website: '',
     firstName: '', lastName: '', email: '', phone: '',
     status: 'ONBOARDING', type: 'CUSTOMER'
   })
 
+  // Initialize secure browser client for DB writes
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -52,10 +53,8 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
       return
     }
     
-    // Clean phone for DB storage (strip dashes so DB just gets +17275551234)
-    const dbCleanPhone = formData.phone.replace(/[\s-()]/g, '');
-    if (dbCleanPhone && !/^\+[1-9]\d{6,14}$/.test(dbCleanPhone)) {
-      setValidationError('MALFORMED DATA: Phone number must be a valid 10-digit number.')
+    if (formData.phone && !formData.phone.trim().startsWith('+')) {
+      setValidationError('MALFORMED DATA: Phone number must include a country code starting with "+" (e.g., +1).')
       return
     }
 
@@ -73,11 +72,12 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
       const activeTenantId = user.id
 
       // --- LAYER 2: DATABASE INGESTION ---
+      // Insert Corporate Entity Shell
       const { data: newEntity, error: entityError } = await supabase
         .from('crm_entities')
         .insert({
           tenant_id: activeTenantId,
-          type: formData.type, 
+          type: formData.type, // FIXED: Now uses the new dropdown value
           status: formData.status, 
           display_name: formData.displayName.trim(),
           legal_name: formData.legalName.trim(),
@@ -88,6 +88,7 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
 
       if (entityError) throw entityError
 
+      // Insert Primary Stakeholder (Linked to new Entity)
       if (formData.firstName || formData.lastName) {
         const { error: contactError } = await supabase
           .from('crm_contacts')
@@ -98,14 +99,17 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
             first_name: formData.firstName.trim() || 'Unknown',
             last_name: formData.lastName.trim() || '',
             email: formData.email.trim(),
-            phone: dbCleanPhone // Sends clean E.164 string to DB
+            phone: formData.phone.trim()
           })
           
         if (contactError) throw contactError
       }
 
+      // Success Reset
       setFormData({ displayName: '', legalName: '', website: '', firstName: '', lastName: '', email: '', phone: '', status: 'ONBOARDING', type: 'CUSTOMER' })
       setIsFormOpen(false)
+      
+      // Refresh the server data to show the new row instantly
       router.refresh()
 
     } catch (error: any) {
@@ -116,27 +120,14 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
     }
   }
 
-  // 📞 SMART NANP PHONE FORMATTER (Auto-dashes: +1-XXX-XXX-XXXX)
+  // 📞 PHONE FORMATTER HELPER
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let digits = e.target.value.replace(/\D/g, ''); // Extract only numbers
-    
-    if (digits.length === 0) {
-      setFormData({ ...formData, phone: '' });
-      return;
+    let val = e.target.value;
+    // Auto-inject '+' if the user types a number without it
+    if (val.length > 0 && !val.startsWith('+')) {
+      val = '+' + val;
     }
-
-    // Force US country code '1' if they don't type it
-    if (digits[0] !== '1') {
-      digits = '1' + digits;
-    }
-
-    // Build the beautiful dashed string
-    let formatted = '+1';
-    if (digits.length > 1) formatted += '-' + digits.substring(1, 4);
-    if (digits.length > 4) formatted += '-' + digits.substring(4, 7);
-    if (digits.length > 7) formatted += '-' + digits.substring(7, 11);
-
-    setFormData({ ...formData, phone: formatted });
+    setFormData({ ...formData, phone: val });
   }
 
   return (
@@ -180,8 +171,7 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
       {/* 📥 SLIDE-OUT INGESTION FORM */}
       {isFormOpen && (
         <div className="p-6 bg-zinc-950/80 border border-amber-500/30 rounded-xl space-y-6 animate-in slide-in-from-top-4 fade-in duration-200">
-          {/* UPDATED TITLE */}
-          <h3 className="text-xs font-bold tracking-widest text-amber-500 border-b border-zinc-900 pb-2">FAST-TRACK ONBOARDING</h3>
+          <h3 className="text-xs font-bold tracking-widest text-amber-500 border-b border-zinc-900 pb-2">PROVISION NEW CORPORATE RECORD</h3>
           <form className="grid grid-cols-2 gap-6">
             <div className="space-y-4">
               <h4 className="text-[10px] font-mono text-zinc-500 tracking-wider">ENTITY INFRASTRUCTURE</h4>
@@ -189,6 +179,7 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
               <input type="text" placeholder="Legal Name (e.g. Acme Corporation, LLC)" value={formData.legalName} onChange={e => setFormData({...formData, legalName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               <input type="text" placeholder="Corporate Website" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               
+              {/* THE STATUS DROPDOWN (Native arrow restored) */}
               <select 
                 value={formData.status} 
                 onChange={e => setFormData({...formData, status: e.target.value})} 
@@ -209,9 +200,10 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
               </div>
               <input type="email" placeholder="Direct Email Address" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               
-              {/* SMART PHONE INPUT */}
-              <input type="tel" placeholder="Direct Phone Line (e.g. 727...)" value={formData.phone} onChange={handlePhoneChange} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+              {/* AUTO-FORMATTING PHONE INPUT */}
+              <input type="tel" placeholder="Direct Phone Line (e.g. 1-727...)" value={formData.phone} onChange={handlePhoneChange} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
 
+              {/* THE NEW TYPE DROPDOWN (Directly under phone) */}
               <select 
                 value={formData.type} 
                 onChange={e => setFormData({...formData, type: e.target.value})} 
@@ -268,17 +260,9 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
                   <tr key={entity.id} className="border-b border-zinc-900/50 hover:bg-zinc-900/30 cursor-pointer transition-colors">
                     <td className="p-4 font-semibold text-zinc-200">{entity.display_name}</td>
                     <td className="p-4 text-zinc-400">{contact ? `${contact.first_name} ${contact.last_name}` : '—'}</td>
-                    {/* UPDATED MAILTO LINK */}
-                    <td className="p-4 font-mono text-zinc-500">
-                      {contact?.email ? (
-                        <a href={`mailto:${contact.email}`} className="hover:text-amber-400 transition-colors">
-                          {contact.email}
-                        </a>
-                      ) : '—'}
-                    </td>
+                    <td className="p-4 font-mono text-zinc-500">{contact?.email || '—'}</td>
                     <td className="p-4 font-mono text-zinc-500">{contact?.phone || '—'}</td>
-                    {/* GRACEFULLY FALLS BACK IF COMPANY PHONE IS MISSING */}
-                    <td className="p-4 font-mono text-zinc-500">{entity.company_phone || contact?.phone || '—'} <span className="text-[9px] text-zinc-700">{!entity.company_phone && '(Linked)'}</span></td>
+                    <td className="p-4 font-mono text-zinc-500">{contact?.phone || '—'} <span className="text-[9px] text-zinc-700">(Linked)</span></td>
                     <td className="p-4">
                       <span className={`px-2 py-0.5 rounded border text-[10px] font-mono font-bold uppercase ${
                         entity.status === 'ACTIVE' ? 'bg-emerald-950/50 border-emerald-900 text-emerald-400' :
