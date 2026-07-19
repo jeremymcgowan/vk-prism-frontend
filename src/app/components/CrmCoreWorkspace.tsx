@@ -265,19 +265,26 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
               filteredData.map((entity) => {
                 const contact = entity.crm_contacts?.find((c: any) => c.is_primary_contact) || entity.crm_contacts?.[0]
                 return (
-                  <tr key={entity.id} className="border-b border-zinc-900/50 hover:bg-zinc-900/30 cursor-pointer transition-colors">
+                  <tr 
+                    key={entity.id} 
+                    onClick={() => window.location.href = `/dashboard/client/${entity.id}`}
+                    className="border-b border-zinc-900/50 hover:bg-zinc-900/30 cursor-pointer transition-colors"
+                  >
                     <td className="p-4 font-semibold text-zinc-200">{entity.display_name}</td>
                     <td className="p-4 text-zinc-400">{contact ? `${contact.first_name} ${contact.last_name}` : '—'}</td>
-                    {/* UPDATED MAILTO LINK */}
+                    {/* STOP PROPAGATION ON EMAIL LINK SO IT DOESN'T TRIGGER THE ROW CLICK */}
                     <td className="p-4 font-mono text-zinc-500">
                       {contact?.email ? (
-                        <a href={`mailto:${contact.email}`} className="hover:text-amber-400 transition-colors">
+                        <a 
+                          href={`mailto:${contact.email}`} 
+                          onClick={(e) => e.stopPropagation()} 
+                          className="hover:text-amber-400 transition-colors"
+                        >
                           {contact.email}
                         </a>
                       ) : '—'}
                     </td>
                     <td className="p-4 font-mono text-zinc-500">{contact?.phone || '—'}</td>
-                    {/* GRACEFULLY FALLS BACK IF COMPANY PHONE IS MISSING */}
                     <td className="p-4 font-mono text-zinc-500">{entity.company_phone || contact?.phone || '—'} <span className="text-[9px] text-zinc-700">{!entity.company_phone && '(Linked)'}</span></td>
                     <td className="p-4">
                       <span className={`px-2 py-0.5 rounded border text-[10px] font-mono font-bold uppercase ${
