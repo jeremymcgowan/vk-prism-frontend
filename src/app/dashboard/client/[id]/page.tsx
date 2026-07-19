@@ -71,7 +71,7 @@ export default async function ClientDossierPage({ params }: PageProps) {
       {/* 🏛️ CORPORATE IDENTITY MODULE */}
       <div className="bg-zinc-950/40 border border-zinc-900 p-8 rounded-xl flex justify-between items-start">
         <div className="space-y-2">
-          <h1 className="text-4xl font-serif font-bold text-zinc-100 tracking-tight">{entity.display_name}</h1>
+          <h1 className="text-4xl font-sans font-bold text-zinc-100 tracking-tight">{entity.display_name}</h1>
           <p className="text-sm font-mono text-zinc-500">{entity.legal_name || 'No legal DBA on file.'}</p>
           <div className="pt-2 flex items-center space-x-3">
             <span className={`px-2 py-0.5 rounded border text-[10px] font-mono font-bold uppercase ${

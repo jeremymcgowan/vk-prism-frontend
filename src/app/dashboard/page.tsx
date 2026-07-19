@@ -76,7 +76,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <aside className="w-72 border-r border-zinc-900 bg-zinc-950/40 p-6 flex flex-col justify-between">
         <div className="space-y-8">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded border border-amber-500/30 flex items-center justify-center text-amber-500 font-serif font-bold">VK</div>
+            <div className="w-8 h-8 rounded border border-amber-500/30 flex items-center justify-center text-amber-500 font-sans font-bold">VK</div>
             <div>
               <h1 className="text-sm font-bold tracking-widest text-zinc-200">V&K PARTNERS</h1>
               <p className="text-[10px] font-bold tracking-[0.3em] text-amber-500/80">PRISM</p>
@@ -126,7 +126,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {/* VIEW 0: ECOSYSTEM OVERVIEW */}
           {activeId === '0' && (
              <div className="space-y-6 max-w-4xl">
-             <h2 className="text-2xl font-bold tracking-tight font-serif text-zinc-100">ECOSYSTEM OVERVIEW</h2>
+             <h2 className="text-2xl font-bold tracking-tight font-sans text-zinc-100">ECOSYSTEM OVERVIEW</h2>
              <p className="text-sm text-zinc-400 leading-relaxed">Welcome to the V&K Prism master operations terminal. Live database telemetries and CRM views are synchronized.</p>
              <div className="grid grid-cols-3 gap-4 pt-4">
                <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40"><h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">OPERATIONAL STATUS</h3><p className="text-xs text-zinc-500 leading-normal">System parameters verified. Core analytical functions running standard network telemetry.</p></div>
@@ -139,7 +139,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {/* VIEW 1: CRM CORE (Injected Client Component) */}
           {activeId === '1' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold tracking-tight font-serif text-zinc-100 mb-6">CRM CORE</h2>
+              <h2 className="text-2xl font-bold tracking-tight font-sans text-zinc-100 mb-6">CRM CORE</h2>
               <CrmCoreWorkspace initialData={crmData} />
             </div>
           )}
@@ -147,7 +147,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {/* VIEW 2: PROPOSALS & BILLING */}
           {activeId === '2' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold tracking-tight font-serif text-zinc-100">PROPOSALS & BILLING</h2>
+              <h2 className="text-2xl font-bold tracking-tight font-sans text-zinc-100">PROPOSALS & BILLING</h2>
               {billingData.length === 0 ? (
                 <div className="p-8 border border-dashed border-zinc-900 rounded-xl text-center text-xs text-zinc-500 font-mono">No active invoices or proposals recorded inside proposals_billing.</div>
               ) : (
@@ -169,7 +169,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {activeId === '3' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold tracking-tight font-serif text-zinc-100">COGNITIVE CALENDAR</h2>
+                <h2 className="text-2xl font-bold tracking-tight font-sans text-zinc-100">COGNITIVE CALENDAR</h2>
                 
                 <a 
                   href="/api/calendar/feed" 
