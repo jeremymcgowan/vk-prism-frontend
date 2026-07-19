@@ -28,22 +28,48 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
     }
   )
 
-  // 👤 ROLE VERIFICATION: Fetch session and validate SUPER_ADMIN authorization tokens
+  // 👤 ROLE VERIFICATION: Fetch session and validate security authorization tokens
   const { data: { user } } = await supabase.auth.getUser()
   const userRole = user?.app_metadata?.role ?? 'CLIENT_STAFF'
 
-  // Mock datasets for structural UI scaffolding before live database telemetry binding
-  const mockEntities = [
-    { id: '1', name: 'Indomitable Global Corp', type: 'DIRECT_CLIENT', industry: 'MEDTECH', status: 'ONBOARDING', revenue: 12500, active_at: '2 mins ago' },
-    { id: '2', name: 'Aether Kinetics LLC', type: 'DIRECT_CLIENT', industry: 'ROBOTICS', status: 'ACTIVE', revenue: 45000, active_at: '1 hour ago' },
-    { id: '3', name: 'Apex Logistics Group', type: 'DOWNSTREAM_NODE', industry: 'FINTECH', status: 'ACTIVE', revenue: 0, active_at: '14 days ago' }
-  ]
+  // 📡 LIVE TELEMETRY QUERY ENGINE (Sequential Promise Executions)
+  
+  // 1. Fetch live CRM Entities for the Global Ledger and counts
+  const { data: liveEntities } = await supabase
+    .from('crm_entities')
+    .select('*')
+    .order('created_at', { ascending: false })
+  const entities = liveEntities || []
 
-  const mockUsers = [
-    { id: 'u1', name: 'Sarah Jenkins', email: 's.jenkins@vkpartners.com', role: 'PARTNER_AM', scope: 'Internal Staff', status: 'ACTIVE' },
-    { id: 'u2', name: 'JP McGowan', email: 'jmcgowan2030@outlook.com', role: 'CLIENT_OWNER', scope: 'Indomitable Global', status: 'ACTIVE' },
-    { id: 'u3', name: 'Markus Vance', email: 'vance@apexlogistics.io', role: 'CLIENT_STAFF', scope: 'Downstream Asset', status: 'AUDIT_LOCK' }
-  ]
+  // 2. Fetch Billing ledger lines to aggregate system-wide revenue calculations
+  const { data: liveBilling } = await supabase
+    .from('proposals_billing')
+    .select('amount, status')
+  const billingLines = liveBilling || []
+
+  // 3. Fetch platform user identity metrics for the access manager
+  const { data: liveProfiles } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false })
+  const systemUsers = liveProfiles || []
+
+  // 4. Fetch the automated outbound partner routing metrics
+  const { data: liveReferrals } = await supabase
+    .from('partner_referrals')
+    .select('*')
+    .order('created_at', { ascending: false })
+  const referrals = liveReferrals || []
+
+  // 🧮 LIVE MATRIX AGGREGATIONS
+  
+  // Calculate total system revenue dynamically across all billing profiles
+  const totalRevenue = billingLines.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+  
+  // Dynamic calculation filters based on standard structural organization types
+  const directTenantsCount = entities.filter(e => e.type === 'DIRECT_CLIENT' || e.structural_type === 'DIRECT_CLIENT' || !e.type).length
+  const downstreamNodesCount = entities.filter(e => e.type === 'DOWNSTREAM_NODE' || e.structural_type === 'DOWNSTREAM_NODE').length
+  const activeAllianceHooks = referrals.length
 
   return (
     <div className="flex flex-col md:flex-row min-h-dvh bg-black text-white font-sans antialiased select-none overflow-x-hidden">
@@ -55,7 +81,7 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
             <div className="w-8 h-8 rounded border border-amber-500 bg-amber-500/10 flex items-center justify-center text-amber-500 font-bold text-sm">Ω</div>
             <div>
               <h1 className="text-sm font-bold tracking-widest text-zinc-200">V&K SYSTEM</h1>
-              <p className="text-[10px] font-bold tracking-[0.3em] text-red-500">ROOT AMIN</p>
+              <p className="text-[10px] font-bold tracking-[0.3em] text-red-500">ROOT ADMIN</p>
             </div>
           </div>
 
@@ -75,7 +101,7 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
         <div className="mt-6 md:mt-0 p-4 rounded-xl bg-zinc-900/40 border border-zinc-900 flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="text-xs font-bold text-red-400 font-mono tracking-tight uppercase">SYSTEM MASTER</div>
-            <div className="text-[10px] text-zinc-500 truncate font-mono">root@vkpartners.co</div>
+            <div className="text-[10px] text-zinc-500 truncate font-mono">{user?.email || 'root@vkpartners.co'}</div>
           </div>
           <LogoutButton />
         </div>
@@ -98,41 +124,65 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
               <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 ${lora.className}`}>Ecosystem Intelligence</h2>
               <p className="text-xs text-zinc-400 leading-relaxed">Omniscient telemetry tracking direct client networks and downstream asset structural parameters.</p>
               
-              {/* Core Analytics Grid */}
+              {/* Dynamic Live Analytics Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950"><h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Total System Revenue</h4><p className="text-2xl font-mono text-emerald-400">$57,500.00</p></div>
-                <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950"><h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Direct Tenants</h4><p className="text-2xl font-mono text-zinc-200">42 Firms</p></div>
-                <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950"><h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Downstream Nodes</h4><p className="text-2xl font-mono text-zinc-400">188 Entities</p></div>
-                <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950"><h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Active Alliance Hooks</h4><p className="text-2xl font-mono text-amber-400">12 Links</p></div>
+                <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950">
+                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Total System Revenue</h4>
+                  <p className="text-2xl font-mono text-emerald-400">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950">
+                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Direct Tenants</h4>
+                  <p className="text-2xl font-mono text-zinc-200">{directTenantsCount} Firms</p>
+                </div>
+                <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950">
+                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Downstream Nodes</h4>
+                  <p className="text-2xl font-mono text-zinc-400">{downstreamNodesCount} Entities</p>
+                </div>
+                <div className="p-4 border border-zinc-900 rounded-xl bg-zinc-950">
+                  <h4 className="text-[10px] font-mono tracking-wider text-zinc-500 uppercase mb-1">Active Alliance Hooks</h4>
+                  <p className="text-2xl font-mono text-amber-400">{activeAllianceHooks} Links</p>
+                </div>
               </div>
 
-              {/* Global Entity Directory Grid */}
+              {/* Global Live Entity Ledger Grid */}
               <div className="space-y-3 pt-4">
                 <h3 className="text-xs font-bold tracking-widest text-zinc-400 uppercase">Global Entity Ledger</h3>
-                <div className="border border-zinc-900 rounded-xl overflow-x-auto bg-zinc-950/40 w-full block">
-                  <table className="w-full text-left border-collapse text-xs min-w-[700px]">
-                    <thead>
-                      <tr className="border-b border-zinc-900 bg-zinc-900/30 text-zinc-400 font-bold font-mono">
-                        <th className="p-3">ENTITY NAME</th>
-                        <th className="p-3">STRUCTURAL STATUS</th>
-                        <th className="p-3">SECTOR</th>
-                        <th className="p-3">TELEMETRY VELOCITY</th>
-                        <th className="p-3">SYSTEM CONTRIBUTION</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mockEntities.map((entity) => (
-                        <tr key={entity.id} className="border-b border-zinc-900/40 hover:bg-zinc-900/10">
-                          <td className="p-3 font-semibold text-zinc-200">{entity.name}</td>
-                          <td className="p-3"><span className={`px-2 py-0.5 rounded text-[9px] font-mono ${entity.type === 'DIRECT_CLIENT' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'bg-zinc-950 text-zinc-500 border border-zinc-900'}`}>{entity.type}</span></td>
-                          <td className="p-3 font-mono text-zinc-400">{entity.industry}</td>
-                          <td className="p-3 text-zinc-500 font-mono">{entity.active_at}</td>
-                          <td className="p-3 font-mono text-emerald-500">${entity.revenue.toFixed(2)}</td>
+                {entities.length === 0 ? (
+                  <div className="p-8 border border-dashed border-zinc-900 rounded-xl text-center text-xs text-zinc-500 font-mono">No live operational matrix nodes recorded in crm_entities.</div>
+                ) : (
+                  <div className="border border-zinc-900 rounded-xl overflow-x-auto bg-zinc-950/40 w-full block">
+                    <table className="w-full text-left border-collapse text-xs min-w-[700px]">
+                      <thead>
+                        <tr className="border-b border-zinc-900 bg-zinc-900/30 text-zinc-400 font-bold font-mono">
+                          <th className="p-3">ENTITY NAME</th>
+                          <th className="p-3">STRUCTURAL STATUS</th>
+                          <th className="p-3">SECTOR / INDUSTRY</th>
+                          <th className="p-3">TELEMETRY TIMESTAMP</th>
+                          <th className="p-3">FINANCIAL PARITY</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {entities.map((entity) => (
+                          <tr key={entity.id} className="border-b border-zinc-900/40 hover:bg-zinc-900/10">
+                            <td className="p-3 font-semibold text-zinc-200">{entity.name || entity.company_name || 'Unnamed Shell'}</td>
+                            <td className="p-3">
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-mono ${entity.type === 'DOWNSTREAM_NODE' ? 'bg-zinc-950 text-zinc-500 border border-zinc-900' : 'bg-zinc-900 text-amber-400 border border-zinc-800'}`}>
+                                {entity.type || 'DIRECT_CLIENT'}
+                              </span>
+                            </td>
+                            <td className="p-3 font-mono text-zinc-400">{entity.industry || entity.sector || 'GENERAL_ENTERPRISE'}</td>
+                            <td className="p-3 text-zinc-500 font-mono">
+                              {entity.created_at ? new Date(entity.created_at).toLocaleDateString() : 'N/A'}
+                            </td>
+                            <td className="p-3 font-mono text-emerald-500">
+                              ${Number(entity.revenue || entity.estimated_value || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -142,46 +192,49 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
             <div className="space-y-6 max-w-6xl">
               <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 ${lora.className}`}>Global User Manager</h2>
               
-              {/* Custodian Banner Insulating Downstream Pipelines */}
               <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-950/10 text-xs text-amber-400/90 leading-relaxed max-w-3xl">
-                🔒 <strong>Data Custodian Protocol Active:</strong> Downstream account visibility conforms strictly to the V&K Sovereign Custodian Manifesto. All structural view sequences are recorded inside the un-erasable administrative audit ledger log pipeline.
+                🔒 <strong>Data Custodian Protocol Active:</strong> Downstream account visibility conforms strictly to the V&K Sovereign Custodian Manifesto. All structural view sequences are recorded inside the administrative audit ledger log pipeline.
               </div>
 
-              <div className="border border-zinc-900 rounded-xl overflow-x-auto bg-zinc-950/40 w-full block mt-4">
-                <table className="w-full text-left border-collapse text-xs min-w-[700px]">
-                  <thead>
-                    <tr className="border-b border-zinc-900 bg-zinc-900/30 text-zinc-400 font-bold font-mono">
-                      <th className="p-3">HUMAN PROFILE</th>
-                      <th className="p-3">ASSIGNED PRIVILEGE</th>
-                      <th className="p-3">ECOSYSTEM RELATIONSHIP</th>
-                      <th className="p-3">STATUS</th>
-                      <th className="p-3 text-right">SECURE CONTROL ACTION</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockUsers.map((user) => (
-                      <tr key={user.id} className="border-b border-zinc-900/40 hover:bg-zinc-900/10">
-                        <td className="p-3">
-                          <div className="font-semibold text-zinc-200">{user.name}</div>
-                          <div className="text-[10px] text-zinc-500 font-mono">{user.email}</div>
-                        </td>
-                        <td className="p-3 font-mono text-zinc-400 text-[11px]">{user.role}</td>
-                        <td className="p-3 text-zinc-400 font-medium">{user.scope}</td>
-                        <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-mono ${user.status === 'ACTIVE' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900/50' : 'bg-red-950 text-red-400 border border-red-900/50'}`}>
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="p-3 text-right">
-                          <button className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-semibold rounded text-[10px] tracking-wide active:scale-95 transition-all">
-                            OPTIMIZE PASSTHROUGH
-                          </button>
-                        </td>
+              {systemUsers.length === 0 ? (
+                <div className="p-8 border border-dashed border-zinc-900 rounded-xl text-center text-xs text-zinc-500 font-mono mt-4">No real-time identities mapped inside public profiles data pipeline yet.</div>
+              ) : (
+                <div className="border border-zinc-900 rounded-xl overflow-x-auto bg-zinc-950/40 w-full block mt-4">
+                  <table className="w-full text-left border-collapse text-xs min-w-[700px]">
+                    <thead>
+                      <tr className="border-b border-zinc-900 bg-zinc-900/30 text-zinc-400 font-bold font-mono">
+                        <th className="p-3">HUMAN PROFILE</th>
+                        <th className="p-3">ASSIGNED PRIVILEGE</th>
+                        <th className="p-3">ECOSYSTEM RELATIONSHIP</th>
+                        <th className="p-3">STATUS</th>
+                        <th className="p-3 text-right">SECURE CONTROL ACTION</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {systemUsers.map((profile) => (
+                        <tr key={profile.id} className="border-b border-zinc-900/40 hover:bg-zinc-900/10">
+                          <td className="p-3">
+                            <div className="font-semibold text-zinc-200">{profile.full_name || profile.name || 'Anonymous User'}</div>
+                            <div className="text-[10px] text-zinc-500 font-mono">{profile.email || 'no-email-recorded'}</div>
+                          </td>
+                          <td className="p-3 font-mono text-zinc-400 text-[11px]">{profile.role || 'CLIENT_STAFF'}</td>
+                          <td className="p-3 text-zinc-400 font-medium">{profile.organization_scope || 'Assigned Node Tenant'}</td>
+                          <td className="p-3">
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-mono ${profile.status === 'SUSPENDED' ? 'bg-red-950 text-red-400 border border-red-900/50' : 'bg-emerald-950 text-emerald-400 border border-emerald-900/50'}`}>
+                              {profile.status || 'ACTIVE'}
+                            </span>
+                          </td>
+                          <td className="p-3 text-right">
+                            <button className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-semibold rounded text-[10px] tracking-wide active:scale-95 transition-all">
+                              OPTIMIZE PASSTHROUGH
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
@@ -191,9 +244,38 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
               <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 ${lora.className}`}>Alliance Referral Clearing House</h2>
               <p className="text-xs text-zinc-400 leading-relaxed">Monitors automated data handoffs dispatched to external partner desks and tracking performance yields.</p>
               
-              <div className="p-8 border border-dashed border-zinc-900 rounded-xl text-center text-xs text-zinc-500 font-mono max-w-3xl">
-                No outbound matching exceptions triggered inside partner_referrals matrix pipelines today.
-              </div>
+              {referrals.length === 0 ? (
+                <div className="p-8 border border-dashed border-zinc-900 rounded-xl text-center text-xs text-zinc-500 font-mono max-w-3xl">
+                  No outbound matching exceptions triggered inside partner_referrals matrix pipelines today.
+                </div>
+              ) : (
+                <div className="border border-zinc-900 rounded-xl overflow-x-auto bg-zinc-950/40 w-full block">
+                  <table className="w-full text-left border-collapse text-xs min-w-[700px]">
+                    <thead>
+                      <tr className="border-b border-zinc-900 bg-zinc-900/30 text-zinc-400 font-bold font-mono">
+                        <th className="p-3">TARGET ROUTE</th>
+                        <th className="p-3">ORIGINATING NODE</th>
+                        <th className="p-3">VULNERABILITY MATRICES</th>
+                        <th className="p-3">CLEARING STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {referrals.map((ref) => (
+                        <tr key={ref.id} className="border-b border-zinc-900/40 hover:bg-zinc-900/10">
+                          <td className="p-3 font-semibold text-zinc-200">{ref.partner_name || 'Assigned Desk'}</td>
+                          <td className="p-3 font-mono text-zinc-400">{ref.client_name || 'Internal Lead Node'}</td>
+                          <td className="p-3 text-zinc-400">{ref.scanned_vector || 'Optimization Pipeline'}</td>
+                          <td className="p-3">
+                            <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-300 font-mono">
+                              {ref.status?.toUpperCase() || 'DISPATCHED'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
