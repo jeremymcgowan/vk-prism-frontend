@@ -12,11 +12,13 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
   const [searchQuery, setSearchQuery] = useState('')
   const [isFocused, setIsFocused] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [validationError, setValidationError] = useState('')
 
-  // Form State
+  // Form State (Now includes the default status)
   const [formData, setFormData] = useState({
     displayName: '', legalName: '', website: '',
-    firstName: '', lastName: '', email: '', phone: ''
+    firstName: '', lastName: '', email: '', phone: '',
+    status: 'ONBOARDING'
   })
 
   // Initialize secure browser client for DB writes
@@ -41,33 +43,52 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
     })
   }, [searchQuery, initialData])
 
-  // 🚀 DUAL-INGESTION EXECUTION PROTOCOL
+  // 🚀 DUAL-INGESTION EXECUTION PROTOCOL (With Strict Validation & Dropdown)
   const handleIngestion = async () => {
+    setValidationError('') // Clear previous errors
+    
+    // --- LAYER 1: STRICT FRONTEND VALIDATION ---
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setValidationError('MALFORMED DATA: Email must contain an @ and a valid domain.')
+      return
+    }
+    
+    if (formData.phone && !formData.phone.trim().startsWith('+')) {
+      setValidationError('MALFORMED DATA: Phone number must include a country code starting with "+" (e.g., +1).')
+      return
+    }
+
+    // Auto-normalize website (add https:// if missing)
+    let normalizedWebsite = formData.website.trim()
+    if (normalizedWebsite && !/^https?:\/\//i.test(normalizedWebsite)) {
+      normalizedWebsite = `https://${normalizedWebsite}`
+    }
+
     try {
       setIsSubmitting(true)
       
-      // 1. Get the current active session/tenant
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Unauthorized: No active session.")
       const activeTenantId = user.id
 
-      // 2. Insert Corporate Entity Shell
+      // --- LAYER 2: DATABASE INGESTION ---
+      // Insert Corporate Entity Shell
       const { data: newEntity, error: entityError } = await supabase
         .from('crm_entities')
         .insert({
           tenant_id: activeTenantId,
-          type: 'client', // Replace with exact enum if your DB requires
-          status: 'lead',
-          display_name: formData.displayName,
-          legal_name: formData.legalName,
-          website: formData.website
+          type: 'client',
+          status: formData.status, // Uses the dropdown selection
+          display_name: formData.displayName.trim(),
+          legal_name: formData.legalName.trim(),
+          website: normalizedWebsite
         })
         .select('id')
         .single()
 
       if (entityError) throw entityError
 
-      // 3. Insert Primary Stakeholder (Linked to new Entity)
+      // Insert Primary Stakeholder (Linked to new Entity)
       if (formData.firstName || formData.lastName) {
         const { error: contactError } = await supabase
           .from('crm_contacts')
@@ -75,25 +96,25 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
             tenant_id: activeTenantId,
             entity_id: newEntity.id,
             is_primary_contact: true,
-            first_name: formData.firstName || 'Unknown',
-            last_name: formData.lastName || '',
-            email: formData.email,
-            phone: formData.phone
+            first_name: formData.firstName.trim() || 'Unknown',
+            last_name: formData.lastName.trim() || '',
+            email: formData.email.trim(),
+            phone: formData.phone.trim()
           })
           
         if (contactError) throw contactError
       }
 
-      // 4. Success Reset
-      setFormData({ displayName: '', legalName: '', website: '', firstName: '', lastName: '', email: '', phone: '' })
+      // Success Reset
+      setFormData({ displayName: '', legalName: '', website: '', firstName: '', lastName: '', email: '', phone: '', status: 'ONBOARDING' })
       setIsFormOpen(false)
       
       // Refresh the server data to show the new row instantly
       router.refresh()
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Ingestion Error:", error)
-      alert("Database insertion failed. Check console for structural errors.")
+      setValidationError(`DATABASE REJECTION: ${error.message || 'Check console for details.'}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -104,7 +125,7 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
       {/* 🎛️ ACTION HEADER */}
       <div className="flex items-center space-x-4 relative">
         
-        {/* GOLD EXECUTION BUTTON - COLOR FIXED */}
+        {/* GOLD EXECUTION BUTTON */}
         <button 
           onClick={() => setIsFormOpen(!isFormOpen)}
           className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-zinc-800 text-xs font-bold tracking-widest rounded transition-all"
@@ -151,6 +172,18 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
               <input type="text" placeholder="Display Name (e.g. Acme Corp)" value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               <input type="text" placeholder="Legal Name (e.g. Acme Corporation, LLC)" value={formData.legalName} onChange={e => setFormData({...formData, legalName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               <input type="text" placeholder="Corporate Website" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+              
+              {/* THE NEW STATUS DROPDOWN */}
+              <select 
+                value={formData.status} 
+                onChange={e => setFormData({...formData, status: e.target.value})} 
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none appearance-none cursor-pointer"
+              >
+                <option value="ONBOARDING">STATUS: ONBOARDING</option>
+                <option value="ACTIVE">STATUS: ACTIVE</option>
+                <option value="SUSPENDED">STATUS: SUSPENDED</option>
+                <option value="ARCHIVED">STATUS: ARCHIVED</option>
+              </select>
             </div>
             <div className="space-y-4">
               <h4 className="text-[10px] font-mono text-zinc-500 tracking-wider">PRIMARY STAKEHOLDER</h4>
@@ -159,9 +192,15 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
                 <input type="text" placeholder="Last Name" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               </div>
               <input type="email" placeholder="Direct Email Address" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
-              <input type="tel" placeholder="Direct Phone Line" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+              <input type="tel" placeholder="Direct Phone Line (+1...)" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
             </div>
-            <div className="col-span-2 pt-2 flex justify-end">
+            
+            <div className="col-span-2 pt-2 flex flex-col items-end space-y-3">
+              {validationError && (
+                <div className="text-[10px] font-mono font-bold text-red-500 bg-red-950/30 px-3 py-1.5 border border-red-900/50 rounded w-full text-right">
+                  {validationError}
+                </div>
+              )}
               <button 
                 type="button" 
                 onClick={handleIngestion}
@@ -205,8 +244,8 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
                     <td className="p-4 font-mono text-zinc-500">{contact?.phone || '—'} <span className="text-[9px] text-zinc-700">(Linked)</span></td>
                     <td className="p-4">
                       <span className={`px-2 py-0.5 rounded border text-[10px] font-mono font-bold uppercase ${
-                        entity.status === 'active' ? 'bg-emerald-950/50 border-emerald-900 text-emerald-400' :
-                        entity.status === 'lead' ? 'bg-amber-950/50 border-amber-900 text-amber-400' :
+                        entity.status === 'ACTIVE' ? 'bg-emerald-950/50 border-emerald-900 text-emerald-400' :
+                        entity.status === 'ONBOARDING' ? 'bg-amber-950/50 border-amber-900 text-amber-400' :
                         'bg-zinc-900 border-zinc-800 text-zinc-500'
                       }`}>
                         {entity.status || 'UNKNOWN'}
