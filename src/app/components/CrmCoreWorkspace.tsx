@@ -14,11 +14,11 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [validationError, setValidationError] = useState('')
 
-  // Form State (Now includes the default status)
+  // Form State (Now includes default type and status)
   const [formData, setFormData] = useState({
     displayName: '', legalName: '', website: '',
     firstName: '', lastName: '', email: '', phone: '',
-    status: 'ONBOARDING'
+    status: 'ONBOARDING', type: 'CUSTOMER'
   })
 
   // Initialize secure browser client for DB writes
@@ -43,9 +43,9 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
     })
   }, [searchQuery, initialData])
 
-  // 🚀 DUAL-INGESTION EXECUTION PROTOCOL (With Strict Validation & Dropdown)
+  // 🚀 DUAL-INGESTION EXECUTION PROTOCOL
   const handleIngestion = async () => {
-    setValidationError('') // Clear previous errors
+    setValidationError('') 
     
     // --- LAYER 1: STRICT FRONTEND VALIDATION ---
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -58,7 +58,7 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
       return
     }
 
-    // Auto-normalize website (add https:// if missing)
+    // Auto-normalize website
     let normalizedWebsite = formData.website.trim()
     if (normalizedWebsite && !/^https?:\/\//i.test(normalizedWebsite)) {
       normalizedWebsite = `https://${normalizedWebsite}`
@@ -77,8 +77,8 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
         .from('crm_entities')
         .insert({
           tenant_id: activeTenantId,
-          type: 'client',
-          status: formData.status, // Uses the dropdown selection
+          type: formData.type, // FIXED: Now uses the new dropdown value
+          status: formData.status, 
           display_name: formData.displayName.trim(),
           legal_name: formData.legalName.trim(),
           website: normalizedWebsite
@@ -106,7 +106,7 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
       }
 
       // Success Reset
-      setFormData({ displayName: '', legalName: '', website: '', firstName: '', lastName: '', email: '', phone: '', status: 'ONBOARDING' })
+      setFormData({ displayName: '', legalName: '', website: '', firstName: '', lastName: '', email: '', phone: '', status: 'ONBOARDING', type: 'CUSTOMER' })
       setIsFormOpen(false)
       
       // Refresh the server data to show the new row instantly
@@ -120,12 +120,20 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
     }
   }
 
+  // 📞 PHONE FORMATTER HELPER
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+    // Auto-inject '+' if the user types a number without it
+    if (val.length > 0 && !val.startsWith('+')) {
+      val = '+' + val;
+    }
+    setFormData({ ...formData, phone: val });
+  }
+
   return (
     <div className="space-y-6">
       {/* 🎛️ ACTION HEADER */}
       <div className="flex items-center space-x-4 relative">
-        
-        {/* GOLD EXECUTION BUTTON */}
         <button 
           onClick={() => setIsFormOpen(!isFormOpen)}
           className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-zinc-800 text-xs font-bold tracking-widest rounded transition-all"
@@ -133,7 +141,6 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
           {isFormOpen ? 'CLOSE PANEL' : '+ ADD CLIENT'}
         </button>
 
-        {/* OMNI-SEARCH BAR */}
         <div className="relative flex-1 max-w-xl">
           <input 
             type="text" 
@@ -145,7 +152,6 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
             className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded px-4 py-2.5 text-xs text-zinc-200 font-mono outline-none transition-colors"
           />
           
-          {/* PREDICTIVE DROPDOWN */}
           {isFocused && searchQuery.trim() && filteredData.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 overflow-hidden">
               {filteredData.slice(0, 5).map(entity => {
@@ -173,11 +179,11 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
               <input type="text" placeholder="Legal Name (e.g. Acme Corporation, LLC)" value={formData.legalName} onChange={e => setFormData({...formData, legalName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               <input type="text" placeholder="Corporate Website" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               
-              {/* THE NEW STATUS DROPDOWN */}
+              {/* THE STATUS DROPDOWN (Native arrow restored) */}
               <select 
                 value={formData.status} 
                 onChange={e => setFormData({...formData, status: e.target.value})} 
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none appearance-none cursor-pointer"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none cursor-pointer"
               >
                 <option value="ONBOARDING">STATUS: ONBOARDING</option>
                 <option value="ACTIVE">STATUS: ACTIVE</option>
@@ -185,6 +191,7 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
                 <option value="ARCHIVED">STATUS: ARCHIVED</option>
               </select>
             </div>
+            
             <div className="space-y-4">
               <h4 className="text-[10px] font-mono text-zinc-500 tracking-wider">PRIMARY STAKEHOLDER</h4>
               <div className="flex space-x-3">
@@ -192,7 +199,21 @@ export default function CrmCoreWorkspace({ initialData }: { initialData: any[] }
                 <input type="text" placeholder="Last Name" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
               </div>
               <input type="email" placeholder="Direct Email Address" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
-              <input type="tel" placeholder="Direct Phone Line (+1...)" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+              
+              {/* AUTO-FORMATTING PHONE INPUT */}
+              <input type="tel" placeholder="Direct Phone Line (e.g. 1-727...)" value={formData.phone} onChange={handlePhoneChange} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none" />
+
+              {/* THE NEW TYPE DROPDOWN (Directly under phone) */}
+              <select 
+                value={formData.type} 
+                onChange={e => setFormData({...formData, type: e.target.value})} 
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200 focus:border-amber-500 outline-none cursor-pointer"
+              >
+                <option value="CUSTOMER">TYPE: CUSTOMER</option>
+                <option value="EMPLOYEE">TYPE: EMPLOYEE</option>
+                <option value="CONTRACTOR">TYPE: CONTRACTOR</option>
+                <option value="VENDOR">TYPE: VENDOR</option>
+              </select>
             </div>
             
             <div className="col-span-2 pt-2 flex flex-col items-end space-y-3">
