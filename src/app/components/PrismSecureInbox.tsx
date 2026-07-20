@@ -13,25 +13,33 @@ interface Message {
   created_at: string
 }
 
+interface SuggestionItem {
+  type: 'INDIVIDUAL' | 'DEPARTMENT' | 'ALL_USERS'
+  label: string
+  subLabel: string
+  routingKey: string // Can be an email or a formatted department routing token
+}
+
 export default function PrismSecureInbox() {
   const [loading, setLoading] = useState(true)
   const [dispatching, setDispatching] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
   
-  // 👥 Identity & Access States
+  // 👥 Identity States
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string>('CLIENT_STAFF')
   const [companyName, setCompanyName] = useState<string>('')
+  const [myDepartment, setMyDepartment] = useState<string>('')
 
-  // 📬 Messaging States
+  // 📬 Inbox States
   const [messages, setMessages] = useState<Message[]>([])
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
-  const [activeFolder, setActiveFolder] = useState<'INBOX' | 'SENT' | 'DRAFTS' | 'ARCHIVE'>('INBOX')
+  const [activeFolder, setActiveFolder] = useState<'INBOX' | 'SENT'>('INBOX')
 
-  // 📝 Compose Form States
-  const [recipientChannel, setRecipientChannel] = useState('')
+  // 📝 Advanced Autocomplete & Form States
   const [searchQuery, setSearchQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [resolvedRecipient, setResolvedRecipient] = useState<SuggestionItem | null>(null)
+  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [subjectLine, setSubjectLine] = useState('')
   const [payloadData, setPayloadData] = useState('')
@@ -41,7 +49,7 @@ export default function PrismSecureInbox() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // 🔐 Initialize Session & Roles
+  // 🔐 Initialize Master Session & Profile Data
   useEffect(() => {
     async function initializeSession() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -49,340 +57,279 @@ export default function PrismSecureInbox() {
 
       setUserEmail(user.email || null)
 
-      // Hydrate user profile security credentials
       const { data: profile } = await supabase
         .from('crm_contacts')
-        .select('role, company_name')
+        .select('role, company_name, department')
         .eq('email', user.email)
         .single()
 
       if (profile) {
         setUserRole(profile.role || 'CLIENT_STAFF')
         setCompanyName(profile.company_name || '')
-        // Pre-set default selection for client selector dropdown
-        if (profile.role !== 'SYSTEM_ADMIN') {
-          setRecipientChannel('V&K Executive Matrix')
-        }
+        setMyDepartment(profile.department || '')
       }
       setLoading(false)
     }
     initializeSession()
   }, [])
 
-  // 📥 Fetch Dynamic Mailbox Folders
+  // 📥 Load Reactive Inbox Ledger
   useEffect(() => {
     if (!userEmail) return
 
     async function fetchMailboxData() {
       let query = supabase.from('crm_messages').select('*')
-
+      
       if (activeFolder === 'INBOX') {
-        query = query.eq('recipient_email', userEmail)
-      } else if (activeFolder === 'SENT') {
+        query = query.or(`recipient_email.eq.${userEmail},recipient_email.eq.${companyName}_ALL,recipient_email.eq.${companyName}_DEPT_${myDepartment}`)
+      } else {
         query = query.eq('sender_email', userEmail)
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false })
+      const { data } = await query.order('created_at', { ascending: false })
       if (data) {
         setMessages(data)
-        if (data.length > 0 && !selectedMessage) {
-          setSelectedMessage(data[0])
-        }
+        if (data.length > 0 && !selectedMessage) setSelectedMessage(data[0])
       }
     }
     fetchMailboxData()
-  }, [userEmail, activeFolder])
+  }, [userEmail, activeFolder, companyName, myDepartment])
 
-  // 🔍 Live Directory Autocomplete Keystroke Listener (Admin Only)
+  // 🔍 Multi-Layered Autocomplete Query Engine (Admin/Staff Tracker)
   useEffect(() => {
-    if (userRole !== 'SYSTEM_ADMIN' || searchQuery.length < 2) {
+    if (userRole !== 'SYSTEM_ADMIN' || searchQuery.length < 2 || resolvedRecipient) {
       setSuggestions([])
       return
     }
 
-    const fetchDirectorySuggestions = async () => {
-      const { data } = await supabase
+    const buildIntelligentSuggestions = async () => {
+      const { data: matches } = await supabase
         .from('crm_contacts')
-        .select('email, name, company_name')
-        .or(`email.ilike.%${searchQuery}%,company_name.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`)
-        .limit(5)
+        .select('email, name, company_name, department, title')
+        .or(`company_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`)
+        .limit(10)
 
-      if (data) setSuggestions(data)
+      if (!matches) return
+
+      const compiledList: SuggestionItem[] = []
+      const processedCompanies = new Set<string>()
+
+      matches.forEach(contact => {
+        const comp = contact.company_name || 'Individual Node'
+
+        // 1. Map Individual User Profile
+        compiledList.push({
+          type: 'INDIVIDUAL',
+          label: comp,
+          subLabel: `${contact.name || 'Unassigned'} — ${contact.title || 'No Title'} (${contact.email})`,
+          routingKey: contact.email
+        })
+
+        // 2. Map Broadcast & Department Layers if it's a corporate client
+        if (contact.company_name && !processedCompanies.has(contact.company_name)) {
+          processedCompanies.add(contact.company_name)
+
+          // Global Corporate Broadcast Route
+          compiledList.push({
+            type: 'ALL_USERS',
+            label: contact.company_name,
+            subLabel: `📢 Broadcast to All Associated Users`,
+            routingKey: `${contact.company_name}_ALL`
+          })
+
+          // Detect active client departments present in current lookup rows
+          if (contact.department) {
+            compiledList.push({
+              type: 'DEPARTMENT',
+              label: contact.company_name,
+              subLabel: `👥 ${contact.department.replace('_', ' ')} Team Node`,
+              routingKey: `${contact.company_name}_DEPT_${contact.department}`
+            })
+          }
+        }
+      })
+
+      setSuggestions(compiledList)
     }
 
     const delayDebounce = setTimeout(() => {
-      fetchDirectorySuggestions()
-    }, 250)
+      buildIntelligentSuggestions()
+    }, 200)
 
     return () => clearTimeout(delayDebounce)
-  }, [searchQuery, userRole])
+  }, [searchQuery, userRole, resolvedRecipient])
 
-  // 🚀 Secure Payload Transmission Handshake
+  // 🚀 Intelligent Payload Routing Dispatch
   const handleDispatchPayload = async (e: React.FormEvent) => {
     e.preventDefault()
     setDispatching(true)
     setStatusMessage('')
 
     try {
-      if (!userEmail) throw new Error("Unauthorized identity footprint.")
-      let targetEmail = ''
+      if (!userEmail) throw new Error("Unauthorized security footprint.")
+      let targetRoutingKey = ''
 
-      // 🛡️ ROLE-BASED ACCESS ROUTING ENGINE
       if (userRole === 'SYSTEM_ADMIN') {
-        if (!recipientChannel) throw new Error("Please select a verified node from directory.")
-        targetEmail = recipientChannel
+        if (!resolvedRecipient) throw new Error("Please select a verified operational routing channel.")
+        targetRoutingKey = resolvedRecipient.routingKey
       } else {
-        // 🔒 Sandboxed Client Logic Matrix
-        if (recipientChannel === 'V&K Tactical Support') {
-          targetEmail = 'support@vkpartners.co'
-        } else if (recipientChannel === 'V&K Executive Matrix') {
-          targetEmail = 'admin@vkpartners.co'
-        } else if (recipientChannel === 'My Internal Team') {
-          const { data: teamRecord } = await supabase
-            .from('crm_contacts')
-            .select('email')
-            .eq('company_name', companyName)
-            .neq('email', userEmail)
-            .limit(1)
-            .single()
-
-          if (!teamRecord) throw new Error("Dynamic Routing Failure: No alternative corporate team nodes registered.")
-          targetEmail = teamRecord.email
+        // 🔒 Client Sandbox Routing Framework
+        if (searchQuery === 'V&K Executive Matrix') targetRoutingKey = 'admin@vkpartners.co'
+        else if (searchQuery === 'V&K Tactical Support') targetRoutingKey = 'support@vkpartners.co'
+        else if (searchQuery.startsWith('INTERNAL_DEPT_')) {
+          const targetedDept = searchQuery.replace('INTERNAL_DEPT_', '')
+          targetRoutingKey = `${companyName}_DEPT_${targetedDept}`
         }
       }
 
-      // Execute Ledger Transaction Insertion
-      const { error: dispatchError } = await supabase
+      const { error } = await supabase
         .from('crm_messages')
         .insert({
           sender_email: userEmail,
-          recipient_email: targetEmail,
+          recipient_email: targetRoutingKey,
           subject: subjectLine,
           payload: payloadData,
           status: 'DELIVERED',
           created_at: new Date().toISOString()
         })
 
-      if (dispatchError) throw dispatchError
+      if (error) throw error
 
-      setStatusMessage(`🚀 Payload successfully routed to node: [${targetEmail}]`)
+      setStatusMessage(`🚀 Payload securely locked and routed to channel node.`)
       setSubjectLine('')
       setPayloadData('')
       setSearchQuery('')
+      setResolvedRecipient(null)
     } catch (err: any) {
       setStatusMessage(`❌ Dispatch Aborted: ${err.message}`)
-    } finally {
-      setDispatching(false)
-    }
+    } bits: { setDispatching(false) }
   }
 
-  if (loading) return <div className="p-6 text-xs font-mono text-zinc-500 animate-pulse">SYNCHRONIZING PRISM SECURE COMMUNICATIONS CORE...</div>
+  if (loading) return <div className="p-6 text-xs font-mono text-zinc-500">INITIALIZING SECURITY MATRIX...</div>
 
   return (
-    <div className="w-full bg-black text-zinc-100 min-h-screen p-4 md:p-6 font-mono selection:bg-amber-500/20 selection:text-amber-400">
-      
-      {/* Upper Terminal Banner */}
-      <div className="w-full border border-zinc-900 bg-zinc-950/20 rounded-xl p-4 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="space-y-0.5">
-          <h1 className="text-sm font-bold tracking-widest text-zinc-300">SECURE OPERATIONS INBOX</h1>
-          <div className="text-[10px] text-zinc-500 uppercase">Clearance Status: <span className="text-amber-500">{userRole}</span> // {userEmail}</div>
-        </div>
-        <div className="border border-amber-500/30 bg-amber-500/5 px-3 py-1.5 rounded text-[10px] tracking-widest text-amber-500 font-bold uppercase">
-          NODE ID: [ VERIFIED ]
+    <div className="w-full bg-black text-zinc-100 min-h-screen p-6 font-mono">
+      {/* Top Banner Status Info */}
+      <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-xs font-bold tracking-widest text-zinc-300">SECURE OPERATIONS PORTAL</h1>
+          <div className="text-[10px] text-zinc-500 mt-0.5">Clearance: <span className="text-amber-500">{userRole}</span> // {userEmail}</div>
         </div>
       </div>
 
-      {/* Main Split Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* Navigation Sidebar Pillars (3/12 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Navigation Column */}
         <div className="lg:col-span-3 space-y-2">
-          <button className="w-full text-left p-3 border border-amber-600/30 bg-amber-500 text-black font-bold text-xs rounded-lg uppercase tracking-wider transition">
-            ➕ COMPOSE SECURE DISCLOSURE
-          </button>
-          
-          <div className="border border-zinc-900 rounded-lg overflow-hidden bg-zinc-950/40 divide-y divide-zinc-900/50 text-xs">
-            {(['INBOX', 'SENT', 'DRAFTS', 'ARCHIVE'] as const).map((folder) => (
-              <button
-                key={folder}
-                onClick={() => { setActiveFolder(folder); setSelectedMessage(null); }}
-                className={`w-full p-3 text-left transition flex items-center gap-2 font-bold tracking-wide uppercase ${activeFolder === folder ? 'bg-zinc-900/80 text-amber-500 border-l-2 border-amber-500' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/30'}`}
-              >
-                <span>{folder === 'INBOX' ? '📥' : folder === 'SENT' ? '📤' : folder === 'DRAFTS' ? '📝' : '🗄️'}</span>
-                {folder}
-              </button>
-            ))}
-          </div>
+          {(['INBOX', 'SENT'] as const).map(f => (
+            <button key={f} onClick={() => setActiveFolder(f)} className={`w-full p-3 text-left border text-xs font-bold rounded-lg transition ${activeFolder === f ? 'bg-zinc-900 border-amber-500 text-amber-500' : 'bg-zinc-950 border-zinc-900 text-zinc-400'}`}>
+              {f === 'INBOX' ? '📥 ' : '📤 '} {f} FEED
+            </button>
+          ))}
         </div>
 
-        {/* Dynamic Ledger Feed Box (4/12 cols) */}
-        <div className="lg:col-span-4 border border-zinc-900 bg-zinc-950/40 rounded-xl min-h-[500px] flex flex-col overflow-hidden">
-          <div className="p-3 border-b border-zinc-900 bg-zinc-950 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-            {activeFolder} Ledger Feed Matrix
-          </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-zinc-900/40 max-h-[600px]">
-            {messages.length === 0 ? (
-              <div className="p-6 text-center text-zinc-600 text-[11px]">NO PAYLOAD RECORD ENTRIES DETECTED IN THIS FOLDER.</div>
-            ) : (
-              messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  onClick={() => setSelectedMessage(msg)}
-                  className={`p-3.5 text-left cursor-pointer transition space-y-1 ${selectedMessage?.id === msg.id ? 'bg-zinc-900/50 border-r-2 border-amber-500' : 'hover:bg-zinc-900/20'}`}
-                >
-                  <div className="flex justify-between items-center text-[10px]">
-                    <span className="text-zinc-400 font-bold truncate max-w-[150px]">
-                      {activeFolder === 'INBOX' ? `From: ${msg.sender_email}` : `To: ${msg.recipient_email}`}
-                    </span>
-                    <span className="text-zinc-600">{new Date(msg.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <h4 className="text-xs font-bold text-zinc-200 truncate">{msg.subject || '(No Subject)'}</h4>
+        {/* Messaging Feed Grid Item */}
+        <div className="lg:col-span-4 border border-zinc-900 bg-zinc-950/40 rounded-xl min-h-[400px] overflow-y-auto">
+          {messages.length === 0 ? (
+            <div className="p-6 text-center text-zinc-600 text-[11px]">NO RECORDS REGISTERED.</div>
+          ) : (
+            messages.map(msg => (
+              <div key={msg.id} onClick={() => setSelectedMessage(msg)} className={`p-3 border-b border-zinc-900/40 cursor-pointer transition ${selectedMessage?.id === msg.id ? 'bg-zinc-900/40' : ''}`}>
+                <div className="text-[9px] text-zinc-500 flex justify-between">
+                  <span className="truncate max-w-[120px]">{msg.sender_email}</span>
+                  <span>{new Date(msg.created_at).toLocaleDateString()}</span>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Dynamic Context Panel Slot (5/12 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          
-          {/* Active View Payload Card */}
-          {selectedMessage && (
-            <div className="border border-zinc-900 bg-zinc-950/60 p-4 rounded-xl space-y-4 text-left">
-              <div className="border-b border-zinc-900 pb-3 space-y-1">
-                <div className="text-[10px] text-zinc-500 uppercase">TRANSMISSION HEADER DETECTED</div>
-                <h3 className="text-xs font-bold text-amber-500">{selectedMessage.subject}</h3>
-                <div className="text-[10px] text-zinc-400 font-mono pt-1">
-                  <div>Sender Footprint: {selectedMessage.sender_email}</div>
-                  <div>Receiver Routing: {selectedMessage.recipient_email}</div>
-                </div>
+                <div className="text-xs font-bold text-zinc-300 truncate mt-0.5">{msg.subject}</div>
               </div>
-              <p className="text-xs text-zinc-300 whitespace-pre-wrap font-sans leading-relaxed bg-black/40 p-3 border border-zinc-900/50 rounded-lg">
-                {selectedMessage.payload}
-              </p>
+            ))
+          )}
+        </div>
+
+        {/* Outbound Transaction Composer Panel */}
+        <div className="lg:col-span-5 space-y-4">
+          {selectedMessage && (
+            <div className="border border-zinc-900 bg-zinc-950/60 p-4 rounded-xl text-left space-y-2">
+              <div className="text-[10px] text-zinc-500 uppercase font-bold">Encrypted Payload View</div>
+              <div className="text-xs font-bold text-amber-500">{selectedMessage.subject}</div>
+              <p className="text-xs text-zinc-300 bg-black/40 p-3 border border-zinc-900/50 rounded-lg whitespace-pre-wrap font-sans">{selectedMessage.payload}</p>
             </div>
           )}
 
-          {/* New Secure Disclosure Output Composer Form */}
-          <div className="border border-zinc-900 bg-zinc-950/40 p-5 rounded-xl space-y-5 text-left">
-            <div>
-              <h3 className="text-xs font-bold font-mono tracking-widest text-amber-500 uppercase">NEW SECURE DISCLOSURE PAYLOAD</h3>
-              <p className="text-[10px] text-zinc-500 mt-1">Initialize dynamic end-to-end infrastructure handshake triggers across cluster environments.</p>
-            </div>
+          <div className="border border-zinc-900 bg-zinc-950/40 p-5 rounded-xl space-y-4 text-left">
+            <h3 className="text-xs font-bold tracking-widest text-amber-500 uppercase">NEW SECURE TRANSMISSION</h3>
 
             <form onSubmit={handleDispatchPayload} className="space-y-4 text-xs">
-              
-              {/* Recipient Channel Control Slot */}
               <div className="relative space-y-1">
-                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">RECIPIENT CHANNEL TARGET</label>
+                <label className="text-[10px] text-zinc-500 uppercase">Recipient Destination Channel</label>
                 
                 {userRole === 'SYSTEM_ADMIN' ? (
-                  /* 👑 ROOT ADMIN VIEW: Dynamic Search Field Box */
                   <>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      placeholder="Type email, principal name, or corporate entity name..."
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value)
-                        setRecipientChannel(e.target.value)
-                        setShowDropdown(true)
-                      }}
-                      className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800"
-                      required
-                    />
+                    {resolvedRecipient ? (
+                      <div className="w-full bg-zinc-900 border border-amber-500/40 p-2.5 rounded-lg flex items-center justify-between">
+                        <div>
+                          <span className="bg-amber-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded mr-2">{resolvedRecipient.type}</span>
+                          <span className="text-xs text-zinc-200 font-bold">{resolvedRecipient.label}</span>
+                          <div className="text-[10px] text-zinc-500 mt-0.5">{resolvedRecipient.subLabel}</div>
+                        </div>
+                        <button type="button" onClick={() => { setResolvedRecipient(null); setSearchQuery(''); }} className="text-zinc-500 hover:text-red-400 text-xs">✕</button>
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        placeholder="Search client companies, names, or domains..."
+                        onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+                        className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none"
+                        required
+                      />
+                    )}
 
-                    {/* Autocomplete Suggestions Menu */}
                     {showDropdown && suggestions.length > 0 && (
-                      <div className="absolute z-50 w-full mt-1 bg-zinc-950 border border-zinc-900 rounded-lg shadow-2xl max-h-52 overflow-y-auto divide-y divide-zinc-900/60">
-                        {suggestions.map((contact) => (
-                          <div
-                            key={contact.email}
-                            onClick={() => {
-                              setSearchQuery(contact.email)
-                              setRecipientChannel(contact.email)
-                              setShowDropdown(false)
-                            }}
-                            className="p-2.5 text-left hover:bg-zinc-900/80 cursor-pointer transition space-y-0.5"
-                          >
-                            <div className="text-[11px] text-zinc-200 font-bold">{contact.company_name || 'Individual Identity'}</div>
-                            <div className="text-[10px] text-zinc-500 flex justify-between">
-                              <span>{contact.email}</span>
-                              {contact.name && <span className="text-zinc-600">({contact.name})</span>}
+                      <div className="absolute z-50 w-full mt-1 bg-zinc-950 border border-zinc-900 rounded-lg max-h-60 overflow-y-auto divide-y divide-zinc-900">
+                        {suggestions.map((item, idx) => (
+                          <div key={idx} onClick={() => { setResolvedRecipient(item); setShowDropdown(false); }} className="p-3 hover:bg-zinc-900/80 cursor-pointer space-y-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-zinc-200 font-bold">{item.label}</span>
+                              <span className="text-[9px] bg-zinc-900 border border-zinc-800 px-1 text-zinc-500 rounded font-bold">{item.type}</span>
                             </div>
+                            <div className="text-[10px] text-zinc-400 truncate">{item.subLabel}</div>
                           </div>
                         ))}
                       </div>
                     )}
                   </>
                 ) : (
-                  /* 🔒 CLIENT SANDBOX VIEW: Immutable Isolated Select Dropdown */
                   <select
-                    value={recipientChannel}
-                    onChange={(e) => setRecipientChannel(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 appearance-none cursor-pointer"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 appearance-none cursor-pointer"
                   >
-                    <option value="V&K Executive Matrix">V&K Executive Matrix (Root Operations Desk)</option>
-                    <option value="V&K Tactical Support">V&K Tactical Support (Infrastructure Core)</option>
-                    <option value="My Internal Team">My Internal Corporate Node (All Internal Staff)</option>
+                    <option value="V&K Executive Matrix">V&K Executive Matrix (Operations Desk)</option>
+                    <option value="V&K Tactical Support">V&K Tactical Support (Infrastructure Support)</option>
+                    {['EXECUTIVE', 'FINANCE', 'HUMAN_RESOURCES', 'OPERATIONS', 'LEGAL', 'TECHNICAL_SUPPORT'].map(dept => (
+                      <option key={dept} value={`INTERNAL_DEPT_${dept}`}>👥 My Company — {dept.replace('_', ' ')} Team</option>
+                    ))}
                   </select>
                 )}
               </div>
 
-              {/* Subject Text Input Field */}
               <div className="space-y-1">
-                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">SUBJECT LINE</label>
-                <input
-                  type="text"
-                  value={subjectLine}
-                  onChange={(e) => setSubjectLine(e.target.value)}
-                  placeholder="Enter institutional subject mapping parameters..."
-                  className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800"
-                  required
-                />
+                <label className="text-[10px] text-zinc-500 uppercase">Subject Parameters</label>
+                <input type="text" value={subjectLine} onChange={(e) => setSubjectLine(e.target.value)} className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none" required />
               </div>
 
-              {/* Secure Payload Textarea Input */}
               <div className="space-y-1">
-                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">CRYPTOGRAPHIC PAYLOAD DATA</label>
-                <textarea
-                  value={payloadData}
-                  onChange={(e) => setPayloadData(e.target.value)}
-                  placeholder="Paste or write detailed infrastructure gap tracking text fields here..."
-                  rows={5}
-                  className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 font-sans leading-relaxed resize-none"
-                  required
-                />
+                <label className="text-[10px] text-zinc-500 uppercase">Payload Metrics</label>
+                <textarea value={payloadData} onChange={(e) => setPayloadData(e.target.value)} rows={4} className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none resize-none font-sans" required />
               </div>
 
-              {/* Action Log Status Warnings */}
-              {statusMessage && (
-                <div className={`text-[11px] p-3 rounded-lg border ${statusMessage.startsWith('❌') ? 'border-red-900/30 bg-red-500/5 text-red-400' : 'border-emerald-900/30 bg-emerald-500/5 text-emerald-400'}`}>
-                  {statusMessage}
-                </div>
-              )}
+              {statusMessage && <div className="text-[10px] p-2 rounded border border-zinc-800 bg-zinc-900 text-amber-400">{statusMessage}</div>}
 
-              {/* Action Trigger Buttons */}
-              <div className="flex flex-wrap gap-3 items-center pt-2">
-                <button
-                  type="submit"
-                  disabled={dispatching}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs rounded-lg transition uppercase tracking-wider disabled:opacity-50"
-                >
-                  {dispatching ? 'ROUTING TRANSIT...' : '🚀 DISPATCH'}
-                </button>
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold text-xs rounded-lg transition uppercase tracking-wider"
-                >
-                  💾 SAVE DRAFT
-                </button>
-              </div>
+              <button type="submit" disabled={dispatching} className="px-4 py-2 bg-amber-500 text-black font-bold text-xs rounded-lg transition hover:bg-amber-600 disabled:opacity-50">
+                {dispatching ? 'PROCESSING...' : '🚀 DISPATCH PAYLOAD'}
+              </button>
             </form>
           </div>
-
         </div>
-
       </div>
     </div>
   )
