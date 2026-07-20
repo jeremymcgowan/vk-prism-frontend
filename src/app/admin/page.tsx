@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import LogoutButton from '../components/LogoutButton'
+import PrismUserManagement from '../components/PrismUserManagement'
 
 // ⚡ FORCE LIVE-FIRE DYNAMIC TELEMETRY (Bypasses Next.js caching completely)
 export const dynamic = 'force-dynamic'
@@ -49,14 +50,7 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
     .select('amount, status')
   const billingLines = liveBilling || []
 
-  // 3. Fetch platform user identity metrics for the access manager
-  const { data: liveProfiles } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('created_at', { ascending: false })
-  const systemUsers = liveProfiles || []
-
-  // 4. Fetch the automated outbound partner routing metrics
+  // 3. Fetch the automated outbound partner routing metrics
   const { data: liveReferrals } = await supabase
     .from('partner_referrals')
     .select('*')
@@ -64,9 +58,6 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
   const referrals = liveReferrals || []
 
   // 🧮 LIVE MATRIX AGGREGATIONS
-  
-  // Calculate total system revenue dynamically across all billing profiles
-  const totalRevenue = billingLines.reduce((sum, item) => sum + Number(item.amount || 0), 0)
   
   // Dynamic calculation filters mapped perfectly to your 4 core operational channels
   const customerCount = entities.filter(e => e.type === 'CUSTOMER').length
@@ -199,54 +190,10 @@ export default async function AdminMasterTerminal({ searchParams }: AdminPagePro
             </div>
           )}
 
-          {/* TAB 1: 3-TIER USER MANAGER CONSOLE */}
+          {/* 👥 TAB 1: NEW INTUITIVE JOOMLA-STYLE INTERNAL WORKFORCE MANAGEMENT PORTAL */}
           {activeTab === '1' && (
-            <div className="space-y-6 max-w-6xl">
-              <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 ${lora.className}`}>Global User Manager</h2>
-              
-              <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-950/10 text-xs text-amber-400/90 leading-relaxed max-w-3xl">
-                🔒 <strong>Data Custodian Protocol Active:</strong> Downstream account visibility conforms strictly to the V&K Sovereign Custodian Manifesto. All structural view sequences are recorded inside the administrative audit ledger log pipeline.
-              </div>
-
-              {systemUsers.length === 0 ? (
-                <div className="p-8 border border-dashed border-zinc-900 rounded-xl text-center text-xs text-zinc-500 font-mono mt-4">No real-time identities mapped inside public profiles data pipeline yet.</div>
-              ) : (
-                <div className="border border-zinc-900 rounded-xl overflow-x-auto bg-zinc-950/40 w-full block mt-4">
-                  <table className="w-full text-left border-collapse text-xs min-w-[700px]">
-                    <thead>
-                      <tr className="border-b border-zinc-900 bg-zinc-900/30 text-zinc-400 font-bold font-mono">
-                        <th className="p-3">HUMAN PROFILE</th>
-                        <th className="p-3">ASSIGNED PRIVILEGE</th>
-                        <th className="p-3">ECOSYSTEM RELATIONSHIP</th>
-                        <th className="p-3">STATUS</th>
-                        <th className="p-3 text-right">SECURE CONTROL ACTION</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {systemUsers.map((profile) => (
-                        <tr key={profile.id} className="border-b border-zinc-900/40 hover:bg-zinc-900/10">
-                          <td className="p-3">
-                            <div className="font-semibold text-zinc-200">{profile.full_name || 'Anonymous User'}</div>
-                            <div className="text-[10px] text-zinc-500 font-mono">{profile.email || 'no-email-recorded'}</div>
-                          </td>
-                          <td className="p-3 font-mono text-zinc-400 text-[11px]">{profile.role || 'CLIENT_STAFF'}</td>
-                          <td className="p-3 text-zinc-400 font-medium">{profile.organization_scope || 'Assigned Node Tenant'}</td>
-                          <td className="p-3">
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-mono ${profile.status === 'SUSPENDED' ? 'bg-red-950 text-red-400 border border-red-900/50' : 'bg-emerald-950 text-emerald-400 border border-emerald-900/50'}`}>
-                              {profile.status || 'ACTIVE'}
-                            </span>
-                          </td>
-                          <td className="p-3 text-right">
-                            <button className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-semibold rounded text-[10px] tracking-wide active:scale-95 transition-all">
-                              OPTIMIZE PASSTHROUGH
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+            <div className="max-w-6xl">
+              <PrismUserManagement />
             </div>
           )}
 
