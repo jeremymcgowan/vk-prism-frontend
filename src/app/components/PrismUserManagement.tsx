@@ -48,7 +48,6 @@ export default function PrismUserManagement() {
   // 🔐 Initial Core Matrix Hydration Loop
   useEffect(() => {
     async function hydrateManagementCore() {
-      // 1. Fetch Dynamic Resale Configuration Variable
       const { data: config } = await supabase
         .from('global_system_config')
         .select('config_value')
@@ -56,11 +55,10 @@ export default function PrismUserManagement() {
         .maybeSingle()
 
       if (config) {
-        const domainsArray = config.config_value.split(',').map(d => d.trim().toLowerCase())
+        const domainsArray = config.config_value.split(',').map((d: string) => d.trim().toLowerCase())
         setAllowedDomains(domainsArray)
       }
 
-      // 2. Pull Active Internal Operators Registry Grid
       const { data: staffList } = await supabase
         .from('system_permissions')
         .select('*')
@@ -68,7 +66,6 @@ export default function PrismUserManagement() {
 
       if (staffList) setOperators(staffList)
 
-      // 3. Pull Live Active Pending Invitations Ledger
       const { data: inviteList } = await supabase
         .from('vk_invite_vault')
         .select('*')
@@ -98,16 +95,13 @@ export default function PrismUserManagement() {
         throw new Error("Invalid format matrix structure encountered in target email address string.")
       }
 
-      // 🗺️ Security Guardrail: Enforce Resale Domain Domain Matches
       const isDomainAuthorized = allowedDomains.includes(extractedDomain)
       if (!isDomainAuthorized) {
         throw new Error(`Security Violation: Extension [@${extractedDomain}] is unauthorized. Access to system operator parameters restricted to: [${allowedDomains.join(', ')}].`)
       }
 
-      // Generate localized cryptographic security string
       const secureToken = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
 
-      // Write parameters directly into the Invite Vault
       const { error } = await supabase
         .from('vk_invite_vault')
         .insert({
@@ -120,14 +114,11 @@ export default function PrismUserManagement() {
 
       if (error) throw error
 
-      // Component A Delivery: Render Immediately on Admin UI Clipboard Link
       const localizedActivationUrl = `${window.location.origin}/activate?token=${secureToken}`
       setGeneratedLink(localizedActivationUrl)
 
-      // Component B Delivery: Simulated Background Mail System Trigger Output
       setSuccessMessage(`⚡ System Validation Matrix Confirmed. Background mail worker dispatched invitation notification packet securely to automated routing destination: [${emailTarget}].`)
       
-      // Refresh Pending List
       const { data: refreshedInvites } = await supabase
         .from('vk_invite_vault')
         .select('*')
@@ -135,7 +126,6 @@ export default function PrismUserManagement() {
         .order('created_at', { ascending: false })
       if (refreshedInvites) setPendingInvites(refreshedInvites)
 
-      // Reset Inputs
       setInviteEmail('')
       setInviteTitle('')
     } catch (err: any) {
@@ -145,7 +135,6 @@ export default function PrismUserManagement() {
     }
   }
 
-  // ❄️ Instant Firewall Account Suspension Routine
   const handleSuspendOperator = async (operatorId: string, operatorEmail: string) => {
     if (operatorEmail === 'jp@vkpartners.co') {
       alert("Operational Guardrail: The master root administrative owner account cannot be suspended or deleted.")
@@ -161,8 +150,6 @@ export default function PrismUserManagement() {
 
   return (
     <div className="w-full bg-black text-zinc-100 min-h-screen p-4 md:p-6 font-mono selection:bg-amber-500/20 selection:text-amber-400">
-      
-      {/* Upper Framework Stats Ribbon */}
       <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
         <div>
           <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Total VK Operators</div>
@@ -178,13 +165,11 @@ export default function PrismUserManagement() {
         </div>
         <div>
           <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Pending Vault Invites</div>
-          <div className="text-lg font-bold text-amber-400 mt-1 animate-pulse">{pendingInvites.length} Staged</div>
+          <div className="text-lg font-bold text-amber-400 mt-1">{pendingInvites.length} Staged</div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* Main Joomla-Style Workforce Grid Panel */}
         <div className="lg:col-span-8 border border-zinc-900 bg-zinc-950/40 rounded-xl overflow-hidden text-left">
           <div className="p-3.5 border-b border-zinc-900 bg-zinc-950 text-[10px] font-bold text-zinc-400 tracking-widest uppercase">
             👥 INTERNAL WORKFORCE OPERATOR REGISTRY GENERAL MATRIX
@@ -225,10 +210,7 @@ export default function PrismUserManagement() {
           </div>
         </div>
 
-        {/* Action Panel Drawer (Onboarding, Tokens & Constraints) */}
         <div className="lg:col-span-4 space-y-6">
-          
-          {/* Module 1: Token Invitation Generator Card */}
           <div className="border border-zinc-900 bg-zinc-950/40 p-5 rounded-xl space-y-4 text-left">
             <h3 className="text-xs font-bold tracking-widest text-amber-500 uppercase">⚡ ENROLL INTERNAL OPERATION TARGET</h3>
             
@@ -296,7 +278,6 @@ export default function PrismUserManagement() {
             </form>
           </div>
 
-          {/* Module 2: Resale Guardrails System Variables Panel */}
           <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl text-left space-y-2.5">
             <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">🔒 GLOBAL WHITE-LABEL RESALE CONSTRAINTS</div>
             <div className="text-xs font-bold text-zinc-300">Active Authorized Operator Domains Matrix</div>
@@ -309,9 +290,7 @@ export default function PrismUserManagement() {
               Operational Guideline: Domain constraints are packageable variables queried on initialization. Any invitation text outside these keys will trigger a UI block exception loop automatically.
             </p>
           </div>
-
         </div>
-
       </div>
     </div>
   )

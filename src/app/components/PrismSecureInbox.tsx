@@ -1,318 +1,405 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 
-interface Operator {
+interface Message {
   id: string
-  email: string
-  security_group: 'VKOwners' | 'VKStaff' | 'VKFinancial'
-  title: string
+  sender_email: string
+  recipient_email: string
+  subject: string
+  payload: string
+  status: string
   created_at: string
 }
 
-interface PendingInvite {
-  id: string
-  email: string
-  target_group: string
-  target_title: string
-  invite_token: string
-  expires_at: string
-  is_redeemed: boolean
+interface SuggestionItem {
+  type: 'INDIVIDUAL' | 'DEPARTMENT' | 'ALL_USERS' | 'VK_CORE'
+  label: string
+  subLabel: string
+  routingKey: string
 }
 
-export default function PrismUserManagement() {
+export default function PrismSecureInbox() {
   const [loading, setLoading] = useState(true)
-  const [processing, setProcessing] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
-  const [generatedLink, setGeneratedLink] = useState('')
+  const [dispatching, setDispatching] = useState(false)
+  const [statusMessage, setStatusMessage] = useState('')
+  
+  // 👥 Authenticated Session Footprints
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string>('CLIENT_STAFF')
+  const [companyName, setCompanyName] = useState<string>('')
+  const [myDepartment, setMyDepartment] = useState<string>('')
 
-  // 🌍 Global Resale Configurations
-  const [allowedDomains, setAllowedDomains] = useState<string[]>([])
+  // 📬 Dynamic Mailbox Ledger Pillars
+  const [messages, setMessages] = useState<Message[]>([])
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
+  const [activeFolder, setActiveFolder] = useState<'INBOX' | 'SENT' | 'DRAFTS' | 'ARCHIVE'>('INBOX')
 
-  // 📊 Portal State Ledgers
-  const [operators, setOperators] = useState<Operator[]>([])
-  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
-
-  // 📝 Setup Invitation Card Form States
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteGroup, setInviteGroup] = useState<'VKStaff' | 'VKFinancial'>('VKStaff')
-  const [inviteTitle, setInviteTitle] = useState('')
+  // 📝 Intelligent Autocomplete Search States
+  const [searchQuery, setSearchQuery] = useState('')
+  const [resolvedRecipient, setResolvedRecipient] = useState<SuggestionItem | null>(null)
+  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [subjectLine, setSubjectLine] = useState('')
+  const [payloadData, setPayloadData] = useState('')
+  
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // 🔐 Initial Core Matrix Hydration Loop
+  // 🔐 Initialize Sovereign Identity Permissions
   useEffect(() => {
-    async function hydrateManagementCore() {
-      // 1. Fetch Dynamic Resale Configuration Variable
-      const { data: config } = await supabase
-        .from('global_system_config')
-        .select('config_value')
-        .eq('config_key', 'allowed_workforce_domains')
+    async function initializeSession() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !user.email) {
+        setLoading(false)
+        return
+      }
+
+      const activeEmail = user.email
+      setUserEmail(activeEmail)
+
+      // 1. Check Core Governance RBAC Table First
+      const { data: clearance } = await supabase
+        .from('system_permissions')
+        .select('security_group, title')
+        .ilike('email', activeEmail)
         .maybeSingle()
 
-      if (config) {
-        // Explicitly type 'd' as a string to eliminate the implicit 'any' compiler blockage
-        const domainsArray = config.config_value.split(',').map((d: string) => d.trim().toLowerCase())
-        setAllowedDomains(domainsArray)
+      if (clearance && (clearance.security_group === 'VKOwners' || clearance.security_group === 'VKStaff' || clearance.security_group === 'VKFinancial')) {
+        setUserRole('SYSTEM_ADMIN')
+        setCompanyName('V&K Partners')
+        setMyDepartment('EXECUTIVE')
+        setLoading(false)
+        return
       }
 
-      // 2. Pull Active Internal Operators Registry Grid
-      const { data: staffList } = await supabase
-        .from('system_permissions')
-        .select('*')
-        .order('created_at', { ascending: true })
+      // 2. Fallback to Multi-Tenant Client Contact Directory
+      const { data: profile } = await supabase
+        .from('crm_contacts')
+        .select('role, company_name, department')
+        .ilike('email', activeEmail)
+        .maybeSingle()
 
-      if (staffList) setOperators(staffList)
-
-      // 3. Pull Live Active Pending Invitations Ledger
-      const { data: inviteList } = await supabase
-        .from('vk_invite_vault')
-        .select('*')
-        .eq('is_redeemed', false)
-        .order('created_at', { ascending: false })
-
-      if (inviteList) setPendingInvites(inviteList)
-
+      if (profile) {
+        setUserRole(profile.role || 'CLIENT_STAFF')
+        setCompanyName(profile.company_name || '')
+        setMyDepartment(profile.department || '')
+      }
       setLoading(false)
     }
-    hydrateManagementCore()
+    initializeSession()
   }, [])
 
-  // 🚀 The Dual-Delivery Token Invitation Handler
-  const handleGenerateInvitation = async (e: React.FormEvent) => {
+  // 📥 Reactive Folder Content Dispatcher
+  useEffect(() => {
+    const email = userEmail
+    if (!email) return
+
+    async function fetchMailboxData() {
+      let query = supabase.from('crm_messages').select('*')
+
+      if (activeFolder === 'INBOX') {
+        if (userRole === 'SYSTEM_ADMIN') {
+          query = query.or(`recipient_email.ilike.${email},recipient_email.eq.admin@vkpartners.co`)
+        } else {
+          query = query.or(`recipient_email.ilike.${email},recipient_email.eq.${companyName}_ALL,recipient_email.eq.${companyName}_DEPT_${myDepartment}`)
+        }
+      } else if (activeFolder === 'SENT') {
+        query = query.eq('sender_email', email)
+      } else {
+        query = query.eq('sender_email', email).ilike('status', activeFolder)
+      }
+
+      const { data } = await query.order('created_at', { ascending: false })
+      if (data) {
+        setMessages(data)
+        if (data.length > 0) setSelectedMessage(data[0])
+        else setSelectedMessage(null)
+      }
+    }
+    fetchMailboxData()
+  }, [userEmail, activeFolder, companyName, myDepartment, userRole])
+
+  // Dropdown UI Dismissal Listener
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  // 🔍 Multi-Tiered Directory Search Matrix Engine
+  useEffect(() => {
+    if (searchQuery.length === 0 && showDropdown) {
+      if (userRole === 'SYSTEM_ADMIN') {
+        setSuggestions([
+          { type: 'VK_CORE', label: 'V&K Executive Matrix', subLabel: 'Root Operations Channel', routingKey: 'admin@vkpartners.co' },
+          { type: 'VK_CORE', label: 'V&K Tactical Support', subLabel: 'Infrastructure Core Support', routingKey: 'support@vkpartners.co' }
+        ])
+      } else {
+        setSuggestions([
+          { type: 'VK_CORE', label: 'V&K Executive Matrix', subLabel: 'Contact Managing Partners', routingKey: 'admin@vkpartners.co' },
+          { type: 'VK_CORE', label: 'V&K Tactical Support', subLabel: 'Contact Technical Support Desk', routingKey: 'support@vkpartners.co' }
+        ])
+      }
+      return
+    }
+
+    if (searchQuery.length < 2 || resolvedRecipient) return
+
+    const executeAutocompleteHandshake = async () => {
+      let queryBuilder = supabase.from('crm_contacts').select('email, company_name, department, title')
+      
+      if (userRole !== 'SYSTEM_ADMIN') {
+        queryBuilder = queryBuilder.eq('company_name', companyName)
+      }
+
+      const { data: matches } = await queryBuilder
+        .or(`company_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
+        .limit(12)
+
+      if (!matches) return
+
+      const compiledSuggestions: SuggestionItem[] = []
+      const uniquelyMappedCompanies = new Set<string>()
+
+      matches.forEach(row => {
+        const targetCompany = row.company_name || 'Individual Entity'
+
+        if (row.company_name && row.company_name.toLowerCase().includes(searchQuery.toLowerCase())) {
+          if (!uniquelyMappedCompanies.has(row.company_name)) {
+            uniquelyMappedCompanies.add(row.company_name)
+
+            compiledSuggestions.push({
+              type: 'ALL_USERS',
+              label: targetCompany,
+              subLabel: `📢 All Personnel Broadcast Node`,
+              routingKey: `${targetCompany}_ALL`
+            })
+
+            const departments = ['EXECUTIVE', 'FINANCE', 'HUMAN_RESOURCES', 'OPERATIONS', 'LEGAL', 'TECHNICAL_SUPPORT']
+            departments.forEach(dept => {
+              compiledSuggestions.push({
+                type: 'DEPARTMENT',
+                label: targetCompany,
+                subLabel: `👥 — ${dept.replace('_', ' ')} Team Node`,
+                routingKey: `${targetCompany}_DEPT_${dept}`
+              })
+            })
+          }
+        }
+
+        if (row.email && row.email.toLowerCase().includes(searchQuery.toLowerCase())) {
+          const userHandle = row.email.split('@')[0].toUpperCase()
+          compiledSuggestions.push({
+            type: 'INDIVIDUAL',
+            label: userHandle,
+            subLabel: `👤 ${row.title || 'Staff Member'} // ${targetCompany} (${row.email})`,
+            routingKey: row.email
+          })
+        }
+      })
+
+      setSuggestions(compiledSuggestions.slice(0, 8))
+    }
+
+    const searchDebounceLoop = setTimeout(() => {
+      executeAutocompleteHandshake()
+    }, 200)
+
+    return () => clearTimeout(searchDebounceLoop)
+  }, [searchQuery, userRole, companyName, resolvedRecipient, showDropdown])
+
+  const handleDispatchPayload = async (e: React.FormEvent) => {
     e.preventDefault()
-    setProcessing(true)
-    setErrorMessage('')
-    setSuccessMessage('')
-    setGeneratedLink('')
+    setDispatching(true)
+    setStatusMessage('')
 
     try {
-      const emailTarget = inviteEmail.trim().toLowerCase()
-      const extractedDomain = emailTarget.split('@')[1]
+      const email = userEmail
+      if (!email) throw new Error("Unauthorized validation footprint.")
+      
+      let ultimateRouteKey = ''
 
-      if (!extractedDomain) {
-        throw new Error("Invalid format matrix structure encountered in target email address string.")
+      if (userRole === 'SYSTEM_ADMIN') {
+        if (!resolvedRecipient) throw new Error("Please select a verified operational routing destination.")
+        ultimateRouteKey = resolvedRecipient.routingKey
+      } else {
+        if (resolvedRecipient) {
+          ultimateRouteKey = resolvedRecipient.routingKey
+        } else if (searchQuery === 'V&K Executive Matrix') {
+          ultimateRouteKey = 'admin@vkpartners.co'
+        } else if (searchQuery === 'V&K Tactical Support') {
+          ultimateRouteKey = 'support@vkpartners.co'
+        } else {
+          throw new Error("Target destination outside authorized sandbox parameters.")
+        }
       }
 
-      // 🗺️ Security Guardrail: Enforce Resale Domain Matches
-      const isDomainAuthorized = allowedDomains.includes(extractedDomain)
-      if (!isDomainAuthorized) {
-        throw new Error(`Security Violation: Extension [@${extractedDomain}] is unauthorized. Access to system operator parameters restricted to: [${allowedDomains.join(', ')}].`)
-      }
-
-      // Generate localized cryptographic security string
-      const secureToken = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
-
-      // Write parameters directly into the Invite Vault
       const { error } = await supabase
-        .from('vk_invite_vault')
+        .from('crm_messages')
         .insert({
-          email: emailTarget,
-          target_group: inviteGroup,
-          target_title: inviteTitle,
-          invite_token: secureToken,
-          expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+          sender_email: email,
+          recipient_email: ultimateRouteKey,
+          subject: subjectLine,
+          payload: payloadData,
+          status: 'DELIVERED',
+          created_at: new Date().toISOString()
         })
 
       if (error) throw error
 
-      // Component A Delivery: Render Immediately on Admin UI Clipboard Link
-      const localizedActivationUrl = `${window.location.origin}/activate?token=${secureToken}`
-      setGeneratedLink(localizedActivationUrl)
-
-      // Component B Delivery: Simulated Background Mail System Trigger Output
-      setSuccessMessage(`⚡ System Validation Matrix Confirmed. Background mail worker dispatched invitation notification packet securely to automated routing destination: [${emailTarget}].`)
-      
-      // Refresh Pending List
-      const { data: refreshedInvites } = await supabase
-        .from('vk_invite_vault')
-        .select('*')
-        .eq('is_redeemed', false)
-        .order('created_at', { ascending: false })
-      if (refreshedInvites) setPendingInvites(refreshedInvites)
-
-      // Reset Inputs
-      setInviteEmail('')
-      setInviteTitle('')
+      setStatusMessage(`🚀 Payload successfully synchronized to channel key: [${ultimateRouteKey}]`)
+      setSubjectLine('')
+      setPayloadData('')
+      setSearchQuery('')
+      setResolvedRecipient(null)
     } catch (err: any) {
-      setErrorMessage(err.message)
-    } bits: {} finally {
-      setProcessing(false)
+      setStatusMessage(`❌ Transmission Aborted: ${err.message}`)
+    } finally {
+      setDispatching(false)
     }
   }
 
-  // ❄️ Instant Firewall Account Suspension Routine
-  const handleSuspendOperator = async (operatorId: string, operatorEmail: string) => {
-    if (operatorEmail === 'jp@vkpartners.co') {
-      alert("Operational Guardrail: The master root administrative owner account cannot be suspended or deleted.")
-      return
-    }
-    if (!confirm(`Confirm core system suspension protocols for operator account [${operatorEmail}]?`)) return
-
-    await supabase.from('system_permissions').delete().eq('id', operatorId)
-    setOperators(operators.filter(op => op.id !== operatorId))
-  }
-
-  if (loading) return <div className="p-6 text-xs font-mono text-zinc-500 animate-pulse">HYDRATING JOOMLA MANAGEMENT FRAMEWORK CORE...</div>
+  if (loading) return <div className="p-6 text-xs font-mono text-zinc-500 animate-pulse">SYNCHRONIZING PRISM SECURE COMMUNICATIONS CORE...</div>
 
   return (
     <div className="w-full bg-black text-zinc-100 min-h-screen p-4 md:p-6 font-mono selection:bg-amber-500/20 selection:text-amber-400">
-      
-      {/* Upper Framework Stats Ribbon */}
-      <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
+      <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Total VK Operators</div>
-          <div className="text-lg font-bold text-zinc-200 mt-1">{operators.length} Active</div>
+          <h1 className="text-xs font-bold tracking-widest text-zinc-300 uppercase">SECURE COMMUNICATIONS INTERFACE</h1>
+          <div className="text-[10px] text-zinc-500 mt-0.5 uppercase">
+            Clearance Authority: <span className="text-amber-500">{userRole}</span> // {userEmail}
+          </div>
         </div>
-        <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Clearance Level: Owners</div>
-          <div className="text-lg font-bold text-amber-500 mt-1">{operators.filter(o => o.security_group === 'VKOwners').length} Seat</div>
-        </div>
-        <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Clearance Level: Staff/Fin</div>
-          <div className="text-lg font-bold text-zinc-400 mt-1">{operators.filter(o => o.security_group !== 'VKOwners').length} Allocated</div>
-        </div>
-        <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Pending Vault Invites</div>
-          <div className="text-lg font-bold text-amber-400 mt-1 animate-pulse">{pendingInvites.length} Staged</div>
+        <div className="text-[10px] bg-zinc-900 border border-zinc-800 text-zinc-400 px-3 py-1 rounded font-bold uppercase tracking-widest">
+          Node Status: Operational
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* Main Joomla-Style Workforce Grid Panel */}
-        <div className="lg:col-span-8 border border-zinc-900 bg-zinc-950/40 rounded-xl overflow-hidden text-left">
-          <div className="p-3.5 border-b border-zinc-900 bg-zinc-950 text-[10px] font-bold text-zinc-400 tracking-widest uppercase">
-            👥 INTERNAL WORKFORCE OPERATOR REGISTRY GENERAL MATRIX
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-zinc-900 text-zinc-500 uppercase tracking-wider text-[10px] bg-zinc-950/60">
-                  <th className="p-3">Operator Identity</th>
-                  <th className="p-3">Security Assignment Group</th>
-                  <th className="p-3">Operational Functional Title</th>
-                  <th className="p-3 text-right">System Configuration Parameters</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-900/40">
-                {operators.map((op) => (
-                  <tr key={op.id} className="hover:bg-zinc-900/10 transition">
-                    <td className="p-3 font-bold text-zinc-300">{op.email}</td>
-                    <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${op.security_group === 'VKOwners' ? 'bg-amber-500 text-black' : op.security_group === 'VKStaff' ? 'bg-blue-900/50 text-blue-400 border border-blue-800/30' : 'bg-purple-900/50 text-purple-400 border border-purple-800/30'}`}>
-                        {op.security_group}
-                      </span>
-                    </td>
-                    <td className="p-3 text-zinc-400">{op.title}</td>
-                    <td className="p-3 text-right">
-                      <button 
-                        onClick={() => handleSuspendOperator(op.id, op.email)}
-                        disabled={op.email === 'jp@vkpartners.co'}
-                        className="text-[9px] uppercase border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-zinc-500 rounded hover:text-red-400 hover:border-red-900/40 disabled:opacity-30 disabled:hover:text-zinc-500 tracking-widest transition font-bold"
-                      >
-                        SUSPEND CORE
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="lg:col-span-3 space-y-3">
+          <div className="border border-zinc-900 rounded-lg overflow-hidden bg-zinc-950/40 divide-y divide-zinc-900/50 text-xs">
+            {(['INBOX', 'SENT', 'DRAFTS', 'ARCHIVE'] as const).map((folder) => (
+              <button
+                key={folder}
+                onClick={() => { setActiveFolder(folder); setSelectedMessage(null); }}
+                className={`w-full p-3.5 text-left transition flex items-center gap-2.5 font-bold tracking-wide uppercase ${activeFolder === folder ? 'bg-zinc-900 text-amber-500 border-l-2 border-amber-500' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/30'}`}
+              >
+                <span>{folder === 'INBOX' ? '📥' : folder === 'SENT' ? '📤' : folder === 'DRAFTS' ? '📝' : '🗄️'}</span>
+                {folder} Matrix
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Action Panel Drawer (Onboarding, Tokens & Constraints) */}
-        <div className="lg:col-span-4 space-y-6">
-          
-          {/* Module 1: Token Invitation Generator Card */}
-          <div className="border border-zinc-900 bg-zinc-950/40 p-5 rounded-xl space-y-4 text-left">
-            <h3 className="text-xs font-bold tracking-widest text-amber-500 uppercase">⚡ ENROLL INTERNAL OPERATION TARGET</h3>
-            
-            <form onSubmit={handleGenerateInvitation} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Employee Identity Email</label>
-                <input 
-                  type="email" 
-                  value={inviteEmail} 
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="name@vkpartners.co" 
-                  className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-zinc-200 focus:outline-none focus:border-zinc-800 tracking-wide font-mono"
-                  required 
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Security Group Mapping Profile</label>
-                <select 
-                  value={inviteGroup} 
-                  onChange={(e) => setInviteGroup(e.target.value as any)}
-                  className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-zinc-300 focus:outline-none focus:border-zinc-800 font-mono"
-                >
-                  <option value="VKStaff">VKStaff (Technical Shield Operations)</option>
-                  <option value="VKFinancial">VKFinancial (Fiscal Ledger Operations)</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Corporate Operational Title Title</label>
-                <input 
-                  type="text" 
-                  value={inviteTitle} 
-                  onChange={(e) => setInviteTitle(e.target.value)}
-                  placeholder="e.g., VK Shield Analyst" 
-                  className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-zinc-200 focus:outline-none focus:border-zinc-800 font-mono"
-                  required 
-                />
-              </div>
-
-              {errorMessage && <div className="text-[10px] p-2.5 rounded border border-red-950 bg-red-950/20 text-red-400 font-bold leading-relaxed">{errorMessage}</div>}
-              {successMessage && <div className="text-[10px] p-2.5 rounded border border-zinc-800 bg-zinc-900 text-amber-400 font-bold leading-relaxed">{successMessage}</div>}
-
-              {generatedLink && (
-                <div className="space-y-1.5 pt-1">
-                  <label className="text-[9px] text-amber-500 uppercase font-bold tracking-widest flex items-center gap-1">📋 CLIPBOARD ADMINISTRATIVE ACTION LINK</label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={generatedLink} 
-                    onClick={(e) => (e.target as HTMLInputElement).select()}
-                    className="w-full bg-black border border-amber-500/30 text-amber-400 p-2 rounded text-[11px] font-mono select-all focus:outline-none cursor-pointer"
-                  />
-                  <span className="text-[8px] text-zinc-500 block">Click inside the field above to select all and instantly copy to secure signal strings.</span>
+        <div className="lg:col-span-4 border border-zinc-900 bg-zinc-950/40 rounded-xl min-h-[480px] flex flex-col overflow-hidden">
+          <div className="p-3 border-b border-zinc-900 bg-zinc-950 text-[10px] font-bold text-zinc-500 tracking-widest uppercase">
+            {activeFolder} Transaction Index Ledger
+          </div>
+          <div className="flex-1 overflow-y-auto divide-y divide-zinc-900/40 max-h-[600px]">
+            {messages.length === 0 ? (
+              <div className="p-6 text-center text-zinc-600 text-[11px] uppercase tracking-wide">No localized logs registered in context file.</div>
+            ) : (
+              messages.map(msg => (
+                <div key={msg.id} onClick={() => setSelectedMessage(msg)} className={`p-3.5 text-left cursor-pointer transition ${selectedMessage?.id === msg.id ? 'bg-zinc-900/40 border-r-2 border-amber-500' : 'hover:bg-zinc-900/10'}`}>
+                  <div className="text-[9px] text-zinc-500 flex justify-between gap-2">
+                    <span className="truncate max-w-[140px] font-bold">{activeFolder === 'INBOX' ? msg.sender_email : msg.recipient_email}</span>
+                    <span>{new Date(msg.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div className="text-xs font-bold text-zinc-300 truncate mt-1">{msg.subject || '(No Classification Subject)'}</div>
                 </div>
-              )}
+              ))
+            )}
+          </div>
+        </div>
 
-              <button 
-                type="submit" 
-                disabled={processing} 
-                className="w-full py-2.5 bg-amber-500 text-black font-bold text-xs rounded-lg transition hover:bg-amber-600 disabled:opacity-50 tracking-widest uppercase font-mono"
-              >
-                {processing ? 'COMPUTING GATE SECURITY...' : '⚡ GENERATE WORKFORCE TOKEN'}
+        <div className="lg:col-span-5 space-y-4">
+          {selectedMessage && (
+            <div className="border border-zinc-900 bg-zinc-950/60 p-4 rounded-xl text-left space-y-3">
+              <div className="border-b border-zinc-900 pb-2">
+                <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Secure Payload Inspector Decryption</div>
+                <div className="text-xs font-bold text-amber-500 mt-1">{selectedMessage.subject}</div>
+              </div>
+              <p className="text-xs text-zinc-300 bg-black/40 p-3 border border-zinc-900/50 rounded-lg whitespace-pre-wrap font-sans leading-relaxed">
+                {selectedMessage.payload}
+              </p>
+            </div>
+          )}
+
+          <div className="border border-zinc-900 bg-zinc-950/40 p-5 rounded-xl space-y-4 text-left">
+            <h3 className="text-xs font-bold tracking-widest text-amber-500 uppercase">INITIALIZE SECURE INBOUND TRANSIT</h3>
+
+            <form onSubmit={handleDispatchPayload} className="space-y-4 text-xs" autoComplete="off">
+              <div className="relative space-y-1" ref={dropdownRef}>
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Recipient Destination Target</label>
+                
+                {resolvedRecipient ? (
+                  <div className="w-full bg-zinc-900 border border-amber-500/30 p-2.5 rounded-lg flex items-center justify-between">
+                    <div>
+                      <span className="bg-amber-500 text-black text-[8px] font-bold px-1.5 py-0.5 rounded mr-2 uppercase tracking-wide font-mono">{resolvedRecipient.type}</span>
+                      <span className="text-xs text-zinc-200 font-bold">{resolvedRecipient.label}</span>
+                      <div className="text-[10px] text-zinc-500 mt-0.5 font-mono">{resolvedRecipient.subLabel}</div>
+                    </div>
+                    <button type="button" onClick={() => { setResolvedRecipient(null); setSearchQuery(''); }} className="text-zinc-500 hover:text-red-400 font-bold px-2 text-sm">✕</button>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    placeholder="Start Typing or Select Recipient..."
+                    onFocus={() => setShowDropdown(true)}
+                    onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+                    className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 tracking-wide font-mono"
+                    required
+                  />
+                )}
+
+                {showDropdown && suggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-zinc-950 border border-zinc-900 rounded-lg max-h-64 overflow-y-auto divide-y divide-zinc-900 shadow-2xl">
+                    {suggestions.map((item, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => { setResolvedRecipient(item); setShowDropdown(false); }}
+                        className="p-3 hover:bg-zinc-900/80 cursor-pointer space-y-0.5 text-left transition"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-zinc-200 font-bold tracking-wide">{item.label}</span>
+                          <span className="text-[8px] border border-zinc-800 bg-zinc-900 px-1.5 text-zinc-500 rounded uppercase font-mono font-bold tracking-widest">{item.type}</span>
+                        </div>
+                        <div className="text-[10px] text-zinc-400 font-mono truncate">{item.subLabel}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Subject Parameters</label>
+                <input type="text" value={subjectLine} onChange={(e) => setSubjectLine(e.target.value)} placeholder="Specify metadata subject classification classifications..." className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 font-mono" required />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Payload Ledger Metrics</label>
+                <textarea value={payloadData} onChange={(e) => setPayloadData(e.target.value)} placeholder="Type communication details or tactical payload strings here..." rows={4} className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 resize-none font-sans leading-relaxed" required />
+              </div>
+
+              {statusMessage && <div className="text-[10px] p-2.5 rounded border border-zinc-800 bg-zinc-900 text-amber-400 font-bold font-mono">{statusMessage}</div>}
+
+              <button type="submit" disabled={dispatching} className="px-5 py-2.5 bg-amber-500 text-black font-bold text-xs rounded-lg transition hover:bg-amber-600 disabled:opacity-50 tracking-widest uppercase font-mono">
+                {dispatching ? 'SYNCHRONIZING CORE...' : '🚀 DISPATCH PAYLOAD'}
               </button>
             </form>
           </div>
-
-          {/* Module 2: Resale Guardrails System Variables Panel */}
-          <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl text-left space-y-2.5">
-            <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">🔒 GLOBAL WHITE-LABEL RESALE CONSTRAINTS</div>
-            <div className="text-xs font-bold text-zinc-300">Active Authorized Operator Domains Matrix</div>
-            <div className="flex flex-wrap gap-1.5">
-              {allowedDomains.map((domain, index) => (
-                <code key={index} className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-2 py-0.5 rounded text-[10px] font-bold">@{domain}</code>
-              ))}
-            </div>
-            <p className="text-[9px] text-zinc-500 leading-relaxed pt-1 border-t border-zinc-900">
-              Operational Guideline: Domain constraints are packageable variables queried on initialization. Any invitation text outside these keys will trigger a UI block exception loop automatically.
-            </p>
-          </div>
-
         </div>
-
       </div>
     </div>
   )
