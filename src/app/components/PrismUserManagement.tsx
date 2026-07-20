@@ -158,7 +158,7 @@ export default function PrismUserManagement() {
   if (loading) return <div className="p-6 text-xs font-mono text-zinc-500 animate-pulse">LOADING ACCESS SYSTEM ROSTER...</div>
 
   return (
-    <div className="w-full bg-black text-zinc-100 min-h-screen p-4 md:p-6 font-mono">
+    <div className="w-full bg-black text-zinc-100 min-h-screen p-4 md:p-6 font-mono selection:bg-[#D4AF37]/20 selection:text-[#E6C657]">
       <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
         <div>
           <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Total Operators</div>
@@ -166,7 +166,7 @@ export default function PrismUserManagement() {
         </div>
         <div>
           <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Clearance: Owners</div>
-          <div className="text-lg font-bold text-amber-500 mt-1">{operators.filter(o => o.security_group === 'VKOwners').length} Seat</div>
+          <div className="text-lg font-bold text-[#D4AF37] mt-1">{operators.filter(o => o.security_group === 'VKOwners').length} Seat</div>
         </div>
         <div>
           <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Clearance: Staff / Finance</div>
@@ -174,7 +174,7 @@ export default function PrismUserManagement() {
         </div>
         <div>
           <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Staged Invitations</div>
-          <div className="text-lg font-bold text-amber-400 mt-1">{pendingInvites.length} Pending</div>
+          <div className="text-lg font-bold text-[#E6C657] mt-1">{pendingInvites.length} Pending</div>
         </div>
       </div>
 
@@ -236,7 +236,7 @@ export default function PrismUserManagement() {
 
         <div className="lg:col-span-4 space-y-6">
           <div className="border border-zinc-900 bg-zinc-950/40 p-5 rounded-xl space-y-4 text-left">
-            <h3 className="text-xs font-bold tracking-widest text-amber-500 uppercase">⚡ ENROLL INTERNAL OPERATOR</h3>
+            <h3 className="text-xs font-bold tracking-widest text-[#D4AF37] uppercase">⚡ ENROLL INTERNAL OPERATOR</h3>
             
             <form onSubmit={handleGenerateInvitation} className="space-y-4 text-xs">
               <div className="space-y-1">
@@ -276,17 +276,17 @@ export default function PrismUserManagement() {
               </div>
 
               {errorMessage && <div className="text-[10px] p-2.5 rounded border border-red-950 bg-red-950/20 text-red-400 font-bold leading-relaxed">{errorMessage}</div>}
-              {successMessage && <div className="text-[10px] p-2.5 rounded border border-zinc-800 bg-zinc-900 text-amber-400 font-bold leading-relaxed">{successMessage}</div>}
+              {successMessage && <div className="text-[10px] p-2.5 rounded border border-zinc-800 bg-zinc-900 text-[#D4AF37] font-bold leading-relaxed">{successMessage}</div>}
 
               {generatedLink && (
                 <div className="space-y-1.5 pt-1">
-                  <label className="text-[9px] text-amber-500 uppercase font-bold tracking-widest flex items-center gap-1">📋 ONBOARDING LINK (COPY TO USER)</label>
+                  <label className="text-[9px] text-[#D4AF37] uppercase font-bold tracking-widest flex items-center gap-1">📋 ONBOARDING LINK (COPY TO USER)</label>
                   <input 
                     type="text" 
                     readOnly 
                     value={generatedLink} 
                     onClick={(e) => (e.target as HTMLInputElement).select()}
-                    className="w-full bg-black border border-amber-500/30 text-amber-400 p-2 rounded text-[11px] font-mono select-all focus:outline-none cursor-pointer"
+                    className="w-full bg-black border border-[#D4AF37]/30 text-[#E6C657] p-2 rounded text-[11px] font-mono select-all focus:outline-none cursor-pointer"
                   />
                 </div>
               )}
@@ -294,7 +294,7 @@ export default function PrismUserManagement() {
               <button 
                 type="submit" 
                 disabled={processing} 
-                className="w-full py-2.5 bg-amber-500 text-black font-bold text-xs rounded-lg transition hover:bg-amber-600 disabled:opacity-50 tracking-widest uppercase font-mono"
+                className="w-full py-2.5 bg-[#D4AF37] text-black font-bold text-xs rounded-lg transition hover:bg-[#C29E2E] disabled:opacity-50 tracking-widest uppercase font-mono"
               >
                 {processing ? 'GENERATING...' : '⚡ CREATE ENROLLMENT TOKEN'}
               </button>
