@@ -55,18 +55,22 @@ export default function PrismSecureInbox() {
   useEffect(() => {
     async function initializeSession() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user || !user.email) {
+        setLoading(false)
+        return
+      }
 
-      setUserEmail(user.email || null)
+      const activeEmail = user.email
+      setUserEmail(activeEmail)
 
-      // 1. Check Core Governance RBAC Table First
+      // 1. Check Core Governance RBAC Table First (Hardcoded Groups Alignment)
       const { data: clearance } = await supabase
         .from('system_permissions')
         .select('security_group, title')
-        .ilike('email', user.email)
+        .ilike('email', activeEmail)
         .maybeSingle()
 
-      if (clearance && (clearance.security_group === 'VK_OWNER' || clearance.security_group === 'VK_STAFF')) {
+      if (clearance && (clearance.security_group === 'VKOwners' || clearance.security_group === 'VKStaff' || clearance.security_group === 'VKFinancial')) {
         setUserRole('SYSTEM_ADMIN')
         setCompanyName('V&K Partners')
         setMyDepartment('EXECUTIVE')
@@ -78,7 +82,7 @@ export default function PrismSecureInbox() {
       const { data: profile } = await supabase
         .from('crm_contacts')
         .select('role, company_name, department')
-        .ilike('email', user.email)
+        .ilike('email', activeEmail)
         .maybeSingle()
 
       if (profile) {
@@ -174,7 +178,6 @@ export default function PrismSecureInbox() {
           if (!uniquelyMappedCompanies.has(row.company_name)) {
             uniquelyMappedCompanies.add(row.company_name)
 
-            // Dynamic Corporate Broadcast Node
             compiledSuggestions.push({
               type: 'ALL_USERS',
               label: targetCompany,
@@ -182,7 +185,6 @@ export default function PrismSecureInbox() {
               routingKey: `${targetCompany}_ALL`
             })
 
-            // Standardized Enterprise Department Sub-channels
             const departments = ['EXECUTIVE', 'FINANCE', 'HUMAN_RESOURCES', 'OPERATIONS', 'LEGAL', 'TECHNICAL_SUPPORT']
             departments.forEach(dept => {
               compiledSuggestions.push({
