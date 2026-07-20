@@ -97,7 +97,6 @@ export default function PrismSecureInbox() {
 
   // 📥 Reactive Folder Content Dispatcher
   useEffect(() => {
-    // Local immutable constant narrowing to satisfy strict type compilers
     const email = userEmail
     if (!email) return
 
@@ -175,7 +174,7 @@ export default function PrismSecureInbox() {
       matches.forEach(row => {
         const targetCompany = row.company_name || 'Individual Entity'
 
-        // 🏢 1. COMPANY LOOKUP MATCHING SEGMENTS
+        // 🏢 1. COMPANY LOOKUP MATCHING SEGMENTS (Strict Null Guard Applied)
         if (row.company_name && row.company_name.toLowerCase().includes(searchQuery.toLowerCase())) {
           if (!uniquelyMappedCompanies.has(row.company_name)) {
             uniquelyMappedCompanies.add(row.company_name)
@@ -199,8 +198,8 @@ export default function PrismSecureInbox() {
           }
         }
 
-        // 👥 2. INDIVIDUAL WORKFORCE RECORD MATCHING SEGMENTS
-        if (row.email.toLowerCase().includes(searchQuery.toLowerCase())) {
+        // 👥 2. INDIVIDUAL WORKFORCE RECORD MATCHING SEGMENTS (Strict Null Guard Applied)
+        if (row.email && row.email.toLowerCase().includes(searchQuery.toLowerCase())) {
           const userHandle = row.email.split('@')[0].toUpperCase()
           compiledSuggestions.push({
             type: 'INDIVIDUAL',
@@ -292,7 +291,7 @@ export default function PrismSecureInbox() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* Navigation Sidebar Pillars (Always Visible 4-Folder Tree) */}
+        {/* Navigation Sidebar Pillars */}
         <div className="lg:col-span-3 space-y-3">
           <div className="border border-zinc-900 rounded-lg overflow-hidden bg-zinc-950/40 divide-y divide-zinc-900/50 text-xs">
             {(['INBOX', 'SENT', 'DRAFTS', 'ARCHIVE'] as const).map((folder) => (
