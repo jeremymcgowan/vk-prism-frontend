@@ -95,7 +95,6 @@ export default function EcosystemEntitiesManager() {
 
   async function fetchInitialData() {
     setLoading(true)
-    
     const { data: entData } = await supabase
       .from('crm_entities')
       .select('id, display_name, status')
@@ -183,7 +182,7 @@ export default function EcosystemEntitiesManager() {
     if (entErr || assessErr) {
       triggerToast('error', `Write rejected: ${entErr?.message || assessErr?.message}`)
     } else {
-      triggerToast('success', `All tracking profiles & compliance nodes securely committed.`)
+      triggerToast('success', `All telemetry layers securely synced down to cloud storage columns.`)
       fetchInitialData()
     }
   }
@@ -196,7 +195,7 @@ export default function EcosystemEntitiesManager() {
 
     if (!error) {
       setBanners(banners.map(b => b.id === id ? { ...b, is_active: activeState } : b))
-      triggerToast('success', 'Global route display configuration modified.')
+      triggerToast('success', 'Global network route parameters updated.')
     }
   }
 
@@ -243,90 +242,159 @@ export default function EcosystemEntitiesManager() {
           {loading ? (
             <div className="text-xs font-mono text-zinc-600 animate-pulse uppercase py-12 text-center">Interlocking Profile Matrices...</div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
               
-              {/* 🏢 PANEL 1: CORPORATE BASELINE & CAPITAL VETTING */}
-              <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
-                <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
-                  Section 01 // Corporate Baseline & Capital Vetting
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">DISPLAY NAME</label>
-                    <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.display_name || ''} onChange={e => setTelemetry({...telemetry, display_name: e.target.value})} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 🏢 SECTION 01: CORPORATE BASELINE & CAPITAL VETTING */}
+                <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
+                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
+                    Section 01 // Corporate Baseline & Capital Vetting
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">DISPLAY NAME</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.display_name || ''} onChange={e => setTelemetry({...telemetry, display_name: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">LEGAL CORPORATE NAME</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.legal_name || ''} onChange={e => setTelemetry({...telemetry, legal_name: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">LEGAL STRUCTURE</label>
+                      <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.legal_structure || ''} onChange={e => setTelemetry({...telemetry, legal_structure: e.target.value})}>
+                        <option value="LLC">LLC</option>
+                        <option value="C_CORP">C_CORP</option>
+                        <option value="S_CORP">S_CORP</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">REGISTRATION STATE</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" maxLength={2} value={telemetry.registration_state || ''} onChange={e => setTelemetry({...telemetry, registration_state: e.target.value})} />
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">LEGAL CORPORATE NAME</label>
-                    <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.legal_name || ''} onChange={e => setTelemetry({...telemetry, legal_name: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">LEGAL STRUCTURE</label>
-                    <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.legal_structure || ''} onChange={e => setTelemetry({...telemetry, legal_structure: e.target.value})}>
-                      <option value="LLC">LLC</option>
-                      <option value="C_CORP">C_CORP</option>
-                      <option value="S_CORP">S_CORP</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">REGISTRATION STATE</label>
-                    <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" maxLength={2} value={telemetry.registration_state || ''} onChange={e => setTelemetry({...telemetry, registration_state: e.target.value})} />
+
+                  <div className="grid grid-cols-3 gap-4 border-t border-zinc-900/60 pt-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">FUNDING STAGE</label>
+                      <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-purple-400 font-mono" value={telemetry.funding_stage || ''} onChange={e => setTelemetry({...telemetry, funding_stage: e.target.value})}>
+                        <option value="PRE_SEED">PRE_SEED</option>
+                        <option value="SEED">SEED</option>
+                        <option value="SERIES_A">SERIES_A</option>
+                        <option value="SERIES_B">SERIES_B</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">TARGET CAPITAL ($)</label>
+                      <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.funding_target_amount || 0} onChange={e => setTelemetry({...telemetry, funding_target_amount: Number(e.target.value)})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">V&K AUDIT STATUS</label>
+                      <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-amber-400 font-mono" value={telemetry.vk_audit_status || ''} onChange={e => setTelemetry({...telemetry, vk_audit_status: e.target.value})}>
+                        <option value="PENDING">PENDING</option>
+                        <option value="PASSED">PASSED</option>
+                        <option value="FAILED">FAILED</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 border-t border-zinc-900/60 pt-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">FUNDING STAGE</label>
-                    <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-purple-400 font-mono" value={telemetry.funding_stage || ''} onChange={e => setTelemetry({...telemetry, funding_stage: e.target.value})}>
-                      <option value="PRE_SEED">PRE_SEED</option>
-                      <option value="SEED">SEED</option>
-                      <option value="SERIES_A">SERIES_A</option>
-                      <option value="SERIES_B">SERIES_B</option>
-                    </select>
+                {/* 🛡️ SECTION 02: THREAT VECTOR & SECURITY INFRASTRUCTURE */}
+                <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
+                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
+                    Section 02 // Threat Vector & Security Infrastructure
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">ANTIVIRUS AGENT VENDOR</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.it_antivirus_vendor || ''} onChange={e => setTelemetry({...telemetry, it_antivirus_vendor: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">MDM ENFORCEMENT LOG</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.it_mdm_status || ''} onChange={e => setTelemetry({...telemetry, it_mdm_status: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">SSO GATEWAY VENDOR</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.it_sso_vendor || ''} onChange={e => setTelemetry({...telemetry, it_sso_vendor: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">SSO GATEWAY STATUS</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.it_sso_status || ''} onChange={e => setTelemetry({...telemetry, it_sso_status: e.target.value})} />
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">TARGET CAPITAL ($)</label>
-                    <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.funding_target_amount || 0} onChange={e => setTelemetry({...telemetry, funding_target_amount: Number(e.target.value)})} />
+                  
+                  <div className="pt-2">
+                    <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.it_encryption_enabled} onChange={e => setTelemetry({...telemetry, it_encryption_enabled: e.target.checked})} />
+                      <span>Local Device Storage Encryption Enforced</span>
+                    </label>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">V&K AUDIT STATUS</label>
-                    <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-amber-400 font-mono" value={telemetry.vk_audit_status || ''} onChange={e => setTelemetry({...telemetry, vk_audit_status: e.target.value})}>
-                      <option value="PENDING">PENDING</option>
-                      <option value="PASSED">PASSED</option>
-                      <option value="FAILED">FAILED</option>
-                    </select>
+                </div>
+
+                {/* 👥 SECTION 03: WORKFORCE ADMINISTRATION & COMPLIANCE EXPOSURE */}
+                <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
+                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
+                    Section 03 // Workforce Administration & Compliance Exposure
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">PAYROLL PROCESSING PLATFORM</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.hr_payroll_platform || ''} onChange={e => setTelemetry({...telemetry, hr_payroll_platform: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">MULTISTATE TAX EXPOSURE STATUS</label>
+                      <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-red-400 font-mono" value={telemetry.hr_multistate_tax_registered || ''} onChange={e => setTelemetry({...telemetry, hr_multistate_tax_registered: e.target.value})}>
+                        <option value="CLEAR">CLEAR_NO_NEXUS</option>
+                        <option value="EXPOSED">NEXUS_EXPOSED_RISK</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.hr_benefits_active} onChange={e => setTelemetry({...telemetry, hr_benefits_active: e.target.checked})} />
+                      <span>Active Group Benefits Network Infrastructure</span>
+                    </label>
+                    <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.hr_all_staff_piia_signed} onChange={e => setTelemetry({...telemetry, hr_all_staff_piia_signed: e.target.checked})} />
+                      <span>Proprietary Information & Inventions Agreements Signed (PIIA)</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 📊 SECTION 04: PIPELINE FRICTION & OPTIMIZATION ANALYTICS */}
+                <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
+                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
+                    Section 04 // Pipeline Friction & Optimization Analytics
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">DISCONNECTED UTILITY COUNTER</label>
+                      <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.flow_disconnected_tool_count || 0} onChange={e => setTelemetry({...telemetry, flow_disconnected_tool_count: Number(e.target.value)})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">WEB LAYOUT CONVERSION SATISFACTION</label>
+                      <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.web_design_satisfaction || ''} onChange={e => setTelemetry({...telemetry, web_design_satisfaction: e.target.value})}>
+                        <option value="SATISFIED">OPTIMIZED_CONVERSION</option>
+                        <option value="UNSATISFIED">CONVERSION_FRICTION</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.flow_unstructured_pdf_parsing_manual} onChange={e => setTelemetry({...telemetry, flow_unstructured_pdf_parsing_manual: e.target.checked})} />
+                      <span>Manual Processing of Unstructured Document Formats Active</span>
+                    </label>
                   </div>
                 </div>
               </div>
 
-              {/* 🛡️ PANEL 2: SECOPS INFRASTRUCTURE */}
-              <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
-                <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
-                  Section 02 // Threat Vector & Security Infrastructure
-                </h3>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">ANTIVIRUS AGENT VENDOR</label>
-                    <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.it_antivirus_vendor || ''} onChange={e => setTelemetry({...telemetry, it_antivirus_vendor: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">MDM ENFORCEMENT LOG</label>
-                    <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.it_mdm_status || ''} onChange={e => setTelemetry({...telemetry, it_mdm_status: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">SSO GATEWAY VENDOR</label>
-                    <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.it_sso_vendor || ''} onChange={e => setTelemetry({...telemetry, it_sso_vendor: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-500">SSO GATEWAY STATUS</label>
-                    <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.it_sso_status || ''} onChange={e => setTelemetry({...telemetry, it_sso_status: e.target.value})} />
-                  </div>
-                </div>
-              </div>
-
-              {/* 📈 PANEL 3: REGULATORY COMPLIANCE SYSTEM MATRIX (MODULE 5) */}
-              <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4 lg:col-span-2">
+              {/* 📈 SECTION 05: REGULATORY COMPLIANCE SYSTEM MATRIX (MODULE 5) */}
+              <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4 w-full block">
                 <div>
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
                     Section 05 // Regulatory Compliance Matrix & Framework Safeguards (Module 5)
@@ -336,7 +404,6 @@ export default function EcosystemEntitiesManager() {
                   </p>
                 </div>
 
-                {/* Re-architected flex grid structures to give text elements absolute breathing room */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-zinc-900/60 pb-4">
                   {[
                     { label: 'HIPAA Regulatory Protocol', key: 'is_hipaa_compliant' },
@@ -400,7 +467,7 @@ export default function EcosystemEntitiesManager() {
             </div>
           )}
 
-          {/* ⚡ Execution Output Controls */}
+          {/* ⚡ Execution Output Controls - Secured cleanly at the bottom of the form context */}
           <div className="flex justify-end p-4 border border-zinc-900 bg-zinc-950/60 rounded-xl">
             <button
               type="submit"
@@ -417,7 +484,7 @@ export default function EcosystemEntitiesManager() {
         </div>
       )}
 
-      {/* 🔄 PANEL 4: GLOBAL MARKETING ROUTING REGISTRY (MODULE 6) */}
+      {/* 🔄 SECTION 06: GLOBAL MARKETING ROUTING REGISTRY (MODULE 6) */}
       <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
         <div>
           <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
