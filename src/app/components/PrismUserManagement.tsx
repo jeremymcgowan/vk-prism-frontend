@@ -1,316 +1,218 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 
-interface Operator {
+interface OperatorProfile {
   id: string
   email: string
-  security_group: 'VKOwners' | 'VKStaff' | 'VKFinancial'
   title: string
-}
-
-interface PendingInvite {
-  id: string
-  email: string
-  target_group: string
-  target_title: string
-  invite_token: string
-  expires_at: string
-  is_redeemed: boolean
+  security_group: string
+  universal_routing_handle: string
+  created_at?: string
 }
 
 export default function PrismUserManagement() {
-  const [loading, setLoading] = useState(true)
-  const [processing, setProcessing] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
-  const [generatedLink, setGeneratedLink] = useState('')
-
-  const [allowedDomains, setAllowedDomains] = useState<string[]>([])
-  const [operators, setOperators] = useState<Operator[]>([])
-  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
-
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteGroup, setInviteGroup] = useState<'VKStaff' | 'VKFinancial'>('VKStaff')
-  const [inviteTitle, setInviteTitle] = useState('')
+  const [operators, setOperators] = useState<OperatorProfile[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<Partial<OperatorProfile>>({})
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  async function refreshRoster() {
-    const { data: staffList } = await supabase
-      .from('system_permissions')
-      .select('*')
-      .order('email', { ascending: true })
-    if (staffList) setOperators(staffList)
-  }
-
+  // Fetch all user parameter entries on mount
   useEffect(() => {
-    async function hydrateManagementCore() {
-      const { data: config } = await supabase
-        .from('global_system_config')
-        .select('config_value')
-        .eq('config_key', 'allowed_workforce_domains')
-        .maybeSingle()
-
-      if (config) {
-        const domainsArray = config.config_value.split(',').map((d: string) => d.trim().toLowerCase())
-        setAllowedDomains(domainsArray)
-      }
-
-      await refreshRoster()
-
-      const { data: inviteList } = await supabase
-        .from('vk_invite_vault')
-        .select('*')
-        .eq('is_redeemed', false)
-        .order('email', { ascending: true })
-
-      if (inviteList) setPendingInvites(inviteList)
-
-      setLoading(false)
-    }
-    hydrateManagementCore()
+    fetchOperators()
   }, [])
 
-  const handleUpdateGroup = async (id: string, group: 'VKOwners' | 'VKStaff' | 'VKFinancial') => {
-    const { error } = await supabase
+  async function fetchOperators() {
+    setLoading(true)
+    const { data, error } = await supabase
       .from('system_permissions')
-      .update({ security_group: group })
-      .eq('id', id)
-    if (!error) refreshRoster()
-  }
+      .select('*')
+      .order('created_at', { ascending: true })
 
-  const handleUpdateTitle = async (id: string, newTitle: string) => {
-    await supabase
-      .from('system_permissions')
-      .update({ title: newTitle })
-      .eq('id', id)
-  }
-
-  const handleGenerateInvitation = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setProcessing(true)
-    setErrorMessage('')
-    setSuccessMessage('')
-    setGeneratedLink('')
-
-    try {
-      const emailTarget = inviteEmail.trim().toLowerCase()
-      const extractedDomain = emailTarget.split('@')[1]
-
-      if (!extractedDomain) {
-        throw new Error("Invalid structure format in destination address.")
-      }
-
-      if (!allowedDomains.includes(extractedDomain)) {
-        throw new Error(`Unauthorized target domain. Allowed parameters: [${allowedDomains.join(', ')}].`)
-      }
-
-      const secureToken = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
-
-      const { error } = await supabase
-        .from('vk_invite_vault')
-        .insert({
-          email: emailTarget,
-          target_group: inviteGroup,
-          target_title: inviteTitle,
-          invite_token: secureToken,
-          expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
-        })
-
-      if (error) throw error
-
-      const localizedActivationUrl = `${window.location.origin}/activate?token=${secureToken}`
-      setGeneratedLink(localizedActivationUrl)
-      setSuccessMessage(`Account invitation token written to deployment vaults for [${emailTarget}].`)
-      
-      const { data: refreshedInvites } = await supabase
-        .from('vk_invite_vault')
-        .select('*')
-        .eq('is_redeemed', false)
-        .order('email', { ascending: true })
-      if (refreshedInvites) setPendingInvites(refreshedInvites)
-
-      setInviteEmail('')
-      setInviteTitle('')
-    } catch (err: any) {
-      setErrorMessage(err.message)
-    } finally {
-      setProcessing(false)
+    if (!error && data) {
+      setOperators(data)
     }
+    setLoading(false)
   }
 
-  const handleSuspendOperator = async (operatorId: string, operatorEmail: string) => {
-    if (operatorEmail === 'jp@vkpartners.co') {
-      alert("System Guardrail: The primary administrator owner account cannot be suspended.")
+  // Initialize row editing state
+  const startEditing = (operator: OperatorProfile) => {
+    setEditingId(operator.id)
+    setEditForm({ ...operator })
+  }
+
+  const cancelEditing = () => {
+    setEditingId(null)
+    setEditForm({})
+  }
+
+  // Save changes back to Supabase
+  const handleSave = async (id: string) => {
+    if (!editForm.title || !editForm.security_group || !editForm.universal_routing_handle) {
+      showStatus('error', 'All operational fields must be populated.')
       return
     }
-    if (!confirm(`Revoke all backend platform access credentials for account [${operatorEmail}]?`)) return
 
-    await supabase.from('system_permissions').delete().eq('id', operatorId)
-    setOperators(operators.filter(op => op.id !== operatorId))
+    const { error } = await supabase
+      .from('system_permissions')
+      .update({
+        title: editForm.title,
+        security_group: editForm.security_group,
+        universal_routing_handle: editForm.universal_routing_handle,
+      })
+      .eq('id', id)
+
+    if (error) {
+      showStatus('error', `Save aborted: ${error.message}`)
+    } else {
+      showStatus('success', 'Operator clearance matrix updated successfully.')
+      setEditingId(null)
+      fetchOperators() // Refresh layout data
+    }
   }
 
-  if (loading) return <div className="p-6 text-xs font-mono text-zinc-500 animate-pulse">LOADING ACCESS SYSTEM ROSTER...</div>
+  const showStatus = (type: 'success' | 'error', text: string) => {
+    setStatusMessage({ type, text })
+    setTimeout(() => setStatusMessage(null), 4000)
+  }
+
+  if (loading) {
+    return <div className="text-xs font-mono text-zinc-500 animate-pulse">QUERYING INTERNAL WORKFORCE LEDGER...</div>
+  }
 
   return (
-    <div className="w-full bg-black text-zinc-100 min-h-screen p-4 md:p-6 font-mono selection:bg-[#D4AF37]/20 selection:text-[#E6C657]">
-      <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Total Operators</div>
-          <div className="text-lg font-bold text-zinc-200 mt-1">{operators.length} Active</div>
+          <h3 className="text-xs font-bold tracking-widest text-zinc-400 uppercase">
+            Internal Workforce Management and Access Profiles
+          </h3>
+          <p className="text-[11px] text-zinc-500 mt-1">
+            Configure matrix routing handles and clearance parameters straight from the master grid layout.
+          </p>
         </div>
-        <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Clearance: Owners</div>
-          <div className="text-lg font-bold text-[#D4AF37] mt-1">{operators.filter(o => o.security_group === 'VKOwners').length} Seat</div>
-        </div>
-        <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Clearance: Staff / Finance</div>
-          <div className="text-lg font-bold text-zinc-400 mt-1">{operators.filter(o => o.security_group !== 'VKOwners').length} Allocated</div>
-        </div>
-        <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Staged Invitations</div>
-          <div className="text-lg font-bold text-[#E6C657] mt-1">{pendingInvites.length} Pending</div>
-        </div>
+        
+        {statusMessage && (
+          <div className={`text-[10px] font-mono px-3 py-1 rounded border uppercase tracking-wider ${
+            statusMessage.type === 'success' ? 'bg-emerald-950/20 border-emerald-900 text-emerald-400' : 'bg-red-950/20 border-red-900 text-red-400'
+          }`}>
+            {statusMessage.text}
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-8 border border-zinc-900 bg-zinc-950/40 rounded-xl overflow-hidden text-left">
-          <div className="p-3.5 border-b border-zinc-900 bg-zinc-950 text-[10px] font-bold text-zinc-400 tracking-widest uppercase">
-            👥 INTERNAL WORKFORCE MANAGEMENT AND ACCESS PROFILES
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs min-w-[650px]">
-              <thead>
-                <tr className="border-b border-zinc-900 text-zinc-500 uppercase tracking-wider text-[10px] bg-zinc-950/60">
-                  <th className="p-3">Operator Identity</th>
-                  <th className="p-3">Security Assignment Group</th>
-                  <th className="p-3">Operational Title (Editable)</th>
-                  <th className="p-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-900/40">
-                {operators.map((op) => (
-                  <tr key={op.id} className="hover:bg-zinc-900/10 transition">
-                    <td className="p-3 font-bold text-zinc-300">{op.email}</td>
-                    <td className="p-3">
+      <div className="border border-zinc-900 rounded-xl overflow-x-auto bg-zinc-950/40 w-full block">
+        <table className="w-full text-left border-collapse text-xs min-w-[800px]">
+          <thead>
+            <tr className="border-b border-zinc-900 bg-zinc-900/30 text-zinc-400 font-bold font-mono">
+              <th className="p-3">OPERATOR IDENTITY</th>
+              <th className="p-3">SECURITY ASSIGNMENT GROUP</th>
+              <th className="p-3">ROUTING HANDLE (SPREADSHEET)</th>
+              <th className="p-3">OPERATIONAL TITLE</th>
+              <th className="p-3 text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {operators.map((op) => {
+              const isEditing = editingId === op.id
+
+              return (
+                <tr key={op.id} className="border-b border-zinc-900/40 hover:bg-zinc-900/10 transition-colors">
+                  {/* Column 1: Identity Handle (Read-Only) */}
+                  <td className="p-3 font-mono text-zinc-300 select-all">
+                    {op.email}
+                  </td>
+
+                  {/* Column 2: Security Group Dropdown */}
+                  <td className="p-3">
+                    {isEditing ? (
                       <select
-                        value={op.security_group}
-                        disabled={op.email === 'jp@vkpartners.co'}
-                        onChange={(e) => handleUpdateGroup(op.id, e.target.value as any)}
-                        className="bg-zinc-950 border border-zinc-800 text-zinc-300 rounded p-1 text-[11px] focus:outline-none focus:border-zinc-700 font-mono disabled:opacity-60"
+                        className="bg-black border border-zinc-800 text-amber-400 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-500 font-mono"
+                        value={editForm.security_group}
+                        onChange={(e) => setEditForm({ ...editForm, security_group: e.target.value })}
                       >
-                        <option value="VKOwners">VKOwners (Full Root Access)</option>
-                        <option value="VKStaff">VKStaff (Technical Engine Access)</option>
-                        <option value="VKFinancial">VKFinancial (Ledger Billing Access)</option>
+                        <option value="VKStaff">VKStaff</option>
+                        <option value="VKFinancial">VKFinancial</option>
+                        <option value="VKOwners">VKOwners</option>
                       </select>
-                    </td>
-                    <td className="p-3">
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-300">
+                        {op.security_group}
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Column 3: Universal Routing Handle Dropdown */}
+                  <td className="p-3">
+                    {isEditing ? (
+                      <select
+                        className="bg-black border border-zinc-800 text-purple-400 rounded px-2 py-1 text-xs focus:outline-none focus:border-purple-500 font-mono"
+                        value={editForm.universal_routing_handle}
+                        onChange={(e) => setEditForm({ ...editForm, universal_routing_handle: e.target.value })}
+                      >
+                        <option value="INTERNAL_STAFF_EXECUTIVE">INTERNAL_STAFF_EXECUTIVE</option>
+                        <option value="CLIENT_PORTFOLIO_MANAGER">CLIENT_PORTFOLIO_MANAGER</option>
+                        <option value="ECOSYSTEM_ENTITY_NODE">ECOSYSTEM_ENTITY_NODE</option>
+                      </select>
+                    ) : (
+                      <span className="font-mono text-[11px] text-purple-400 bg-purple-950/10 border border-purple-900/30 px-2 py-0.5 rounded">
+                        {op.universal_routing_handle}
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Column 4: Operational Title Input */}
+                  <td className="p-3 text-zinc-200">
+                    {isEditing ? (
                       <input
                         type="text"
-                        defaultValue={op.title}
-                        onBlur={(e) => handleUpdateTitle(op.id, e.target.value)}
-                        placeholder="Click to assign title..."
-                        className="bg-transparent border-b border-transparent hover:border-zinc-800 focus:border-zinc-700 p-0.5 w-full text-zinc-300 focus:outline-none transition font-mono"
+                        className="w-full max-w-xs bg-black border border-zinc-800 text-zinc-100 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-500 font-sans"
+                        value={editForm.title || ''}
+                        onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                       />
-                    </td>
-                    <td className="p-3 text-right">
-                      <button 
-                        onClick={() => handleSuspendOperator(op.id, op.email)}
-                        disabled={op.email === 'jp@vkpartners.co'}
-                        className="text-[9px] uppercase border border-zinc-800 bg-zinc-900 hash-px px-2.5 py-1 text-zinc-500 rounded hover:text-red-400 hover:border-red-900/40 disabled:opacity-30 tracking-widest font-bold"
+                    ) : (
+                      <span className="text-zinc-400 font-medium">{op.title || 'No Title Appended'}</span>
+                    )}
+                  </td>
+
+                  {/* Column 5: Action Interface Controls */}
+                  <td className="p-3 text-right space-x-2">
+                    {isEditing ? (
+                      <>
+                        <button
+                          onClick={() => handleSave(op.id)}
+                          className="bg-amber-500 text-black font-bold font-mono text-[10px] px-2.5 py-1 rounded hover:bg-amber-400 transition"
+                        >
+                          SAVE
+                        </button>
+                        <button
+                          onClick={cancelEditing}
+                          className="bg-zinc-900 border border-zinc-800 text-zinc-400 font-mono text-[10px] px-2.5 py-1 rounded hover:bg-zinc-800 transition"
+                        >
+                          CANCEL
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => startEditing(op)}
+                        className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-[10px] px-2.5 py-1 rounded hover:border-zinc-700 hover:text-white transition font-mono"
                       >
-                        REVOKE ACCESS
+                        EDIT PARAMETERS
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="lg:col-span-4 space-y-6">
-          <div className="border border-zinc-900 bg-zinc-950/40 p-5 rounded-xl space-y-4 text-left">
-            <h3 className="text-xs font-bold tracking-widest text-[#D4AF37] uppercase">⚡ ENROLL INTERNAL OPERATOR</h3>
-            
-            <form onSubmit={handleGenerateInvitation} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Identity Target Email</label>
-                <input 
-                  type="email" 
-                  value={inviteEmail} 
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="name@vkpartners.co" 
-                  className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-zinc-200 focus:outline-none focus:border-zinc-800 font-mono"
-                  required 
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Security Clearance Assignment</label>
-                <select 
-                  value={inviteGroup} 
-                  onChange={(e) => setInviteGroup(e.target.value as any)}
-                  className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-zinc-300 focus:outline-none focus:border-zinc-800 font-mono"
-                >
-                  <option value="VKStaff">VKStaff (Technical Operations)</option>
-                  <option value="VKFinancial">VKFinancial (Fiscal Operations)</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Operational Role Description</label>
-                <input 
-                  type="text" 
-                  value={inviteTitle} 
-                  onChange={(e) => setInviteTitle(e.target.value)}
-                  placeholder="e.g., Lead Systems Controller" 
-                  className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-zinc-200 focus:outline-none focus:border-zinc-800 font-mono"
-                  required 
-                />
-              </div>
-
-              {errorMessage && <div className="text-[10px] p-2.5 rounded border border-red-950 bg-red-950/20 text-red-400 font-bold leading-relaxed">{errorMessage}</div>}
-              {successMessage && <div className="text-[10px] p-2.5 rounded border border-zinc-800 bg-zinc-900 text-[#D4AF37] font-bold leading-relaxed">{successMessage}</div>}
-
-              {generatedLink && (
-                <div className="space-y-1.5 pt-1">
-                  <label className="text-[9px] text-[#D4AF37] uppercase font-bold tracking-widest flex items-center gap-1">📋 ONBOARDING LINK (COPY TO USER)</label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={generatedLink} 
-                    onClick={(e) => (e.target as HTMLInputElement).select()}
-                    className="w-full bg-black border border-[#D4AF37]/30 text-[#E6C657] p-2 rounded text-[11px] font-mono select-all focus:outline-none cursor-pointer"
-                  />
-                </div>
-              )}
-
-              <button 
-                type="submit" 
-                disabled={processing} 
-                className="w-full py-2.5 bg-[#D4AF37] text-black font-bold text-xs rounded-lg transition hover:bg-[#C29E2E] disabled:opacity-50 tracking-widest uppercase font-mono"
-              >
-                {processing ? 'GENERATING...' : '⚡ CREATE ENROLLMENT TOKEN'}
-              </button>
-            </form>
-          </div>
-
-          <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl text-left space-y-2.5">
-            <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">🔒 WHITE-LABEL ENROLLMENT SCOPES</div>
-            <div className="text-xs font-bold text-zinc-300">Authorized Operator Domains Matrix</div>
-            <div className="flex flex-wrap gap-1.5">
-              {allowedDomains.map((domain, index) => (
-                <code key={index} className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-2 py-0.5 rounded text-[10px] font-bold">@{domain}</code>
-              ))}
-            </div>
-          </div>
-        </div>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )
