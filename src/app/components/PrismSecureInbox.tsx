@@ -25,18 +25,15 @@ export default function PrismSecureInbox() {
   const [dispatching, setDispatching] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
   
-  // 👥 Authenticated Session Footprints
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string>('CLIENT_STAFF')
   const [companyName, setCompanyName] = useState<string>('')
   const [myDepartment, setMyDepartment] = useState<string>('')
 
-  // 📬 Dynamic Mailbox Ledger Pillars
   const [messages, setMessages] = useState<Message[]>([])
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
   const [activeFolder, setActiveFolder] = useState<'INBOX' | 'SENT' | 'DRAFTS' | 'ARCHIVE'>('INBOX')
 
-  // 📝 Intelligent Autocomplete Search States
   const [searchQuery, setSearchQuery] = useState('')
   const [resolvedRecipient, setResolvedRecipient] = useState<SuggestionItem | null>(null)
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([])
@@ -51,7 +48,6 @@ export default function PrismSecureInbox() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // 🔐 Initialize Sovereign Identity Permissions
   useEffect(() => {
     async function initializeSession() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -63,14 +59,13 @@ export default function PrismSecureInbox() {
       const activeEmail = user.email
       setUserEmail(activeEmail)
 
-      // 1. Check Core Governance RBAC Table First
       const { data: clearance } = await supabase
         .from('system_permissions')
         .select('security_group, title')
         .ilike('email', activeEmail)
         .maybeSingle()
 
-      if (clearance && (clearance.security_group === 'VKOwners' || clearance.security_group === 'VKStaff' || clearance.security_group === 'VKFinancial')) {
+      if (clearance && ['VKOwners', 'VKStaff', 'VKFinancial'].includes(clearance.security_group)) {
         setUserRole('SYSTEM_ADMIN')
         setCompanyName('V&K Partners')
         setMyDepartment('EXECUTIVE')
@@ -78,7 +73,6 @@ export default function PrismSecureInbox() {
         return
       }
 
-      // 2. Fallback to Multi-Tenant Client Contact Directory
       const { data: profile } = await supabase
         .from('crm_contacts')
         .select('role, company_name, department')
@@ -95,7 +89,6 @@ export default function PrismSecureInbox() {
     initializeSession()
   }, [])
 
-  // 📥 Reactive Folder Content Dispatcher
   useEffect(() => {
     const email = userEmail
     if (!email) return
@@ -125,7 +118,6 @@ export default function PrismSecureInbox() {
     fetchMailboxData()
   }, [userEmail, activeFolder, companyName, myDepartment, userRole])
 
-  // Dropdown UI Dismissal Listener
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -136,18 +128,17 @@ export default function PrismSecureInbox() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // 🔍 Multi-Tiered Directory Search Matrix Engine
   useEffect(() => {
     if (searchQuery.length === 0 && showDropdown) {
       if (userRole === 'SYSTEM_ADMIN') {
         setSuggestions([
-          { type: 'VK_CORE', label: 'V&K Executive Matrix', subLabel: 'Root Operations Channel', routingKey: 'admin@vkpartners.co' },
-          { type: 'VK_CORE', label: 'V&K Tactical Support', subLabel: 'Infrastructure Core Support', routingKey: 'support@vkpartners.co' }
+          { type: 'VK_CORE', label: 'V&K Executive Roster', subLabel: 'Root Operations Channel', routingKey: 'admin@vkpartners.co' },
+          { type: 'VK_CORE', label: 'V&K Technical Desk', subLabel: 'Infrastructure Core Support', routingKey: 'support@vkpartners.co' }
         ])
       } else {
         setSuggestions([
           { type: 'VK_CORE', label: 'V&K Executive Matrix', subLabel: 'Contact Managing Partners', routingKey: 'admin@vkpartners.co' },
-          { type: 'VK_CORE', label: 'V&K Tactical Support', subLabel: 'Contact Technical Support Desk', routingKey: 'support@vkpartners.co' }
+          { type: 'VK_CORE', label: 'V&K Technical Desk', subLabel: 'Contact Technical Support Desk', routingKey: 'support@vkpartners.co' }
         ])
       }
       return
@@ -157,7 +148,6 @@ export default function PrismSecureInbox() {
 
     const executeAutocompleteHandshake = async () => {
       let queryBuilder = supabase.from('crm_contacts').select('email, company_name, department, title')
-      
       if (userRole !== 'SYSTEM_ADMIN') {
         queryBuilder = queryBuilder.eq('company_name', companyName)
       }
@@ -225,22 +215,21 @@ export default function PrismSecureInbox() {
 
     try {
       const email = userEmail
-      if (!email) throw new Error("Unauthorized validation footprint.")
+      if (!email) throw new Error("Unauthorized identity footprint.")
       
       let ultimateRouteKey = ''
-
       if (userRole === 'SYSTEM_ADMIN') {
-        if (!resolvedRecipient) throw new Error("Please select a verified operational routing destination.")
+        if (!resolvedRecipient) throw new Error("Please select an authorized recipient from the menu.")
         ultimateRouteKey = resolvedRecipient.routingKey
       } else {
         if (resolvedRecipient) {
           ultimateRouteKey = resolvedRecipient.routingKey
-        } else if (searchQuery === 'V&K Executive Matrix') {
+        } else if (searchQuery === 'V&K Executive Roster') {
           ultimateRouteKey = 'admin@vkpartners.co'
-        } else if (searchQuery === 'V&K Tactical Support') {
+        } else if (searchQuery === 'V&K Technical Desk') {
           ultimateRouteKey = 'support@vkpartners.co'
         } else {
-          throw new Error("Target destination outside authorized sandbox parameters.")
+          throw new Error("Target destination outside authorized network paths.")
         }
       }
 
@@ -257,31 +246,31 @@ export default function PrismSecureInbox() {
 
       if (error) throw error
 
-      setStatusMessage(`🚀 Payload successfully synchronized to channel key: [${ultimateRouteKey}]`)
+      setStatusMessage(`🚀 Communication sent to handle: [${ultimateRouteKey}]`)
       setSubjectLine('')
       setPayloadData('')
       setSearchQuery('')
       setResolvedRecipient(null)
     } catch (err: any) {
-      setStatusMessage(`❌ Transmission Aborted: ${err.message}`)
+      setStatusMessage(`❌ Error: ${err.message}`)
     } finally {
       setDispatching(false)
     }
   }
 
-  if (loading) return <div className="p-6 text-xs font-mono text-zinc-500 animate-pulse">SYNCHRONIZING PRISM SECURE COMMUNICATIONS CORE...</div>
+  if (loading) return <div className="p-6 text-xs font-mono text-zinc-500 animate-pulse">LOADING COMMUNICATOR INDEX...</div>
 
   return (
-    <div className="w-full bg-black text-zinc-100 min-h-screen p-4 md:p-6 font-mono selection:bg-amber-500/20 selection:text-amber-400">
+    <div className="w-full bg-black text-zinc-100 min-h-screen p-4 md:p-6 font-mono">
       <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xs font-bold tracking-widest text-zinc-300 uppercase">SECURE COMMUNICATIONS INTERFACE</h1>
+          <h1 className="text-xs font-bold tracking-widest text-zinc-300 uppercase">SECURE SECURE MESSAGING DESK</h1>
           <div className="text-[10px] text-zinc-500 mt-0.5 uppercase">
-            Clearance Authority: <span className="text-amber-500">{userRole}</span> // {userEmail}
+            Clearance Level: <span className="text-amber-500">{userRole}</span> // {userEmail}
           </div>
         </div>
         <div className="text-[10px] bg-zinc-900 border border-zinc-800 text-zinc-400 px-3 py-1 rounded font-bold uppercase tracking-widest">
-          Node Status: Operational
+          Node: Connected
         </div>
       </div>
 
@@ -295,7 +284,7 @@ export default function PrismSecureInbox() {
                 className={`w-full p-3.5 text-left transition flex items-center gap-2.5 font-bold tracking-wide uppercase ${activeFolder === folder ? 'bg-zinc-900 text-amber-500 border-l-2 border-amber-500' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/30'}`}
               >
                 <span>{folder === 'INBOX' ? '📥' : folder === 'SENT' ? '📤' : folder === 'DRAFTS' ? '📝' : '🗄️'}</span>
-                {folder} Matrix
+                {folder.toLowerCase()}
               </button>
             ))}
           </div>
@@ -303,11 +292,11 @@ export default function PrismSecureInbox() {
 
         <div className="lg:col-span-4 border border-zinc-900 bg-zinc-950/40 rounded-xl min-h-[480px] flex flex-col overflow-hidden">
           <div className="p-3 border-b border-zinc-900 bg-zinc-950 text-[10px] font-bold text-zinc-500 tracking-widest uppercase">
-            {activeFolder} Transaction Index Ledger
+            {activeFolder} Folder Records
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-zinc-900/40 max-h-[600px]">
             {messages.length === 0 ? (
-              <div className="p-6 text-center text-zinc-600 text-[11px] uppercase tracking-wide">No localized logs registered in context file.</div>
+              <div className="p-6 text-center text-zinc-600 text-[11px] uppercase tracking-wide">No messages found.</div>
             ) : (
               messages.map(msg => (
                 <div key={msg.id} onClick={() => setSelectedMessage(msg)} className={`p-3.5 text-left cursor-pointer transition ${selectedMessage?.id === msg.id ? 'bg-zinc-900/40 border-r-2 border-amber-500' : 'hover:bg-zinc-900/10'}`}>
@@ -315,7 +304,7 @@ export default function PrismSecureInbox() {
                     <span className="truncate max-w-[140px] font-bold">{activeFolder === 'INBOX' ? msg.sender_email : msg.recipient_email}</span>
                     <span>{new Date(msg.created_at).toLocaleDateString()}</span>
                   </div>
-                  <div className="text-xs font-bold text-zinc-300 truncate mt-1">{msg.subject || '(No Classification Subject)'}</div>
+                  <div className="text-xs font-bold text-zinc-300 truncate mt-1">{msg.subject || '(No Subject)'}</div>
                 </div>
               ))
             )}
@@ -326,7 +315,7 @@ export default function PrismSecureInbox() {
           {selectedMessage && (
             <div className="border border-zinc-900 bg-zinc-950/60 p-4 rounded-xl text-left space-y-3">
               <div className="border-b border-zinc-900 pb-2">
-                <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Secure Payload Inspector Decryption</div>
+                <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Message Payload Inspector</div>
                 <div className="text-xs font-bold text-amber-500 mt-1">{selectedMessage.subject}</div>
               </div>
               <p className="text-xs text-zinc-300 bg-black/40 p-3 border border-zinc-900/50 rounded-lg whitespace-pre-wrap font-sans leading-relaxed">
@@ -336,11 +325,11 @@ export default function PrismSecureInbox() {
           )}
 
           <div className="border border-zinc-900 bg-zinc-950/40 p-5 rounded-xl space-y-4 text-left">
-            <h3 className="text-xs font-bold tracking-widest text-amber-500 uppercase">INITIALIZE SECURE INBOUND TRANSIT</h3>
+            <h3 className="text-xs font-bold tracking-widest text-amber-500 uppercase">COMPOSE OUTBOUND SECURE MAIL</h3>
 
             <form onSubmit={handleDispatchPayload} className="space-y-4 text-xs" autoComplete="off">
               <div className="relative space-y-1" ref={dropdownRef}>
-                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Recipient Destination Target</label>
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Recipient Email Routing Handle</label>
                 
                 {resolvedRecipient ? (
                   <div className="w-full bg-zinc-900 border border-amber-500/30 p-2.5 rounded-lg flex items-center justify-between">
@@ -355,10 +344,10 @@ export default function PrismSecureInbox() {
                   <input
                     type="text"
                     value={searchQuery}
-                    placeholder="Start Typing or Select Recipient..."
+                    placeholder="Type name, company or custom routing rule..."
                     onFocus={() => setShowDropdown(true)}
                     onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
-                    className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 tracking-wide font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 tracking-wide font-mono text-left"
                     required
                   />
                 )}
@@ -383,19 +372,19 @@ export default function PrismSecureInbox() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Subject Parameters</label>
-                <input type="text" value={subjectLine} onChange={(e) => setSubjectLine(e.target.value)} placeholder="Specify metadata subject classification classifications..." className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 font-mono" required />
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Message Subject</label>
+                <input type="text" value={subjectLine} onChange={(e) => setSubjectLine(e.target.value)} placeholder="Enter clean classification subject details..." className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 font-mono text-left" required />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Payload Ledger Metrics</label>
-                <textarea value={payloadData} onChange={(e) => setPayloadData(e.target.value)} placeholder="Type communication details or tactical payload strings here..." rows={4} className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 resize-none font-sans leading-relaxed" required />
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Secure Content Body</label>
+                <textarea value={payloadData} onChange={(e) => setPayloadData(e.target.value)} placeholder="Type communication details here..." rows={4} className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-800 resize-none font-sans leading-relaxed text-left" required />
               </div>
 
               {statusMessage && <div className="text-[10px] p-2.5 rounded border border-zinc-800 bg-zinc-900 text-amber-400 font-bold font-mono">{statusMessage}</div>}
 
               <button type="submit" disabled={dispatching} className="px-5 py-2.5 bg-amber-500 text-black font-bold text-xs rounded-lg transition hover:bg-amber-600 disabled:opacity-50 tracking-widest uppercase font-mono">
-                {dispatching ? 'SYNCHRONIZING CORE...' : '🚀 DISPATCH PAYLOAD'}
+                {dispatching ? 'DISPATCHING...' : '🚀 SEND SECURE MESSAGE'}
               </button>
             </form>
           </div>

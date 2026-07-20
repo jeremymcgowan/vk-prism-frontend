@@ -27,14 +27,10 @@ export default function PrismUserManagement() {
   const [successMessage, setSuccessMessage] = useState('')
   const [generatedLink, setGeneratedLink] = useState('')
 
-  // 🌍 Global Resale Configurations
   const [allowedDomains, setAllowedDomains] = useState<string[]>([])
-
-  // 📊 Portal State Ledgers
   const [operators, setOperators] = useState<Operator[]>([])
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
 
-  // 📝 Setup Invitation Card Form States
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteGroup, setInviteGroup] = useState<'VKStaff' | 'VKFinancial'>('VKStaff')
   const [inviteTitle, setInviteTitle] = useState('')
@@ -44,7 +40,14 @@ export default function PrismUserManagement() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // 🔐 Initial Core Matrix Hydration Loop
+  async function refreshRoster() {
+    const { data: staffList } = await supabase
+      .from('system_permissions')
+      .select('*')
+      .order('email', { ascending: true })
+    if (staffList) setOperators(staffList)
+  }
+
   useEffect(() => {
     async function hydrateManagementCore() {
       const { data: config } = await supabase
@@ -58,13 +61,7 @@ export default function PrismUserManagement() {
         setAllowedDomains(domainsArray)
       }
 
-      // Sorted by email to match the exact schema definitions available in system_permissions
-      const { data: staffList } = await supabase
-        .from('system_permissions')
-        .select('*')
-        .order('email', { ascending: true })
-
-      if (staffList) setOperators(staffList)
+      await refreshRoster()
 
       const { data: inviteList } = await supabase
         .from('vk_invite_vault')
@@ -79,7 +76,21 @@ export default function PrismUserManagement() {
     hydrateManagementCore()
   }, [])
 
-  // 🚀 The Dual-Delivery Token Invitation Handler
+  const handleUpdateGroup = async (id: string, group: 'VKOwners' | 'VKStaff' | 'VKFinancial') => {
+    const { error } = await supabase
+      .from('system_permissions')
+      .update({ security_group: group })
+      .eq('id', id)
+    if (!error) refreshRoster()
+  }
+
+  const handleUpdateTitle = async (id: string, newTitle: string) => {
+    await supabase
+      .from('system_permissions')
+      .update({ title: newTitle })
+      .eq('id', id)
+  }
+
   const handleGenerateInvitation = async (e: React.FormEvent) => {
     e.preventDefault()
     setProcessing(true)
@@ -92,12 +103,11 @@ export default function PrismUserManagement() {
       const extractedDomain = emailTarget.split('@')[1]
 
       if (!extractedDomain) {
-        throw new Error("Invalid format matrix structure encountered in target email address string.")
+        throw new Error("Invalid structure format in destination address.")
       }
 
-      const isDomainAuthorized = allowedDomains.includes(extractedDomain)
-      if (!isDomainAuthorized) {
-        throw new Error(`Security Violation: Extension [@${extractedDomain}] is unauthorized. Access to system operator parameters restricted to: [${allowedDomains.join(', ')}].`)
+      if (!allowedDomains.includes(extractedDomain)) {
+        throw new Error(`Unauthorized target domain. Allowed parameters: [${allowedDomains.join(', ')}].`)
       }
 
       const secureToken = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
@@ -116,8 +126,7 @@ export default function PrismUserManagement() {
 
       const localizedActivationUrl = `${window.location.origin}/activate?token=${secureToken}`
       setGeneratedLink(localizedActivationUrl)
-
-      setSuccessMessage(`⚡ System Validation Matrix Confirmed. Background mail worker dispatched invitation notification packet securely to automated routing destination: [${emailTarget}].`)
+      setSuccessMessage(`Account invitation token written to deployment vaults for [${emailTarget}].`)
       
       const { data: refreshedInvites } = await supabase
         .from('vk_invite_vault')
@@ -137,51 +146,51 @@ export default function PrismUserManagement() {
 
   const handleSuspendOperator = async (operatorId: string, operatorEmail: string) => {
     if (operatorEmail === 'jp@vkpartners.co') {
-      alert("Operational Guardrail: The master root administrative owner account cannot be suspended or deleted.")
+      alert("System Guardrail: The primary administrator owner account cannot be suspended.")
       return
     }
-    if (!confirm(`Confirm core system suspension protocols for operator account [${operatorEmail}]?`)) return
+    if (!confirm(`Revoke all backend platform access credentials for account [${operatorEmail}]?`)) return
 
     await supabase.from('system_permissions').delete().eq('id', operatorId)
     setOperators(operators.filter(op => op.id !== operatorId))
   }
 
-  if (loading) return <div className="p-6 text-xs font-mono text-zinc-500 animate-pulse">HYDRATING JOOMLA MANAGEMENT FRAMEWORK CORE...</div>
+  if (loading) return <div className="p-6 text-xs font-mono text-zinc-500 animate-pulse">LOADING ACCESS SYSTEM ROSTER...</div>
 
   return (
-    <div className="w-full bg-black text-zinc-100 min-h-screen p-4 md:p-6 font-mono selection:bg-amber-500/20 selection:text-amber-400">
+    <div className="w-full bg-black text-zinc-100 min-h-screen p-4 md:p-6 font-mono">
       <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
         <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Total VK Operators</div>
+          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Total Operators</div>
           <div className="text-lg font-bold text-zinc-200 mt-1">{operators.length} Active</div>
         </div>
         <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Clearance Level: Owners</div>
+          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Clearance: Owners</div>
           <div className="text-lg font-bold text-amber-500 mt-1">{operators.filter(o => o.security_group === 'VKOwners').length} Seat</div>
         </div>
         <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Clearance Level: Staff/Fin</div>
+          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Clearance: Staff / Finance</div>
           <div className="text-lg font-bold text-zinc-400 mt-1">{operators.filter(o => o.security_group !== 'VKOwners').length} Allocated</div>
         </div>
         <div>
-          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Pending Vault Invites</div>
-          <div className="text-lg font-bold text-amber-400 mt-1">{pendingInvites.length} Staged</div>
+          <div className="text-[9px] text-zinc-500 tracking-widest uppercase">Staged Invitations</div>
+          <div className="text-lg font-bold text-amber-400 mt-1">{pendingInvites.length} Pending</div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-8 border border-zinc-900 bg-zinc-950/40 rounded-xl overflow-hidden text-left">
           <div className="p-3.5 border-b border-zinc-900 bg-zinc-950 text-[10px] font-bold text-zinc-400 tracking-widest uppercase">
-            👥 INTERNAL WORKFORCE OPERATOR REGISTRY GENERAL MATRIX
+            👥 INTERNAL WORKFORCE MANAGEMENT AND ACCESS PROFILES
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs min-w-[600px]">
+            <table className="w-full text-left border-collapse text-xs min-w-[650px]">
               <thead>
                 <tr className="border-b border-zinc-900 text-zinc-500 uppercase tracking-wider text-[10px] bg-zinc-950/60">
                   <th className="p-3">Operator Identity</th>
                   <th className="p-3">Security Assignment Group</th>
-                  <th className="p-3">Operational Functional Title</th>
-                  <th className="p-3 text-right">System Configuration Parameters</th>
+                  <th className="p-3">Operational Title (Editable)</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-900/40">
@@ -189,18 +198,33 @@ export default function PrismUserManagement() {
                   <tr key={op.id} className="hover:bg-zinc-900/10 transition">
                     <td className="p-3 font-bold text-zinc-300">{op.email}</td>
                     <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${op.security_group === 'VKOwners' ? 'bg-amber-500 text-black' : op.security_group === 'VKStaff' ? 'bg-blue-900/50 text-blue-400 border border-blue-800/30' : 'bg-purple-900/50 text-purple-400 border border-purple-800/30'}`}>
-                        {op.security_group}
-                      </span>
+                      <select
+                        value={op.security_group}
+                        disabled={op.email === 'jp@vkpartners.co'}
+                        onChange={(e) => handleUpdateGroup(op.id, e.target.value as any)}
+                        className="bg-zinc-950 border border-zinc-800 text-zinc-300 rounded p-1 text-[11px] focus:outline-none focus:border-zinc-700 font-mono disabled:opacity-60"
+                      >
+                        <option value="VKOwners">VKOwners (Full Root Access)</option>
+                        <option value="VKStaff">VKStaff (Technical Engine Access)</option>
+                        <option value="VKFinancial">VKFinancial (Ledger Billing Access)</option>
+                      </select>
                     </td>
-                    <td className="p-3 text-zinc-400">{op.title}</td>
+                    <td className="p-3">
+                      <input
+                        type="text"
+                        defaultValue={op.title}
+                        onBlur={(e) => handleUpdateTitle(op.id, e.target.value)}
+                        placeholder="Click to assign title..."
+                        className="bg-transparent border-b border-transparent hover:border-zinc-800 focus:border-zinc-700 p-0.5 w-full text-zinc-300 focus:outline-none transition font-mono"
+                      />
+                    </td>
                     <td className="p-3 text-right">
                       <button 
                         onClick={() => handleSuspendOperator(op.id, op.email)}
                         disabled={op.email === 'jp@vkpartners.co'}
-                        className="text-[9px] uppercase border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-zinc-500 rounded hover:text-red-400 hover:border-red-900/40 disabled:opacity-30 disabled:hover:text-zinc-500 tracking-widest transition font-bold"
+                        className="text-[9px] uppercase border border-zinc-800 bg-zinc-900 hash-px px-2.5 py-1 text-zinc-500 rounded hover:text-red-400 hover:border-red-900/40 disabled:opacity-30 tracking-widest font-bold"
                       >
-                        SUSPEND CORE
+                        REVOKE ACCESS
                       </button>
                     </td>
                   </tr>
@@ -212,40 +236,40 @@ export default function PrismUserManagement() {
 
         <div className="lg:col-span-4 space-y-6">
           <div className="border border-zinc-900 bg-zinc-950/40 p-5 rounded-xl space-y-4 text-left">
-            <h3 className="text-xs font-bold tracking-widest text-amber-500 uppercase">⚡ ENROLL INTERNAL OPERATION TARGET</h3>
+            <h3 className="text-xs font-bold tracking-widest text-amber-500 uppercase">⚡ ENROLL INTERNAL OPERATOR</h3>
             
             <form onSubmit={handleGenerateInvitation} className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Employee Identity Email</label>
+                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Identity Target Email</label>
                 <input 
                   type="email" 
                   value={inviteEmail} 
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="name@vkpartners.co" 
-                  className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-zinc-200 focus:outline-none focus:border-zinc-800 tracking-wide font-mono"
+                  className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-zinc-200 focus:outline-none focus:border-zinc-800 font-mono"
                   required 
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Security Group Mapping Profile</label>
+                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Security Clearance Assignment</label>
                 <select 
                   value={inviteGroup} 
                   onChange={(e) => setInviteGroup(e.target.value as any)}
                   className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-zinc-300 focus:outline-none focus:border-zinc-800 font-mono"
                 >
-                  <option value="VKStaff">VKStaff (Technical Shield Operations)</option>
-                  <option value="VKFinancial">VKFinancial (Fiscal Ledger Operations)</option>
+                  <option value="VKStaff">VKStaff (Technical Operations)</option>
+                  <option value="VKFinancial">VKFinancial (Fiscal Operations)</option>
                 </select>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Corporate Operational Title Title</label>
+                <label className="text-[9px] text-zinc-500 uppercase tracking-widest">Operational Role Description</label>
                 <input 
                   type="text" 
                   value={inviteTitle} 
                   onChange={(e) => setInviteTitle(e.target.value)}
-                  placeholder="e.g., VK Shield Analyst" 
+                  placeholder="e.g., Lead Systems Controller" 
                   className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-zinc-200 focus:outline-none focus:border-zinc-800 font-mono"
                   required 
                 />
@@ -256,7 +280,7 @@ export default function PrismUserManagement() {
 
               {generatedLink && (
                 <div className="space-y-1.5 pt-1">
-                  <label className="text-[9px] text-amber-500 uppercase font-bold tracking-widest flex items-center gap-1">📋 CLIPBOARD ADMINISTRATIVE ACTION LINK</label>
+                  <label className="text-[9px] text-amber-500 uppercase font-bold tracking-widest flex items-center gap-1">📋 ONBOARDING LINK (COPY TO USER)</label>
                   <input 
                     type="text" 
                     readOnly 
@@ -264,7 +288,6 @@ export default function PrismUserManagement() {
                     onClick={(e) => (e.target as HTMLInputElement).select()}
                     className="w-full bg-black border border-amber-500/30 text-amber-400 p-2 rounded text-[11px] font-mono select-all focus:outline-none cursor-pointer"
                   />
-                  <span className="text-[8px] text-zinc-500 block">Click inside the field above to select all and instantly copy to secure signal strings.</span>
                 </div>
               )}
 
@@ -273,22 +296,19 @@ export default function PrismUserManagement() {
                 disabled={processing} 
                 className="w-full py-2.5 bg-amber-500 text-black font-bold text-xs rounded-lg transition hover:bg-amber-600 disabled:opacity-50 tracking-widest uppercase font-mono"
               >
-                {processing ? 'COMPUTING GATE SECURITY...' : '⚡ GENERATE WORKFORCE TOKEN'}
+                {processing ? 'GENERATING...' : '⚡ CREATE ENROLLMENT TOKEN'}
               </button>
             </form>
           </div>
 
           <div className="border border-zinc-900 bg-zinc-950/20 p-4 rounded-xl text-left space-y-2.5">
-            <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">🔒 GLOBAL WHITE-LABEL RESALE CONSTRAINTS</div>
-            <div className="text-xs font-bold text-zinc-300">Active Authorized Operator Domains Matrix</div>
+            <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">🔒 WHITE-LABEL ENROLLMENT SCOPES</div>
+            <div className="text-xs font-bold text-zinc-300">Authorized Operator Domains Matrix</div>
             <div className="flex flex-wrap gap-1.5">
               {allowedDomains.map((domain, index) => (
                 <code key={index} className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-2 py-0.5 rounded text-[10px] font-bold">@{domain}</code>
               ))}
             </div>
-            <p className="text-[9px] text-zinc-500 leading-relaxed pt-1 border-t border-zinc-900">
-              Operational Guideline: Domain constraints are packageable variables queried on initialization. Any invitation text outside these keys will trigger a UI block exception loop automatically.
-            </p>
           </div>
         </div>
       </div>
