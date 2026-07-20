@@ -93,7 +93,8 @@ export default function EcosystemEntitiesManager() {
     fetchInitialData()
   }, [])
 
-  async function fetchInitialData() {
+  // Added preserveId parameter to lock client dropdown index state across read cycles
+  async function fetchInitialData(preserveId?: string) {
     setLoading(true)
     const { data: entData } = await supabase
       .from('crm_entities')
@@ -108,9 +109,10 @@ export default function EcosystemEntitiesManager() {
     if (entData) setNodes(entData)
     if (banData) setBanners(banData)
     
-    if (entData && entData.length > 0) {
-      setSelectedId(entData[0].id)
-      await fetchProfileData(entData[0].id)
+    const activeTargetId = preserveId || selectedId || (entData && entData.length > 0 ? entData[0].id : '')
+    if (activeTargetId) {
+      setSelectedId(activeTargetId)
+      await fetchProfileData(activeTargetId)
     }
     setLoading(false)
   }
@@ -169,21 +171,26 @@ export default function EcosystemEntitiesManager() {
     if (!telemetry || !assessment) return
     setSaving(true)
 
+    // ES6 Destructuring: Explicitly strip immutable database primary keys to prevent write rejections
+    const { id: entityUuid, parent_entity_id, created_at, ...cleanTelemetryPayload } = telemetry as any
+    const { id: assessmentUuid, entity_id, ...cleanAssessmentPayload } = assessment as any
+
     const { error: entErr } = await supabase
       .from('crm_entities')
-      .update({ ...telemetry })
+      .update(cleanTelemetryPayload)
       .eq('id', telemetry.id)
 
     const { error: assessErr } = await supabase
       .from('crm_it_assessments')
-      .upsert({ ...assessment }, { onConflict: 'entity_id' })
+      .upsert({ entity_id: telemetry.id, ...cleanAssessmentPayload }, { onConflict: 'entity_id' })
 
     setSaving(false)
     if (entErr || assessErr) {
       triggerToast('error', `Write rejected: ${entErr?.message || assessErr?.message}`)
     } else {
       triggerToast('success', `All system configurations committed securely.`)
-      fetchInitialData()
+      // Refetch while explicitly locking state to the modified node parameter
+      await fetchInitialData(telemetry.id)
     }
   }
 
@@ -210,7 +217,7 @@ export default function EcosystemEntitiesManager() {
 
   return (
     <div className="space-y-6">
-      {/* 🛠️ Master Filter Controller */}
+      {/* 🛠_ Master Filter Controller */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-zinc-900 bg-zinc-950/80 rounded-xl">
         <div className="space-y-1">
           <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block">Active Entity Target</label>
@@ -238,17 +245,15 @@ export default function EcosystemEntitiesManager() {
       </div>
 
       {telemetry && assessment ? (
-        // Single parent form container wrapping Sections 01 through 06 sequentially
         <form onSubmit={handleUpdate} className="space-y-6 animate-fadeIn">
           {loading ? (
             <div className="text-xs font-mono text-zinc-600 animate-pulse uppercase py-12 text-center">Interlocking Profile Matrices...</div>
           ) : (
             <div className="space-y-6">
               
-              {/* Primary Dual Column Layout for Baseline Metrics */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 
-                {/* 🏢 SECTION 01: CORPORATE BASELINE & CAPITAL VETTING */}
+                {/* 🏢_ SECTION 01: CORPORATE BASELINE & CAPITAL VETTING */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
                     Section 01 // Corporate Baseline & Capital Vetting
@@ -352,7 +357,7 @@ export default function EcosystemEntitiesManager() {
                   </div>
                 </div>
 
-                {/* 🛡️ SECTION 02: THREAT VECTOR & SECURITY INFRASTRUCTURE (VK Shield) */}
+                {/* 🛡️_ SECTION 02: THREAT VECTOR & SECURITY INFRASTRUCTURE (VK Shield) */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
                     Section 02 // Threat Vector & Security Infrastructure
@@ -393,7 +398,7 @@ export default function EcosystemEntitiesManager() {
                   </div>
                 </div>
 
-                {/* 👥 SECTION 03: WORKFORCE ADMINISTRATION & COMPLIANCE EXPOSURE (VK People) */}
+                {/* 👥_ SECTION 03: WORKFORCE ADMINISTRATION & COMPLIANCE EXPOSURE (VK People) */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
                     Section 03 // Workforce Administration & Compliance Exposure
@@ -429,7 +434,7 @@ export default function EcosystemEntitiesManager() {
                   </div>
                 </div>
 
-                {/* 📊 SECTION 04: PIPELINE FRICTION & OPTIMIZATION ANALYTICS */}
+                {/* 📊_ SECTION 04: PIPELINE FRICTION & OPTIMIZATION ANALYTICS */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
                     Section 04 // Pipeline Friction & Optimization Analytics
@@ -467,7 +472,7 @@ export default function EcosystemEntitiesManager() {
 
               </div>
 
-              {/* 📈 SECTION 05: REGULATORY COMPLIANCE SYSTEM MATRIX (MODULE 5) */}
+              {/* 📈_ SECTION 05: REGULATORY COMPLIANCE SYSTEM MATRIX (MODULE 5) */}
               <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4 block w-full">
                 <div>
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
@@ -538,8 +543,7 @@ export default function EcosystemEntitiesManager() {
                 </div>
               </div>
 
-              {/* 🔄 SECTION 06: GLOBAL PROMOTION ADVERTISING REGISTRY (MODULE 6) */}
-              {/* Section 06 is now placed directly within the form structure before the primary action button block */}
+              {/* 🔄_ SECTION 06: GLOBAL PROMOTION ADVERTISING REGISTRY (MODULE 6) */}
               <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
                 <div>
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
