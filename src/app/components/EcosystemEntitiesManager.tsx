@@ -182,7 +182,7 @@ export default function EcosystemEntitiesManager() {
     if (entErr || assessErr) {
       triggerToast('error', `Write rejected: ${entErr?.message || assessErr?.message}`)
     } else {
-      triggerToast('success', `All telemetry layers securely synced down to cloud storage columns.`)
+      triggerToast('success', `All system configurations committed securely.`)
       fetchInitialData()
     }
   }
@@ -195,7 +195,7 @@ export default function EcosystemEntitiesManager() {
 
     if (!error) {
       setBanners(banners.map(b => b.id === id ? { ...b, is_active: activeState } : b))
-      triggerToast('success', 'Global network route parameters updated.')
+      triggerToast('success', 'Global banner tracking parameters updated.')
     }
   }
 
@@ -209,8 +209,8 @@ export default function EcosystemEntitiesManager() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* 🛠️ Top Selector Controller */}
+    <div className="space-y-6">
+      {/* 🛠️ Master Filter Controller */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-zinc-900 bg-zinc-950/80 rounded-xl">
         <div className="space-y-1">
           <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block">Active Entity Target</label>
@@ -238,13 +238,16 @@ export default function EcosystemEntitiesManager() {
       </div>
 
       {telemetry && assessment ? (
+        // Single parent form container wrapping Sections 01 through 06 sequentially
         <form onSubmit={handleUpdate} className="space-y-6 animate-fadeIn">
           {loading ? (
             <div className="text-xs font-mono text-zinc-600 animate-pulse uppercase py-12 text-center">Interlocking Profile Matrices...</div>
           ) : (
             <div className="space-y-6">
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Primary Dual Column Layout for Baseline Metrics */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                
                 {/* 🏢 SECTION 01: CORPORATE BASELINE & CAPITAL VETTING */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
@@ -272,6 +275,22 @@ export default function EcosystemEntitiesManager() {
                       <label className="text-[10px] font-mono text-zinc-500">REGISTRATION STATE</label>
                       <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" maxLength={2} value={telemetry.registration_state || ''} onChange={e => setTelemetry({...telemetry, registration_state: e.target.value})} />
                     </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">FORMATION YEAR</label>
+                      <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.formation_year || 0} onChange={e => setTelemetry({...telemetry, formation_year: Number(e.target.value)})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">EIN NUMBER</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.ein_number || ''} onChange={e => setTelemetry({...telemetry, ein_number: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">INDUSTRY SECTOR</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.industry || ''} onChange={e => setTelemetry({...telemetry, industry: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">NODE STATUS</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.status || ''} onChange={e => setTelemetry({...telemetry, status: e.target.value})} />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 border-t border-zinc-900/60 pt-4">
@@ -297,15 +316,57 @@ export default function EcosystemEntitiesManager() {
                       </select>
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-900/40">
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                        <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.is_seeking_funding} onChange={e => setTelemetry({...telemetry, is_seeking_funding: e.target.checked})} />
+                        <span>Seeking Funding</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                        <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.crunchbase_active} onChange={e => setTelemetry({...telemetry, crunchbase_active: e.target.checked})} />
+                        <span>Crunchbase Profile Verified</span>
+                      </label>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                        <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.sells_tangible_goods} onChange={e => setTelemetry({...telemetry, sells_tangible_goods: e.target.checked})} />
+                        <span>Sells Tangible Goods</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                        <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.has_duns_number} onChange={e => setTelemetry({...telemetry, has_duns_number: e.target.checked})} />
+                        <span>Has DUNS Tracker</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 border-t border-zinc-900/40 pt-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">DUNS NUMBER ID</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.duns_number || ''} onChange={e => setTelemetry({...telemetry, duns_number: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">BBB WEDGE SENTIMENT</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.bbb_wedge_sentiment || ''} onChange={e => setTelemetry({...telemetry, bbb_wedge_sentiment: e.target.value})} />
+                    </div>
+                  </div>
                 </div>
 
-                {/* 🛡️ SECTION 02: THREAT VECTOR & SECURITY INFRASTRUCTURE */}
+                {/* 🛡️ SECTION 02: THREAT VECTOR & SECURITY INFRASTRUCTURE (VK Shield) */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
                     Section 02 // Threat Vector & Security Infrastructure
                   </h3>
 
                   <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">MANAGED IT VECTOR (MSP)</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.has_managed_it || ''} onChange={e => setTelemetry({...telemetry, has_managed_it: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500">ANTIVIRUS ENGINE STATUS</label>
+                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.it_antivirus_status || ''} onChange={e => setTelemetry({...telemetry, it_antivirus_status: e.target.value})} />
+                    </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">ANTIVIRUS AGENT VENDOR</label>
                       <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.it_antivirus_vendor || ''} onChange={e => setTelemetry({...telemetry, it_antivirus_vendor: e.target.value})} />
@@ -324,7 +385,7 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
                   
-                  <div className="pt-2">
+                  <div className="pt-2 border-t border-zinc-900/60">
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
                       <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.it_encryption_enabled} onChange={e => setTelemetry({...telemetry, it_encryption_enabled: e.target.checked})} />
                       <span>Local Device Storage Encryption Enforced</span>
@@ -332,7 +393,7 @@ export default function EcosystemEntitiesManager() {
                   </div>
                 </div>
 
-                {/* 👥 SECTION 03: WORKFORCE ADMINISTRATION & COMPLIANCE EXPOSURE */}
+                {/* 👥 SECTION 03: WORKFORCE ADMINISTRATION & COMPLIANCE EXPOSURE (VK People) */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
                     Section 03 // Workforce Administration & Compliance Exposure
@@ -352,7 +413,7 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  <div className="space-y-2 pt-2">
+                  <div className="space-y-2 pt-2 border-t border-zinc-900/60">
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
                       <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.hr_benefits_active} onChange={e => setTelemetry({...telemetry, hr_benefits_active: e.target.checked})} />
                       <span>Active Group Benefits Network Infrastructure</span>
@@ -360,6 +421,10 @@ export default function EcosystemEntitiesManager() {
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
                       <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.hr_all_staff_piia_signed} onChange={e => setTelemetry({...telemetry, hr_all_staff_piia_signed: e.target.checked})} />
                       <span>Proprietary Information & Inventions Agreements Signed (PIIA)</span>
+                    </label>
+                    <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.ins_commercial_policy_active} onChange={e => setTelemetry({...telemetry, ins_commercial_policy_active: e.target.checked})} />
+                      <span>Active General Commercial Liability Protection Policy</span>
                     </label>
                   </div>
                 </div>
@@ -376,7 +441,7 @@ export default function EcosystemEntitiesManager() {
                       <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.flow_disconnected_tool_count || 0} onChange={e => setTelemetry({...telemetry, flow_disconnected_tool_count: Number(e.target.value)})} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-mono text-zinc-500">WEB LAYOUT CONVERSION SATISFACTION</label>
+                      <label className="text-[10px] font-mono text-zinc-500">WEB LAYOUT SATISFACTION</label>
                       <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.web_design_satisfaction || ''} onChange={e => setTelemetry({...telemetry, web_design_satisfaction: e.target.value})}>
                         <option value="SATISFIED">OPTIMIZED_CONVERSION</option>
                         <option value="UNSATISFIED">CONVERSION_FRICTION</option>
@@ -384,17 +449,26 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  <div className="space-y-2 pt-2">
+                  <div className="space-y-2 pt-2 border-t border-zinc-900/60">
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
                       <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.flow_unstructured_pdf_parsing_manual} onChange={e => setTelemetry({...telemetry, flow_unstructured_pdf_parsing_manual: e.target.checked})} />
                       <span>Manual Processing of Unstructured Document Formats Active</span>
                     </label>
+                    <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.web_yields_leads} onChange={e => setTelemetry({...telemetry, web_yields_leads: e.target.checked})} />
+                      <span>Inbound Capture Funnels Harvest Leads Effectively</span>
+                    </label>
+                    <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
+                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.web_analytics_active} onChange={e => setTelemetry({...telemetry, web_analytics_active: e.target.checked})} />
+                      <span>Traffic Performance Analytics Trackers Active</span>
+                    </label>
                   </div>
                 </div>
+
               </div>
 
               {/* 📈 SECTION 05: REGULATORY COMPLIANCE SYSTEM MATRIX (MODULE 5) */}
-              <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4 w-full block">
+              <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4 block w-full">
                 <div>
                   <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
                     Section 05 // Regulatory Compliance Matrix & Framework Safeguards (Module 5)
@@ -464,77 +538,77 @@ export default function EcosystemEntitiesManager() {
                 </div>
               </div>
 
+              {/* 🔄 SECTION 06: GLOBAL PROMOTION ADVERTISING REGISTRY (MODULE 6) */}
+              {/* Section 06 is now placed directly within the form structure before the primary action button block */}
+              <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
+                <div>
+                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
+                    Section 06 // Dynamic Platform Banner & Ad Routing Registry (Module 6)
+                  </h3>
+                  <p className="text-[11px] text-zinc-600 mt-0.5">
+                    Configure contextual application updates and promo scripts running directly across consumer-facing dashboards.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {banners.length === 0 ? (
+                    <div className="text-center py-6 text-xs font-mono text-zinc-600 uppercase border border-dashed border-zinc-900 rounded-xl bg-black/40">
+                      Zero promotion tracks initialized in crm_ecosystem_banners registry ledger.
+                    </div>
+                  ) : (
+                    banners.map((b) => (
+                      <div key={b.id} className="p-4 border border-zinc-900/60 bg-black rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-[10px] text-purple-400 font-bold bg-purple-950/10 border border-purple-900/20 px-2 py-0.5 rounded">
+                              {b.banner_key}
+                            </span>
+                            <h4 className="text-xs font-bold text-zinc-200">{b.display_title}</h4>
+                          </div>
+                          <p className="text-[11px] text-zinc-500 italic truncate select-all">{b.promo_text}</p>
+                          <div className="text-[10px] font-mono text-zinc-600 truncate">
+                            ROUTE: <span className="text-zinc-400">{b.action_url}</span> | TRIGGER: <span className="text-zinc-400">[{b.button_label}]</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleBannerToggle(b.id, !b.is_active)}
+                            className={`font-mono text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border ${
+                              b.is_active 
+                                ? 'bg-emerald-950/30 border-emerald-900 text-emerald-400' 
+                                : 'bg-zinc-900/40 border-zinc-800 text-zinc-500'
+                            }`}
+                          >
+                            {b.is_active ? '● PROPAGATING // LIVE' : '○ DEACTIVATED // SLEEP'}
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* ⚡ Absolute Button Hierarchy Placement // Confirmed safely anchored beneath Section 06 */}
+              <div className="flex justify-end p-4 border border-zinc-900 bg-zinc-950/60 rounded-xl pt-4">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-amber-500 hover:bg-amber-400 font-bold font-mono text-black text-xs px-6 py-2.5 rounded-lg transition disabled:opacity-40 w-full sm:w-auto"
+                >
+                  {saving ? 'COMMITTING PARAMS TO MASTER DATABASE...' : 'COMMIT FULL CONFIGURATION LAYOUT'}
+                </button>
+              </div>
+
             </div>
           )}
-
-          {/* ⚡ Execution Output Controls - Secured cleanly at the bottom of the form context */}
-          <div className="flex justify-end p-4 border border-zinc-900 bg-zinc-950/60 rounded-xl">
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-amber-500 hover:bg-amber-400 font-bold font-mono text-black text-xs px-6 py-2.5 rounded-lg transition disabled:opacity-40"
-            >
-              {saving ? 'COMMITTING PARAMS TO MASTER DATABASE...' : 'COMMIT FULL CONFIGURATION LAYOUT'}
-            </button>
-          </div>
         </form>
       ) : (
         <div className="p-12 border border-dashed border-zinc-900 bg-zinc-950/20 text-center text-xs text-zinc-500 font-mono rounded-xl">
           Awaiting core system selection hook. Select a corporate node from the matrix above to edit.
         </div>
       )}
-
-      {/* 🔄 SECTION 06: GLOBAL MARKETING ROUTING REGISTRY (MODULE 6) */}
-      <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
-        <div>
-          <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
-            Section 06 // Dynamic Platform Banner & Ad Routing Registry (Module 6)
-          </h3>
-          <p className="text-[11px] text-zinc-600 mt-0.5">
-            Configure contextual application updates and promo scripts running directly across consumer-facing dashboards.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          {banners.length === 0 ? (
-            <div className="text-center py-6 text-xs font-mono text-zinc-600 uppercase border border-dashed border-zinc-900 rounded-xl bg-black/40">
-              Zero promotion tracks initialized in crm_ecosystem_banners registry ledger.
-            </div>
-          ) : (
-            banners.map((b) => (
-              <div key={b.id} className="p-4 border border-zinc-900/60 bg-black rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1 min-w-0 flex-1">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-[10px] text-purple-400 font-bold bg-purple-950/10 border border-purple-900/20 px-2 py-0.5 rounded">
-                      {b.banner_key}
-                    </span>
-                    <h4 className="text-xs font-bold text-zinc-200">{b.display_title}</h4>
-                  </div>
-                  <p className="text-[11px] text-zinc-500 italic truncate select-all">{b.promo_text}</p>
-                  <div className="text-[10px] font-mono text-zinc-600 truncate">
-                    ROUTE: <span className="text-zinc-400">{b.action_url}</span> | TRIGGER: <span className="text-zinc-400">[{b.button_label}]</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleBannerToggle(b.id, !b.is_active)}
-                    className={`font-mono text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border ${
-                      b.is_active 
-                        ? 'bg-emerald-950/30 border-emerald-900 text-emerald-400' 
-                        : 'bg-zinc-900/40 border-zinc-800 text-zinc-500'
-                    }`}
-                  >
-                    {b.is_active ? '● PROPAGATING // LIVE' : '○ DEACTIVATED // SLEEP'}
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
     </div>
   )
 }
