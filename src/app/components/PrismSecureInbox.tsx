@@ -252,7 +252,7 @@ export default function PrismSecureInbox() {
           payload: payloadData,
           status: 'DELIVERED',
           created_at: new Date().toISOString()
-        })
+                })
 
       if (error) throw error
 
