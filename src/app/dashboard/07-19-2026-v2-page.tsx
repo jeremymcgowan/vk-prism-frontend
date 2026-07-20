@@ -5,7 +5,6 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import LogoutButton from '../components/LogoutButton'
 import CrmCoreWorkspace from '../components/CrmCoreWorkspace'
-import PrismSecureInbox from '../components/PrismSecureInbox'
 
 interface PageProps {
   searchParams: Promise<{ id?: string }> | { id?: string }
@@ -101,9 +100,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <Link href="/dashboard?id=3" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '3' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-500'}`}>
             <span>📅</span> <span>CALENDAR</span>
           </Link>
-          <Link href="/dashboard?id=4" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '4' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-500'}`}>
-            <span>🔒</span> <span>INBOX</span>
-          </Link>
         </nav>
       </header>
 
@@ -130,9 +126,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             </Link>
             <Link href="/dashboard?id=3" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded text-xs font-semibold tracking-wider transition ${activeId === '3' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-400 hover:text-zinc-200'}`}>
               <span>📅</span> <span>COGNITIVE CALENDAR</span>
-            </Link>
-            <Link href="/dashboard?id=4" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded text-xs font-semibold tracking-wider transition ${activeId === '4' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-400 hover:text-zinc-200'}`}>
-              <span>🔒</span> <span>SECURE INBOX</span>
             </Link>
           </nav>
         </div>
@@ -263,14 +256,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                   ))}
                 </div>
               )}
-            </div>
-          )}
-
-          {/* VIEW 4: SECURE OPERATIONS INBOX VAULT */}
-          {activeId === '4' && (
-            <div className="space-y-6">
-              <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 mb-4 md:mb-6 ${lora.className}`}>SECURE OPERATIONS INBOX</h2>
-              <PrismSecureInbox />
             </div>
           )}
 
