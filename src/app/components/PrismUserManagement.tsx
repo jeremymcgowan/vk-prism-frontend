@@ -8,7 +8,6 @@ interface Operator {
   email: string
   security_group: 'VKOwners' | 'VKStaff' | 'VKFinancial'
   title: string
-  created_at: string
 }
 
 interface PendingInvite {
@@ -59,10 +58,11 @@ export default function PrismUserManagement() {
         setAllowedDomains(domainsArray)
       }
 
+      // Sorted by email to match the exact schema definitions available in system_permissions
       const { data: staffList } = await supabase
         .from('system_permissions')
         .select('*')
-        .order('created_at', { ascending: true })
+        .order('email', { ascending: true })
 
       if (staffList) setOperators(staffList)
 
@@ -70,7 +70,7 @@ export default function PrismUserManagement() {
         .from('vk_invite_vault')
         .select('*')
         .eq('is_redeemed', false)
-        .order('created_at', { ascending: false })
+        .order('email', { ascending: true })
 
       if (inviteList) setPendingInvites(inviteList)
 
@@ -123,7 +123,7 @@ export default function PrismUserManagement() {
         .from('vk_invite_vault')
         .select('*')
         .eq('is_redeemed', false)
-        .order('created_at', { ascending: false })
+        .order('email', { ascending: true })
       if (refreshedInvites) setPendingInvites(refreshedInvites)
 
       setInviteEmail('')
@@ -175,7 +175,7 @@ export default function PrismUserManagement() {
             👥 INTERNAL WORKFORCE OPERATOR REGISTRY GENERAL MATRIX
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[600px]">
               <thead>
                 <tr className="border-b border-zinc-900 text-zinc-500 uppercase tracking-wider text-[10px] bg-zinc-950/60">
                   <th className="p-3">Operator Identity</th>
