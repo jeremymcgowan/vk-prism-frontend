@@ -123,7 +123,7 @@ export default function LoginPage() {
         <div className="mb-10 flex flex-col items-center justify-center text-center">
           <div className="mb-3 flex h-16 w-16 items-center justify-center">
             <img 
-              src="https://vkpartners.co/knight-only.png" 
+              src="/knight_only.png" 
               alt="V&K Partners Official Knight Crest" 
               className="h-full w-full object-contain filter drop-shadow-[0_0_15px_rgba(197,168,128,0.2)]"
               onError={(e) => {

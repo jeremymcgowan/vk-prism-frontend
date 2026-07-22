@@ -9,29 +9,23 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Luxury Editorial/Display font layer
+// Luxury Editorial/Display font layer (Exported so other components can import it directly)
 export const cinzel = Cinzel({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-cinzel",
 });
 
-// Premium Terminal Monospace font layer
+// Premium Terminal Monospace font layer (Fixes Serif Fallback)
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-mono",
 });
 
-// -----------------------------------------------------------
-// 📍 ADDED HERE: Favicon added to Next.js metadata object
-// -----------------------------------------------------------
 export const metadata: Metadata = {
   title: "V&K Prism Console",
   description: "Enterprise Operations & Infrastructure Diagnostic Terminal",
-  icons: {
-    icon: "/knight_only.png",
-  },
 };
 
 export default function RootLayout({

@@ -1,3 +1,10 @@
+import { Cinzel } from 'next/font/google';
+
+export const cinzel = Cinzel({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-cinzel',
+});
 import type { Metadata } from "next";
 import { Inter, Cinzel, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
@@ -10,28 +17,22 @@ const inter = Inter({
 });
 
 // Luxury Editorial/Display font layer
-export const cinzel = Cinzel({
+const cinzel = Cinzel({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "600", "700"],
   variable: "--font-cinzel",
 });
 
-// Premium Terminal Monospace font layer
+// Premium Terminal Monospace font layer (Fixes Serif Fallback)
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-mono",
 });
 
-// -----------------------------------------------------------
-// 📍 ADDED HERE: Favicon added to Next.js metadata object
-// -----------------------------------------------------------
 export const metadata: Metadata = {
   title: "V&K Prism Console",
   description: "Enterprise Operations & Infrastructure Diagnostic Terminal",
-  icons: {
-    icon: "/knight_only.png",
-  },
 };
 
 export default function RootLayout({

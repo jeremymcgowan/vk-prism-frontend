@@ -27,12 +27,3 @@
     -webkit-font-smoothing: antialiased;
   }
 }
-
-/* EDGE-PROOF GLASSMORPHISM & GPU HARDWARE ACCELERATION */
-.glass-panel {
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  /* Force Edge & WebKit to instantiate a dedicated GPU compositing layer */
-  transform: translateZ(0);
-  will-change: backdrop-filter;
-}
