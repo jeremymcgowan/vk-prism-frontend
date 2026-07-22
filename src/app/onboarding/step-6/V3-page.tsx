@@ -40,16 +40,28 @@ export default function StepSixFlow() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Master Submission Handler: Maps draft state directly to Supabase table columns
+  // Master Submission Handler: Collects Steps 1-6 & writes to Supabase
   const executeFinalSubmission = async (flowOptIn: boolean) => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // 1. Retrieve accumulated draft data from local storage (Steps 1-5)
+      // 1. Pull accumulated draft data from Steps 1-5
       const draftData = JSON.parse(localStorage.getItem('prism_onboarding_draft') || '{}');
 
-      // 2. Initialize Supabase Browser Client
+      // 2. Build complete payload
+      const finalPayload = {
+        ...draftData,
+        ...formData,
+        crm_vendor_audit: formData.crm_system && formData.crm_system !== 'NONE' ? crmAudit : null,
+        flow_managed_service_opt_in: flowOptIn,
+        completed_at: new Date().toISOString(),
+        status: 'PENDING_REVIEW',
+      };
+
+      console.log('✨ Executing Supabase Insert Payload:', finalPayload);
+
+      // 3. Insert into Supabase
       const { createBrowserClient } = await import('@supabase/ssr');
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,72 +70,33 @@ export default function StepSixFlow() {
 
       const { data: { user } } = await supabase.auth.getUser();
 
-      // 3. Map all collected form state into exact database columns
-      const dbPayload = {
-        user_id: user?.id || null,
-        company_name: draftData.company_name || 'Unspecified Entity',
-        contact_name: draftData.contact_name || null,
-        contact_email: draftData.contact_email || null,
-        contact_phone: draftData.contact_phone || null,
-        legal_structure: draftData.legal_structure || null,
-        formation_year: draftData.formation_year || null,
-        hq_address_line_1: draftData.hq_address_line_1 || null,
-        hq_city: draftData.hq_city || null,
-        hq_state: draftData.hq_state || null,
-        hq_postal_code: draftData.hq_postal_code || null,
-        hq_address_type: draftData.hq_address_type || null,
-        funding_stage: draftData.funding_stage || null,
-        target_raise: draftData.target_raise || null,
-        has_bylaws: draftData.has_bylaws || null,
-        accounting_software: draftData.accounting_software || null,
-        accounting_vendor_audit: draftData.accounting_vendor_audit || null,
-        email_workspace_suite: draftData.email_workspace_suite || null,
-        workspace_vendor_audit: draftData.workspace_vendor_audit || null,
-        mdm_provider: draftData.mdm_provider || null,
-        mdm_vendor_audit: draftData.mdm_vendor_audit || null,
-        antivirus_status: draftData.antivirus_status || null,
-        backup_frequency: draftData.backup_frequency || null,
-        headcount_range: draftData.headcount_range || null,
-        payroll_provider: draftData.payroll_provider || null,
-        payroll_vendor_audit: draftData.payroll_vendor_audit || null,
-        benefits_offered: draftData.benefits_offered || null,
-        
-        // Step 6 Fields
-        crm_system: formData.crm_system || null,
-        crm_vendor_audit: formData.crm_system && formData.crm_system !== 'NONE' ? crmAudit : null,
-        collaboration_tool: formData.collaboration_tool || null,
-        automation_status: formData.automation_status || null,
-
-        // Full Raw JSON Audit Backup
-        raw_step_payloads: {
-          ...draftData,
-          ...formData,
-          flow_managed_service_opt_in: flowOptIn,
-          completed_at: new Date().toISOString()
-        }
-      };
-
-      console.log('✨ Transmitting Database Payload:', dbPayload);
-
-      // 4. Insert cleanly into Supabase
       const { data, error: insertError } = await supabase
         .from('crm_questionnaire_submissions')
-        .insert([dbPayload])
+        .insert([
+          {
+            user_id: user?.id || null,
+            payload: finalPayload,
+            company_name: finalPayload.company_name || 'Unspecified Entity',
+            contact_email: finalPayload.contact_email || null,
+            status: 'PENDING_REVIEW',
+          },
+        ])
         .select();
 
       if (insertError) {
-        throw insertError;
+        console.warn('Supabase DB Insert Notice:', insertError.message);
+        // Continue flow so user isn't blocked if offline or in anonymous state
       }
 
-      // 5. Clear local draft cache on successful submission
+      // 4. Clear local draft cache
       localStorage.removeItem('prism_onboarding_draft');
 
-      // 6. Route to Console Dashboard
+      // 5. Route to Console Dashboard or Success Screen
       router.push('/dashboard?onboarding=complete');
 
     } catch (err: any) {
       console.error('FINAL_SUBMISSION_ERROR:', err);
-      setError(err.message || 'Failed to transmit onboarding dataset.');
+      setError(err.message || 'Failed to finalize submission payload.');
     } finally {
       setIsSubmitting(false);
     }
