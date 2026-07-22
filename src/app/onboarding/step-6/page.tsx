@@ -118,8 +118,8 @@ export default function StepSixFlow() {
       // 5. Clear local draft cache on successful submission
       localStorage.removeItem('prism_onboarding_draft');
 
-      // 6. Route to Console Dashboard
-      router.push('/dashboard?onboarding=complete');
+      // 6. Route to Onboarding Success Page
+router.push('/onboarding/success');
 
     } catch (err: any) {
       console.error('FINAL_SUBMISSION_ERROR:', err);
