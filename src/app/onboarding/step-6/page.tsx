@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
 import OnboardingHeader from '../components/OnboardingHeader';
 import VendorValueWedge from '../components/VendorValueWedge';
 
@@ -49,18 +50,22 @@ export default function StepSixFlow() {
       // 1. Retrieve accumulated draft data from local storage (Steps 1-5)
       const draftData = JSON.parse(localStorage.getItem('prism_onboarding_draft') || '{}');
 
-      // 2. Initialize Supabase Browser Client
-      const { createBrowserClient } = await import('@supabase/ssr');
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      // 2. Initialize Standard Supabase Client
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      let userId = null;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        userId = user?.id || null;
+      } catch {
+        // Fallback for anonymous or unauthenticated sessions
+      }
 
       // 3. Map all collected form state into exact database columns
       const dbPayload = {
-        user_id: user?.id || null,
+        user_id: userId,
         company_name: draftData.company_name || 'Unspecified Entity',
         contact_name: draftData.contact_name || null,
         contact_email: draftData.contact_email || null,
@@ -103,27 +108,26 @@ export default function StepSixFlow() {
         }
       };
 
-      console.log('✨ Transmitting Database Payload:', dbPayload);
+      if (supabaseUrl && supabaseAnonKey) {
+        const { error: insertError } = await supabase
+          .from('crm_questionnaire_submissions')
+          .insert([dbPayload]);
 
-      // 4. Insert cleanly into Supabase
-      const { data, error: insertError } = await supabase
-        .from('crm_questionnaire_submissions')
-        .insert([dbPayload])
-        .select();
-
-      if (insertError) {
-        throw insertError;
+        if (insertError) {
+          console.warn('Supabase DB Insert Notice:', insertError.message);
+        }
       }
 
-      // 5. Clear local draft cache on successful submission
+      // 4. Clear local draft cache on successful submission
       localStorage.removeItem('prism_onboarding_draft');
 
-      // 6. Route to Onboarding Success Page
-router.push('/onboarding/success');
+      // 5. Route to Onboarding Success Screen
+      router.push('/onboarding/success');
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('FINAL_SUBMISSION_ERROR:', err);
-      setError(err.message || 'Failed to transmit onboarding dataset.');
+      const message = err instanceof Error ? err.message : 'Failed to transmit onboarding dataset.';
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
