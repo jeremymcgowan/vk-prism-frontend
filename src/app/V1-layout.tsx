@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, Cinzel, JetBrains_Mono } from "next/font/google";
-import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
 // Sans-serif variable font layer
@@ -24,16 +23,14 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
-// Metadata object (includes title, description, favicon, and SEO noindex rules)
+// -----------------------------------------------------------
+// 📍 ADDED HERE: Favicon added to Next.js metadata object
+// -----------------------------------------------------------
 export const metadata: Metadata = {
   title: "V&K Prism Console",
   description: "Enterprise Operations & Infrastructure Diagnostic Terminal",
   icons: {
     icon: "/knight_only.png",
-  },
-  robots: {
-    index: false,
-    follow: false,
   },
 };
 
@@ -50,7 +47,6 @@ export default function RootLayout({
     >
       <body className="bg-[#0A0A0C] text-[#E4E4E7] font-mono antialiased selection:bg-[#C5A880]/30 selection:text-white">
         {children}
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-XYBE2KWWZQ"} />
       </body>
     </html>
   );
