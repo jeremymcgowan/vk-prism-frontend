@@ -293,8 +293,8 @@ export default function StepTwoIdentity() {
             <div className="flex justify-between items-center pt-4">
               <button
                 type="button"
-                onClick={() => router.push('/onboarding/step-1')}
-                className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors"
+                onClick={() => router.push('/onboarding')}
+                className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
               >
                 ← Back
               </button>
