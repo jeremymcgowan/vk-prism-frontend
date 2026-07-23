@@ -3,110 +3,49 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OnboardingHeader from '../components/OnboardingHeader';
-import { useOnboarding } from '../OnboardingContext';
-
-// Valid 2-letter US State & Territory codes
-const VALID_US_STATES = new Set([
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", 
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", 
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", 
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", 
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", 
-  "DC", "PR", "VI", "GU", "MP", "AS"
-]);
 
 export default function StepTwoIdentity() {
   const router = useRouter();
-  const { formData, updateFormData, isHydrated } = useOnboarding();
-
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [skipAddress, setSkipAddress] = useState(
-    formData.hq_address_type === 'SKIP_VERIFY_LATER'
-  );
-  const [stateError, setStateError] = useState('');
-  const [yearError, setYearError] = useState('');
+  const [skipAddress, setSkipAddress] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    legal_structure: '', // Initialized to empty string to force selection
+    formation_year: '',
+    hq_address_line_1: '',
+    hq_city: '',
+    hq_state: '',
+    hq_postal_code: '',
+  });
 
-  if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
-
-  // --- State Abbreviation Logic ---
-  const handleStateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const uppercaseVal = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
-    setStateError('');
-    updateFormData({ hq_state: uppercaseVal });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleStateBlur = () => {
-    const val = formData.hq_state || '';
-    if (val.length > 0 && val.length < 2) {
-      setStateError('Please enter a 2-letter state abbreviation.');
-    } else if (val.length === 2 && !VALID_US_STATES.has(val)) {
-      setStateError('Please enter a valid US state code (e.g. DE, FL, NY).');
-    } else {
-      setStateError('');
-    }
-  };
-
-  // --- Formation Year Logic ---
-  const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 4);
-    setYearError('');
-    updateFormData({ formation_year: digitsOnly });
-  };
-
-  const handleYearBlur = () => {
-    const val = formData.formation_year;
-    if (val && val.length > 0) {
-      const yearNum = parseInt(val, 10);
-      if (val.length < 4 || yearNum < 1900 || yearNum > 2026) {
-        setYearError('Formation year must be a 4-digit year between 1900 and 2026.');
-      } else {
-        setYearError('');
-      }
-    } else {
-      setYearError('');
-    }
-  };
-
-  // --- Virtual Office Bypass Action ---
   const handleVirtualOfficeBypass = async () => {
     setIsSubmitting(true);
     
-    updateFormData({
+    const payload = {
+      ...formData,
       hq_address_type: 'VK_VIRTUAL_OFFICE_PENDING',
       hq_address_verified_usps: false
-    });
+    };
 
+    console.log("Virtual Office / Co-Working Fast-Track Triggered:", payload);
     router.push('/onboarding/step-3');
   };
 
-  // --- Standard Form Submit ---
   const handleStandardNext = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate State
-    const stateVal = formData.hq_state || '';
-    if (!skipAddress && stateVal && (!VALID_US_STATES.has(stateVal) || stateVal.length !== 2)) {
-      setStateError('Please provide a valid 2-letter US state code.');
-      return;
-    }
-
-    // Validate Formation Year
-    const yearVal = formData.formation_year;
-    if (yearVal) {
-      const yearNum = parseInt(yearVal, 10);
-      if (yearVal.length < 4 || yearNum < 1900 || yearNum > 2026) {
-        setYearError('Formation year must be a 4-digit year between 1900 and 2026.');
-        return;
-      }
-    }
-
     setIsSubmitting(true);
-
-    updateFormData({
+    
+    const payload = {
+      ...formData,
       hq_address_type: skipAddress ? 'SKIP_VERIFY_LATER' : 'PHYSICAL',
       hq_address_verified_usps: false
-    });
+    };
 
+    console.log("Step 2 Standard Data Submitted:", payload);
     router.push('/onboarding/step-3');
   };
 
@@ -124,7 +63,7 @@ export default function StepTwoIdentity() {
           {/* Header */}
           <div className="text-center mb-8">
             <h2 className="text-xs font-bold tracking-widest text-emerald-400 uppercase mb-2">
-              Step 2 of 6: Identity &amp; Infrastructure
+              Step 2 of 6: Identity & Infrastructure
             </h2>
             <h1 className="text-3xl font-light text-white">
               Where is your headquarters?
@@ -142,8 +81,8 @@ export default function StepTwoIdentity() {
                 <select 
                   name="legal_structure"
                   required
-                  value={formData.legal_structure || ''}
-                  onChange={(e) => updateFormData({ legal_structure: e.target.value })}
+                  value={formData.legal_structure}
+                  onChange={handleChange}
                   className="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 >
                   <option value="" disabled>Please Select Legal Structure...</option>
@@ -161,21 +100,13 @@ export default function StepTwoIdentity() {
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">Formation Year</label>
                 <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={4}
+                  type="number"
                   name="formation_year"
-                  value={formData.formation_year || ''}
-                  onChange={handleYearChange}
-                  onBlur={handleYearBlur}
+                  value={formData.formation_year}
+                  onChange={handleChange}
                   placeholder="e.g. 2024"
                   className="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
-                {yearError && (
-                  <p className="text-amber-400 text-xs mt-1.5 flex items-center gap-1">
-                    <span>⚠️</span> {yearError}
-                  </p>
-                )}
               </div>
             </div>
 
@@ -209,8 +140,8 @@ export default function StepTwoIdentity() {
                     <input
                       type="text"
                       name="hq_address_line_1"
-                      value={formData.hq_address_line_1 || ''}
-                      onChange={(e) => updateFormData({ hq_address_line_1: e.target.value })}
+                      value={formData.hq_address_line_1}
+                      onChange={handleChange}
                       placeholder="123 Business Blvd, Suite 400"
                       className="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
@@ -221,8 +152,8 @@ export default function StepTwoIdentity() {
                       <input
                         type="text"
                         name="hq_city"
-                        value={formData.hq_city || ''}
-                        onChange={(e) => updateFormData({ hq_city: e.target.value })}
+                        value={formData.hq_city}
+                        onChange={handleChange}
                         placeholder="City"
                         className="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
@@ -231,26 +162,18 @@ export default function StepTwoIdentity() {
                       <input
                         type="text"
                         name="hq_state"
-                        maxLength={2}
-                        value={formData.hq_state || ''}
-                        onChange={handleStateChange}
-                        onBlur={handleStateBlur}
+                        value={formData.hq_state}
+                        onChange={handleChange}
                         placeholder="State (e.g. DE)"
-                        className="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none uppercase"
+                        className="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
-                      {stateError && (
-                        <p className="text-amber-400 text-xs mt-1.5 flex items-center gap-1">
-                          <span>⚠️</span> {stateError}
-                        </p>
-                      )}
                     </div>
                     <div className="col-span-1">
                       <input
                         type="text"
                         name="hq_postal_code"
-                        maxLength={10}
-                        value={formData.hq_postal_code || ''}
-                        onChange={(e) => updateFormData({ hq_postal_code: e.target.value })}
+                        value={formData.hq_postal_code}
+                        onChange={handleChange}
                         placeholder="ZIP Code"
                         className="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
@@ -282,23 +205,15 @@ export default function StepTwoIdentity() {
                   <span className="text-3xl filter drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] group-hover:scale-110 transition-transform">🏢</span>
                   <div className="text-left">
                     <p className="text-base font-medium text-white">Tell Me about Co-Working and Virtual Offices in My Prism Portal!</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Learn how V&amp;K provides corporate address compliance, mail scanning, and co-working space access.</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Learn how V&K provides corporate address compliance, mail scanning, and co-working space access.</p>
                   </div>
                 </div>
                 <span className="text-xs font-semibold text-emerald-400 group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Explore Options →</span>
               </div>
             </button>
 
-            {/* Primary Action Button */}
-            <div className="flex justify-between items-center pt-4">
-              <button
-                type="button"
-                onClick={() => router.push('/onboarding/step-1')}
-                className="px-6 py-3 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors"
-              >
-                ← Back
-              </button>
-
+            {/* Primary Action Button (Anchored Below Fast Track) */}
+            <div className="flex justify-end pt-4">
               <button
                 type="submit"
                 disabled={isSubmitting}
