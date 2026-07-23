@@ -1,57 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OnboardingHeader from './components/OnboardingHeader';
+import { useOnboarding } from '@/app/onboarding/OnboardingContext';
 
 export default function StepOneGateway() {
   const router = useRouter();
+  const { formData, updateFormData, isHydrated } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    company_name: '',
-    contact_name: '',
-    contact_email: '',
-    contact_phone: '',
-  });
 
-  // Load existing draft values if user navigates back to Step 1
-  useEffect(() => {
-    const savedDraft = localStorage.getItem('prism_onboarding_draft');
-    if (savedDraft) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        setFormData((prev) => ({
-          ...prev,
-          company_name: parsed.company_name || '',
-          contact_name: parsed.contact_name || '',
-          contact_email: parsed.contact_email || '',
-          contact_phone: parsed.contact_phone || '',
-        }));
-      } catch (e) {
-        console.error('Failed to restore draft state:', e);
-      }
-    }
-  }, []);
+  if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    updateFormData({ [e.target.name]: e.target.value });
   };
 
   // Helper to persist draft payload before proceeding
   const saveDraftAndNavigate = (mode: 'EXPRESS_CONCIERGE' | 'STANDARD_AUDIT', isFastTrack: boolean) => {
     setIsSubmitting(true);
-    const existingDraft = JSON.parse(localStorage.getItem('prism_onboarding_draft') || '{}');
     
-    const updatedDraft = {
-      ...existingDraft,
-      ...formData,
+    updateFormData({
       is_fast_track: isFastTrack,
       onboarding_mode: mode,
       step_completed: 1,
-    };
+    });
 
-    localStorage.setItem('prism_onboarding_draft', JSON.stringify(updatedDraft));
     router.push('/onboarding/step-2');
   };
 
@@ -69,7 +43,7 @@ export default function StepOneGateway() {
       <OnboardingHeader currentStep={1} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-2xl bg-[#0A0A0C]/90 glass-panel border border-[#1F1F1F] shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-8 my-6 relative overflow-hidden">
+        <div className="w-full max-w-2xl bg-[#0A0A0C]/90 glass-panel border border-[#1F1F1F] shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-8 my-6 relative overflow-hidden rounded-2xl">
           
           {/* Subtle Ambient Gold Glow */}
           <div className="absolute -top-20 -left-20 w-40 h-40 bg-[#C5A880]/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -93,10 +67,10 @@ export default function StepOneGateway() {
                   type="text"
                   name="company_name"
                   required
-                  value={formData.company_name}
+                  value={formData.company_name || ''}
                   onChange={handleChange}
                   placeholder="e.g. Acme Industries, Inc."
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm focus:border-[#C5A880]/60 focus:ring-1 focus:ring-[#C5A880]/20 focus:outline-none transition-all"
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
                 />
               </div>
 
@@ -108,10 +82,10 @@ export default function StepOneGateway() {
                   type="text"
                   name="contact_name"
                   required
-                  value={formData.contact_name}
+                  value={formData.contact_name || ''}
                   onChange={handleChange}
                   placeholder="e.g. Jane Doe"
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm focus:border-[#C5A880]/60 focus:ring-1 focus:ring-[#C5A880]/20 focus:outline-none transition-all"
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
                 />
               </div>
             </div>
@@ -125,10 +99,10 @@ export default function StepOneGateway() {
                   type="email"
                   name="contact_email"
                   required
-                  value={formData.contact_email}
+                  value={formData.contact_email || ''}
                   onChange={handleChange}
                   placeholder="jane@company.com"
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm focus:border-[#C5A880]/60 focus:ring-1 focus:ring-[#C5A880]/20 focus:outline-none transition-all"
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
                 />
               </div>
 
@@ -139,10 +113,10 @@ export default function StepOneGateway() {
                 <input
                   type="tel"
                   name="contact_phone"
-                  value={formData.contact_phone}
+                  value={formData.contact_phone || ''}
                   onChange={handleChange}
                   placeholder="(555) 000-0000"
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm focus:border-[#C5A880]/60 focus:ring-1 focus:ring-[#C5A880]/20 focus:outline-none transition-all"
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
                 />
               </div>
             </div>
@@ -162,14 +136,14 @@ export default function StepOneGateway() {
               type="button"
               onClick={handleFastTrack}
               disabled={isSubmitting}
-              className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/30 p-[1px] hover:border-[#C5A880]/70 hover:shadow-[0_0_25px_rgba(197,168,128,0.2)] transition-all duration-300 cursor-pointer"
+              className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/30 p-[1px] rounded-xl hover:border-[#C5A880]/70 hover:shadow-[0_0_25px_rgba(197,168,128,0.2)] transition-all duration-300 cursor-pointer"
             >
-              <div className="relative w-full bg-[#121215]/90 backdrop-blur-sm px-6 py-4 flex items-center justify-between group-hover:bg-[#161619] transition-colors">
+              <div className="relative w-full bg-[#121215]/90 backdrop-blur-sm px-6 py-4 rounded-xl flex items-center justify-between group-hover:bg-[#161619] transition-colors">
                 <div className="flex items-center gap-4">
                   <span className="text-2xl filter drop-shadow-[0_0_8px_rgba(197,168,128,0.4)] group-hover:scale-110 transition-transform">🚀</span>
                   <div className="text-left">
                     <p className="text-sm font-medium text-white tracking-wide">Express Fast-Track Onboarding</p>
-                    <p className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Skip standard intake and request priority concierge onboarding with a V&K partner.</p>
+                    <p className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Skip standard intake and request priority concierge onboarding with a V&amp;K partner.</p>
                   </div>
                 </div>
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#C5A880] group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Fast Track →</span>
@@ -181,7 +155,7 @@ export default function StepOneGateway() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] text-[#050507] text-xs font-semibold uppercase tracking-[0.2em] hover:opacity-95 active:scale-[0.99] transition-all shadow-[0_4px_25px_rgba(197,168,128,0.15)] disabled:opacity-50 cursor-pointer"
+                className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] text-[#050507] text-xs font-semibold uppercase tracking-[0.2em] rounded-xl hover:opacity-95 active:scale-[0.99] transition-all shadow-[0_4px_25px_rgba(197,168,128,0.15)] disabled:opacity-50 cursor-pointer"
               >
                 Continue →
               </button>
