@@ -37,10 +37,10 @@ export default function StepThreeCapital() {
     }
   };
 
-  // --- Auto-Currency Formatting & Threshold Validation ---
+  // --- Auto-Currency Formatting, Rounding Up & Threshold Validation ---
   const handleRaiseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value.replace(/[^0-9.]/g, '');
-    setFormattedRaise(e.target.value); // Allow free typing in UI
+    setFormattedRaise(e.target.value); // Allow free typing while focused
     updateFormData({ target_raise: rawVal });
     setRaiseError('');
   };
@@ -54,15 +54,22 @@ export default function StepThreeCapital() {
     }
 
     const numVal = parseFloat(rawVal);
-    if (!isNaN(numVal)) {
-      // Auto format to $X,XXX.00
-      setFormattedRaise(`$${numVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    if (!isNaN(numVal) && numVal > 0) {
+      // Round UP to the next multiple of 10 ending in .00 (e.g., 5201.13 -> 5210.00)
+      const roundedVal = Math.ceil(numVal / 10) * 10;
       
-      if (numVal > 0 && numVal < 5000) {
+      // Update both visible UI string and underlying stored data
+      setFormattedRaise(`$${roundedVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+      updateFormData({ target_raise: roundedVal.toString() });
+      
+      if (roundedVal < 5000) {
         setRaiseError('Target raise is below the $5,000.00 threshold typically evaluated for VC/Angel structures.');
       } else {
         setRaiseError('');
       }
+    } else {
+      setFormattedRaise('');
+      setRaiseError('');
     }
   };
 
@@ -271,7 +278,7 @@ export default function StepThreeCapital() {
               <button
                 type="button"
                 onClick={() => router.push('/onboarding/step-2')}
-                className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors"
+                className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
               >
                 ← Back
               </button>
