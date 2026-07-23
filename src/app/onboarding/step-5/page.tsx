@@ -4,18 +4,23 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OnboardingHeader from '../components/OnboardingHeader';
 import VendorValueWedge from '../components/VendorValueWedge';
+import { useOnboarding } from '@/app/onboarding/OnboardingContext';
 
 export default function StepFivePeople() {
   const router = useRouter();
+  const { formData, updateFormData, isHydrated } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    headcount_range: '', // Initialized empty to force explicit selection
-    payroll_provider: '', // Initialized empty
-  });
 
-  const [payrollAudit, setPayrollAudit] = useState({ satisfaction: 'GREAT', costPerception: 'FAIR' });
-  const [selectedBenefits, setSelectedBenefits] = useState<string[]>(['HEALTH_VISION_DENTAL']);
+  const [payrollAudit, setPayrollAudit] = useState({
+    satisfaction: formData.payroll_vendor_audit?.satisfaction || 'GREAT',
+    costPerception: formData.payroll_vendor_audit?.costPerception || 'FAIR',
+  });
+  
+  const [selectedBenefits, setSelectedBenefits] = useState<string[]>(
+    formData.benefits_offered && Array.isArray(formData.benefits_offered)
+      ? formData.benefits_offered
+      : ['HEALTH_VISION_DENTAL']
+  );
 
   const benefitOptions = [
     { id: 'HEALTH_VISION_DENTAL', label: '🏥 Medical / Dental / Vision' },
@@ -25,29 +30,38 @@ export default function StepFivePeople() {
     { id: 'STIPEND_PERKS', label: '🌴 Remote Work / Health Stipends' },
   ];
 
+  if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
+
   const toggleBenefit = (id: string) => {
-    if (selectedBenefits.includes(id)) {
-      setSelectedBenefits(selectedBenefits.filter((item) => item !== id));
-    } else {
-      setSelectedBenefits([...selectedBenefits, id]);
-    }
+    const updated = selectedBenefits.includes(id)
+      ? selectedBenefits.filter((item) => item !== id)
+      : [...selectedBenefits, id];
+    
+    setSelectedBenefits(updated);
+    updateFormData({ benefits_offered: updated });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    updateFormData({ [e.target.name]: e.target.value });
+  };
+
+  const handlePayrollAuditChange = (field: 'satisfaction' | 'costPerception', value: string) => {
+    const updated = { ...payrollAudit, [field]: value };
+    setPayrollAudit(updated);
+    updateFormData({ payroll_vendor_audit: updated });
   };
 
   const handlePeopleBypass = async () => {
     setIsSubmitting(true);
     
-    const payload = {
-      ...formData,
+    updateFormData({
       payroll_vendor_audit: formData.payroll_provider && formData.payroll_provider !== 'NONE' ? payrollAudit : null,
       benefits_offered: selectedBenefits,
-      people_managed_service_opt_in: true
-    };
+      people_managed_service_opt_in: true,
+      headcount_range: formData.headcount_range || '1_TO_5',
+      payroll_provider: formData.payroll_provider || 'NONE'
+    });
 
-    console.log("VK People Managed HR Bypass Triggered:", payload);
     router.push('/onboarding/step-6');
   };
 
@@ -55,33 +69,32 @@ export default function StepFivePeople() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    const payload = {
-      ...formData,
+    updateFormData({
       payroll_vendor_audit: formData.payroll_provider !== 'NONE' ? payrollAudit : null,
       benefits_offered: selectedBenefits,
-    };
+      people_managed_service_opt_in: false
+    });
 
-    console.log("Step 5 Standard Data Submitted:", payload);
     router.push('/onboarding/step-6');
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col font-sans">
+    <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-mono antialiased">
       <OnboardingHeader currentStep={5} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         {/* Main Card */}
-        <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl p-8 my-6 relative overflow-hidden">
+        <div className="w-full max-w-2xl bg-[#0A0A0C]/90 glass-panel border border-[#1F1F1F] shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-8 my-6 relative overflow-hidden rounded-2xl">
           
-          {/* Subtle Accent Glow */}
-          <div className="absolute -top-20 -left-20 w-40 h-40 bg-pink-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          {/* Subtle Champagne Gold Glow */}
+          <div className="absolute -top-20 -left-20 w-40 h-40 bg-[#C5A880]/10 rounded-full blur-3xl pointer-events-none"></div>
 
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-xs font-bold tracking-widest text-pink-400 uppercase mb-2">
-              Step 5 of 6: VK People — HR & Payroll Operations
+            <h2 className="text-xs font-bold tracking-[0.2em] text-[#C5A880] uppercase mb-2">
+              Step 5 of 6: VK People — HR &amp; Payroll Operations
             </h2>
-            <h1 className="text-3xl font-light text-white">
+            <h1 className="text-2xl font-light text-white tracking-wide">
               How is your team managed?
             </h1>
           </div>
@@ -91,15 +104,15 @@ export default function StepFivePeople() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-2">
-                  Team Headcount <span className="text-pink-400">*</span>
+                <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
+                  Team Headcount <span className="text-[#C5A880]">*</span>
                 </label>
                 <select 
                   name="headcount_range"
                   required
-                  value={formData.headcount_range}
+                  value={formData.headcount_range || ''}
                   onChange={handleChange}
-                  className="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
                 >
                   <option value="" disabled>Please Select Headcount...</option>
                   <option value="SOLO">1 (Founder Only)</option>
@@ -111,15 +124,15 @@ export default function StepFivePeople() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-2">
-                  Payroll System <span className="text-pink-400">*</span>
+                <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
+                  Payroll System <span className="text-[#C5A880]">*</span>
                 </label>
                 <select 
                   name="payroll_provider"
                   required
-                  value={formData.payroll_provider}
+                  value={formData.payroll_provider || ''}
                   onChange={handleChange}
-                  className="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
                 >
                   <option value="" disabled>Please Select Payroll System...</option>
                   <option value="GUSTO">Gusto</option>
@@ -132,15 +145,19 @@ export default function StepFivePeople() {
               </div>
             </div>
 
-            <VendorValueWedge 
-              vendorName={formData.payroll_provider !== 'NONE' ? formData.payroll_provider : ''}
-              data={payrollAudit}
-              onChange={(f, v) => setPayrollAudit((prev) => ({ ...prev, [f]: v }))}
-            />
+            {formData.payroll_provider && formData.payroll_provider !== 'NONE' && (
+              <div className="mt-4">
+                <VendorValueWedge 
+                  vendorName={formData.payroll_provider.replace('_', ' ')}
+                  data={payrollAudit}
+                  onChange={handlePayrollAuditChange}
+                />
+              </div>
+            )}
 
             {/* Benefits Suite Checkboxes */}
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-3">Corporate Benefits & Incentives Offered</label>
+              <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-300 mb-3">Corporate Benefits &amp; Incentives Offered</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 {benefitOptions.map((b) => {
                   const isChecked = selectedBenefits.includes(b.id);
@@ -149,15 +166,15 @@ export default function StepFivePeople() {
                       key={b.id}
                       type="button"
                       onClick={() => toggleBenefit(b.id)}
-                      className={`p-3 rounded-xl border text-xs font-medium text-left transition-all flex items-center justify-between ${
+                      className={`p-3 rounded-xl border text-xs font-medium text-left transition-all flex items-center justify-between cursor-pointer ${
                         isChecked 
-                          ? 'bg-pink-500/10 border-pink-500/50 text-pink-200' 
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                          ? 'bg-[#C5A880]/10 border-[#C5A880]/50 text-[#C5A880]' 
+                          : 'bg-[#121215] border-[#27272A] text-neutral-400 hover:border-neutral-600'
                       }`}
                     >
                       <span>{b.label}</span>
                       <span className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${
-                        isChecked ? 'bg-pink-500 border-pink-400 text-slate-950 font-bold' : 'border-slate-700'
+                        isChecked ? 'bg-[#C5A880] border-[#C5A880] text-[#050507] font-bold' : 'border-[#27272A]'
                       }`}>
                         {isChecked ? '✓' : ''}
                       </span>
@@ -170,10 +187,10 @@ export default function StepFivePeople() {
             {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-800"></div>
+                <div className="w-full border-t border-[#27272A]/80"></div>
               </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-4 bg-slate-900 text-slate-500 uppercase tracking-wider">OR</span>
+              <div className="relative flex justify-center text-[10px] font-medium">
+                <span className="px-4 bg-[#0A0A0C] text-neutral-500 uppercase tracking-widest">OR</span>
               </div>
             </div>
 
@@ -182,26 +199,34 @@ export default function StepFivePeople() {
               type="button"
               onClick={handlePeopleBypass}
               disabled={isSubmitting}
-              className="w-full group relative overflow-hidden bg-gradient-to-r from-pink-600/30 to-rose-600/30 border border-pink-500/30 p-[1px] rounded-xl hover:border-pink-500/60 hover:shadow-[0_0_30px_-10px_rgba(236,72,153,0.4)] transition-all duration-300"
+              className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/30 p-[1px] rounded-xl hover:border-[#C5A880]/70 hover:shadow-[0_0_25px_rgba(197,168,128,0.2)] transition-all duration-300 cursor-pointer"
             >
-              <div className="relative w-full bg-slate-950/80 backdrop-blur-sm px-6 py-5 rounded-xl flex items-center justify-between group-hover:bg-slate-900/80 transition-colors">
+              <div className="relative w-full bg-[#121215]/90 backdrop-blur-sm px-6 py-4 rounded-xl flex items-center justify-between group-hover:bg-[#161619] transition-colors">
                 <div className="flex items-center gap-4">
-                  <span className="text-3xl filter drop-shadow-[0_0_10px_rgba(236,72,153,0.3)] group-hover:scale-110 transition-transform">👥</span>
+                  <span className="text-2xl filter drop-shadow-[0_0_8px_rgba(197,168,128,0.4)] group-hover:scale-110 transition-transform">👥</span>
                   <div className="text-left">
-                    <p className="text-base font-medium text-white">I Need Turnkey HR & Payroll!</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Let V&K structure compliant multi-state payroll, health insurance, and 401(k) plans.</p>
+                    <p className="text-sm font-medium text-white tracking-wide">I Need Turnkey HR &amp; Payroll!</p>
+                    <p className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Let V&amp;K structure compliant multi-state payroll, health insurance, and 401(k) plans.</p>
                   </div>
                 </div>
-                <span className="text-xs font-semibold text-pink-400 group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Deploy People →</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#C5A880] group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Deploy People →</span>
               </div>
             </button>
 
-            {/* Primary Action Button (Anchored Below Fast Track) */}
-            <div className="flex justify-end pt-4">
+            {/* Primary Action Button */}
+            <div className="flex justify-between items-center pt-4">
+              <button
+                type="button"
+                onClick={() => router.push('/onboarding/step-4')}
+                className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+              >
+                ← Back
+              </button>
+
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-10 py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold rounded-xl hover:from-pink-400 hover:to-rose-400 transition-all shadow-[0_0_25px_-5px_rgba(236,72,153,0.5)] hover:shadow-[0_0_35px_-5px_rgba(236,72,153,0.7)] active:scale-[0.98] disabled:opacity-50"
+                className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] text-[#050507] text-xs font-semibold uppercase tracking-[0.2em] rounded-xl hover:opacity-95 active:scale-[0.99] transition-all shadow-[0_4px_25px_rgba(197,168,128,0.15)] disabled:opacity-50 cursor-pointer"
               >
                 Continue →
               </button>
