@@ -1,56 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import OnboardingHeader from '../components/OnboardingHeader';
 import VendorValueWedge from '../components/VendorValueWedge';
+import { useOnboarding } from '@/app/onboarding/OnboardingContext';
 
 export default function StepSixFlow() {
   const router = useRouter();
+  const { formData, updateFormData, clearFormData, isHydrated } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const [formData, setFormData] = useState({
-    crm_system: '',
-    collaboration_tool: '',
-    automation_status: '',
+
+  const [crmAudit, setCrmAudit] = useState({
+    satisfaction: formData.crm_vendor_audit?.satisfaction || 'GREAT',
+    costPerception: formData.crm_vendor_audit?.costPerception || 'FAIR',
   });
 
-  const [crmAudit, setCrmAudit] = useState({ satisfaction: 'GREAT', costPerception: 'FAIR' });
-
-  // Load any existing draft values if user returns to Step 6
-  useEffect(() => {
-    const savedDraft = localStorage.getItem('prism_onboarding_draft');
-    if (savedDraft) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        setFormData((prev) => ({
-          ...prev,
-          crm_system: parsed.crm_system || '',
-          collaboration_tool: parsed.collaboration_tool || '',
-          automation_status: parsed.automation_status || '',
-        }));
-      } catch (e) {
-        console.error('Failed to restore Step 6 draft:', e);
-      }
-    }
-  }, []);
+  if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    updateFormData({ [e.target.name]: e.target.value });
   };
 
-  // Master Submission Handler: Maps draft state directly to Supabase table columns
+  const handleCrmAuditChange = (field: 'satisfaction' | 'costPerception', value: string) => {
+    const updated = { ...crmAudit, [field]: value };
+    setCrmAudit(updated);
+    updateFormData({ crm_vendor_audit: updated });
+  };
+
+  // Master Submission Handler: Maps context state directly to Supabase table columns
   const executeFinalSubmission = async (flowOptIn: boolean) => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // 1. Retrieve accumulated draft data from local storage (Steps 1-5)
-      const draftData = JSON.parse(localStorage.getItem('prism_onboarding_draft') || '{}');
-
-      // 2. Initialize Standard Supabase Client
+      // 1. Initialize Standard Supabase Client
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -63,45 +49,44 @@ export default function StepSixFlow() {
         // Fallback for anonymous or unauthenticated sessions
       }
 
-      // 3. Map all collected form state into exact database columns
+      // 2. Map all collected form state into exact database columns
       const dbPayload = {
         user_id: userId,
-        company_name: draftData.company_name || 'Unspecified Entity',
-        contact_name: draftData.contact_name || null,
-        contact_email: draftData.contact_email || null,
-        contact_phone: draftData.contact_phone || null,
-        legal_structure: draftData.legal_structure || null,
-        formation_year: draftData.formation_year || null,
-        hq_address_line_1: draftData.hq_address_line_1 || null,
-        hq_city: draftData.hq_city || null,
-        hq_state: draftData.hq_state || null,
-        hq_postal_code: draftData.hq_postal_code || null,
-        hq_address_type: draftData.hq_address_type || null,
-        funding_stage: draftData.funding_stage || null,
-        target_raise: draftData.target_raise || null,
-        has_bylaws: draftData.has_bylaws || null,
-        accounting_software: draftData.accounting_software || null,
-        accounting_vendor_audit: draftData.accounting_vendor_audit || null,
-        email_workspace_suite: draftData.email_workspace_suite || null,
-        workspace_vendor_audit: draftData.workspace_vendor_audit || null,
-        mdm_provider: draftData.mdm_provider || null,
-        mdm_vendor_audit: draftData.mdm_vendor_audit || null,
-        antivirus_status: draftData.antivirus_status || null,
-        backup_frequency: draftData.backup_frequency || null,
-        headcount_range: draftData.headcount_range || null,
-        payroll_provider: draftData.payroll_provider || null,
-        payroll_vendor_audit: draftData.payroll_vendor_audit || null,
-        benefits_offered: draftData.benefits_offered || null,
+        company_name: formData.company_name || 'Unspecified Entity',
+        contact_name: formData.contact_name || null,
+        contact_email: formData.contact_email || null,
+        contact_phone: formData.contact_phone || null,
+        legal_structure: formData.legal_structure || null,
+        formation_year: formData.formation_year || null,
+        hq_address_line_1: formData.hq_address_line_1 || null,
+        hq_city: formData.hq_city || null,
+        hq_state: formData.hq_state || null,
+        hq_postal_code: formData.hq_postal_code || null,
+        hq_address_type: formData.hq_address_type || null,
+        funding_stage: formData.funding_stage || null,
+        target_raise: formData.target_raise || null,
+        has_bylaws: formData.has_bylaws || null,
+        accounting_software: formData.accounting_software || null,
+        accounting_vendor_audit: formData.accounting_vendor_audit || null,
+        email_workspace_suite: formData.email_workspace_suite || null,
+        workspace_vendor_audit: formData.workspace_vendor_audit || null,
+        mdm_provider: formData.mdm_provider || null,
+        mdm_vendor_audit: formData.mdm_vendor_audit || null,
+        antivirus_status: formData.antivirus_status || null,
+        backup_frequency: formData.backup_frequency || null,
+        headcount_range: formData.headcount_range || null,
+        payroll_provider: formData.payroll_provider || null,
+        payroll_vendor_audit: formData.payroll_vendor_audit || null,
+        benefits_offered: formData.benefits_offered || null,
         
         // Step 6 Fields
-        crm_system: formData.crm_system || null,
+        crm_system: formData.crm_system || (flowOptIn ? 'NONE' : null),
         crm_vendor_audit: formData.crm_system && formData.crm_system !== 'NONE' ? crmAudit : null,
-        collaboration_tool: formData.collaboration_tool || null,
-        automation_status: formData.automation_status || null,
+        collaboration_tool: formData.collaboration_tool || (flowOptIn ? 'SLACK' : null),
+        automation_status: formData.automation_status || (flowOptIn ? 'MANUAL' : null),
 
         // Full Raw JSON Audit Backup
         raw_step_payloads: {
-          ...draftData,
           ...formData,
           flow_managed_service_opt_in: flowOptIn,
           completed_at: new Date().toISOString()
@@ -118,10 +103,11 @@ export default function StepSixFlow() {
         }
       }
 
-      // 4. Clear local draft cache on successful submission
+      // 3. Clear both session context and any legacy local storage cache
+      clearFormData();
       localStorage.removeItem('prism_onboarding_draft');
 
-      // 5. Route to Onboarding Success Screen
+      // 4. Route to Onboarding Success Screen
       router.push('/onboarding/success');
 
     } catch (err: unknown) {
@@ -145,15 +131,15 @@ export default function StepSixFlow() {
       <OnboardingHeader currentStep={6} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-2xl bg-[#0A0A0C]/90 glass-panel border border-[#1F1F1F] shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-8 my-6 relative overflow-hidden">
+        <div className="w-full max-w-2xl bg-[#0A0A0C]/90 glass-panel border border-[#1F1F1F] shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-8 my-6 relative overflow-hidden rounded-2xl">
           
-          {/* Subtle Accent Glow */}
+          {/* Subtle Champagne Gold Glow */}
           <div className="absolute -top-20 -left-20 w-40 h-40 bg-[#C5A880]/10 rounded-full blur-3xl pointer-events-none"></div>
 
           {/* Header */}
           <div className="text-center mb-8">
             <h2 className="text-xs font-bold tracking-[0.2em] text-[#C5A880] uppercase mb-2">
-              Step 6 of 6: VK Flow — Workflows & Automation
+              Step 6 of 6: VK Flow — Workflows &amp; Automation
             </h2>
             <h1 className="text-2xl font-light text-white tracking-wide">
               How does your business run day-to-day?
@@ -163,14 +149,14 @@ export default function StepSixFlow() {
           <form onSubmit={handleStandardSubmit} className="space-y-6">
             <div>
               <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
-                Primary CRM & Customer Data System <span className="text-[#C5A880]">*</span>
+                Primary CRM &amp; Customer Data System <span className="text-[#C5A880]">*</span>
               </label>
               <select 
                 name="crm_system"
                 required
-                value={formData.crm_system}
+                value={formData.crm_system || ''}
                 onChange={handleChange}
-                className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm focus:border-[#C5A880]/60 focus:ring-1 focus:ring-[#C5A880]/20 focus:outline-none transition-all"
+                className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
               >
                 <option value="" disabled>Please Select CRM System...</option>
                 <option value="HUBSPOT">HubSpot</option>
@@ -181,11 +167,13 @@ export default function StepSixFlow() {
               </select>
 
               {formData.crm_system && formData.crm_system !== 'NONE' && (
-                <VendorValueWedge 
-                  vendorName={formData.crm_system}
-                  data={crmAudit}
-                  onChange={(f, v) => setCrmAudit((prev) => ({ ...prev, [f]: v }))}
-                />
+                <div className="mt-4">
+                  <VendorValueWedge 
+                    vendorName={formData.crm_system}
+                    data={crmAudit}
+                    onChange={handleCrmAuditChange}
+                  />
+                </div>
               )}
             </div>
 
@@ -197,9 +185,9 @@ export default function StepSixFlow() {
                 <select 
                   name="collaboration_tool"
                   required
-                  value={formData.collaboration_tool}
+                  value={formData.collaboration_tool || ''}
                   onChange={handleChange}
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm focus:border-[#C5A880]/60 focus:ring-1 focus:ring-[#C5A880]/20 focus:outline-none transition-all"
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
                 >
                   <option value="" disabled>Please Select Communication Tool...</option>
                   <option value="SLACK">Slack</option>
@@ -216,14 +204,14 @@ export default function StepSixFlow() {
                 <select 
                   name="automation_status"
                   required
-                  value={formData.automation_status}
+                  value={formData.automation_status || ''}
                   onChange={handleChange}
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm focus:border-[#C5A880]/60 focus:ring-1 focus:ring-[#C5A880]/20 focus:outline-none transition-all"
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
                 >
                   <option value="" disabled>Please Select Automation Level...</option>
                   <option value="MANUAL">100% Manual Processes</option>
                   <option value="ZAPIER">Basic Zapier / Make Zaps</option>
-                  <option value="CUSTOM_AI">Custom AI & API Workflows</option>
+                  <option value="CUSTOM_AI">Custom AI &amp; API Workflows</option>
                 </select>
               </div>
             </div>
@@ -249,26 +237,34 @@ export default function StepSixFlow() {
               type="button"
               onClick={handleFlowBypass}
               disabled={isSubmitting}
-              className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/30 p-[1px] hover:border-[#C5A880]/70 hover:shadow-[0_0_25px_rgba(197,168,128,0.2)] transition-all duration-300 cursor-pointer"
+              className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/30 p-[1px] rounded-xl hover:border-[#C5A880]/70 hover:shadow-[0_0_25px_rgba(197,168,128,0.2)] transition-all duration-300 cursor-pointer"
             >
-              <div className="relative w-full bg-[#121215]/90 backdrop-blur-sm px-6 py-4 flex items-center justify-between group-hover:bg-[#161619] transition-colors">
+              <div className="relative w-full bg-[#121215]/90 backdrop-blur-sm px-6 py-4 rounded-xl flex items-center justify-between group-hover:bg-[#161619] transition-colors">
                 <div className="flex items-center gap-4">
                   <span className="text-2xl filter drop-shadow-[0_0_8px_rgba(197,168,128,0.4)] group-hover:scale-110 transition-transform">⚡</span>
                   <div className="text-left">
-                    <p className="text-sm font-medium text-white tracking-wide">I Need Turnkey AI & Workflows!</p>
-                    <p className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Automate operations with V&K custom agents and automated software integrations.</p>
+                    <p className="text-sm font-medium text-white tracking-wide">I Need Turnkey AI &amp; Workflows!</p>
+                    <p className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Automate operations with V&amp;K custom agents and automated software integrations.</p>
                   </div>
                 </div>
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#C5A880] group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Automate Us →</span>
               </div>
             </button>
 
-            {/* Primary Final Action Button */}
-            <div className="flex justify-end pt-4">
+            {/* Primary Action Buttons */}
+            <div className="flex justify-between items-center pt-4">
+              <button
+                type="button"
+                onClick={() => router.push('/onboarding/step-5')}
+                className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+              >
+                ← Back
+              </button>
+
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] text-[#050507] text-xs font-semibold uppercase tracking-[0.2em] hover:opacity-95 active:scale-[0.99] transition-all shadow-[0_4px_25px_rgba(197,168,128,0.15)] disabled:opacity-50 cursor-pointer"
+                className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] text-[#050507] text-xs font-semibold uppercase tracking-[0.2em] rounded-xl hover:opacity-95 active:scale-[0.99] transition-all shadow-[0_4px_25px_rgba(197,168,128,0.15)] disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? 'Transmitting Dataset...' : 'Complete Onboarding ✨'}
               </button>
