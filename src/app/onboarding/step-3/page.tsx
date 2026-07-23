@@ -107,23 +107,23 @@ export default function StepThreeCapital() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col font-sans">
+    <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-mono antialiased">
       <OnboardingHeader currentStep={3} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         {/* Main Card */}
-        <div className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 shadow-2xl rounded-2xl p-8 my-6 relative overflow-hidden">
+        <div className="w-full max-w-2xl bg-[#0A0A0C]/90 glass-panel border border-[#1F1F1F] shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-8 my-6 relative overflow-hidden rounded-2xl">
           
-          {/* Subtle Ambient Gold Glow */}
-          <div className="absolute -top-20 -left-20 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          {/* Subtle Champagne Gold Glow */}
+          <div className="absolute -top-20 -left-20 w-40 h-40 bg-[#C5A880]/10 rounded-full blur-3xl pointer-events-none"></div>
 
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-xs font-bold tracking-widest text-amber-400 uppercase mb-2">
-              Step 3 of 6: Capital, Governance & Financial Operations
+            <h2 className="text-xs font-bold tracking-[0.2em] text-[#C5A880] uppercase mb-2">
+              Step 3 of 6: Capital, Governance &amp; Financial Operations
             </h2>
-            <h1 className="text-3xl font-light text-white">
-              What is your funding & financial status?
+            <h1 className="text-2xl font-light text-white tracking-wide">
+              What is your funding &amp; financial status?
             </h1>
           </div>
 
@@ -132,22 +132,22 @@ export default function StepThreeCapital() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">
-                  Funding Stage <span className="text-amber-400">*</span>
+                <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
+                  Funding Stage <span className="text-[#C5A880]">*</span>
                 </label>
                 <select 
                   name="funding_stage"
                   required
                   value={formData.funding_stage || ''}
                   onChange={handleStageChange}
-                  className="w-full bg-black border border-zinc-800 text-white p-3 rounded-lg focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition-colors"
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
                 >
                   <option value="" disabled>Please Select Funding Stage...</option>
                   <option value="BOOTSTRAPPED">Bootstrapped</option>
                   <option value="PRE_SEED">Pre-Seed</option>
                   <option value="SEED">Seed</option>
                   <option value="SERIES_A">Series A+</option>
-                  <option value="FRIENDS_FAMILY">Friends & Family</option>
+                  <option value="FRIENDS_FAMILY">Friends &amp; Family</option>
                   <option value="ANGEL">Angel Funded</option>
                   <option value="DEBT_SBA">Debt / SBA / Revenue-Backed</option>
                   <option value="GRANT">Grant / Non-Equity Funded</option>
@@ -157,11 +157,11 @@ export default function StepThreeCapital() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-zinc-400">
+                  <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400">
                     Target Raise ($ USD)
                   </label>
                   {!isSelfFunded && (
-                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Min: $5,000.00</span>
+                    <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Min: $5,000.00</span>
                   )}
                 </div>
                 <input
@@ -172,12 +172,12 @@ export default function StepThreeCapital() {
                   onChange={handleRaiseChange}
                   onBlur={handleRaiseBlur}
                   placeholder={isSelfFunded ? "N/A (Self-Funded)" : "e.g. $500,000.00"}
-                  className={`w-full bg-black border border-zinc-800 text-white p-3 rounded-lg focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition-all ${
-                    isSelfFunded ? 'opacity-40 cursor-not-allowed border-zinc-900 bg-zinc-950' : ''
+                  className={`w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all ${
+                    isSelfFunded ? 'opacity-40 cursor-not-allowed border-[#1F1F1F] bg-[#0A0A0C]' : ''
                   }`}
                 />
                 {raiseError && (
-                  <div className="mt-2 p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-300 text-xs flex items-start gap-2 animate-fade-in">
+                  <div className="mt-2 p-2.5 bg-[#C5A880]/10 border border-[#C5A880]/30 rounded-lg text-[#C5A880] text-xs flex items-start gap-2 animate-fade-in">
                     <span className="text-sm">💡</span>
                     <span>{raiseError}</span>
                   </div>
@@ -186,15 +186,15 @@ export default function StepThreeCapital() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">
-                Are your Corporate Bylaws & Board Resolutions up to date? <span className="text-amber-400">*</span>
+              <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
+                Are your Corporate Bylaws &amp; Board Resolutions up to date? <span className="text-[#C5A880]">*</span>
               </label>
               <select 
                 name="has_bylaws"
                 required
-                value={formData.has_bylaws || ''}
+                value={String(formData.has_bylaws || '')}
                 onChange={(e) => updateFormData({ has_bylaws: e.target.value })}
-                className="w-full bg-black border border-zinc-800 text-white p-3 rounded-lg focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition-colors"
+                className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
               >
                 <option value="" disabled>Please Select Bylaws Status...</option>
                 <option value="YES">Yes, 100% compliant</option>
@@ -205,15 +205,15 @@ export default function StepThreeCapital() {
 
             {/* Accounting Software & Value Wedge */}
             <div className="pt-2">
-              <label className="block text-sm font-medium text-zinc-400 mb-2">
-                Primary Accounting & Bookkeeping Software <span className="text-amber-400">*</span>
+              <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
+                Primary Accounting &amp; Bookkeeping Software <span className="text-[#C5A880]">*</span>
               </label>
               <select 
                 name="accounting_software"
                 required
                 value={formData.accounting_software || ''}
                 onChange={(e) => updateFormData({ accounting_software: e.target.value })}
-                className="w-full bg-black border border-zinc-800 text-white p-3 rounded-lg focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition-colors"
+                className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
               >
                 <option value="" disabled>Please Select Accounting Software...</option>
                 <option value="QUICKBOOKS_ONLINE">QuickBooks Online</option>
@@ -240,10 +240,10 @@ export default function StepThreeCapital() {
             {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-zinc-800"></div>
+                <div className="w-full border-t border-[#27272A]/80"></div>
               </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-4 bg-zinc-950 text-zinc-500 uppercase tracking-wider">OR</span>
+              <div className="relative flex justify-center text-[10px] font-medium">
+                <span className="px-4 bg-[#0A0A0C] text-neutral-500 uppercase tracking-widest">OR</span>
               </div>
             </div>
 
@@ -252,26 +252,26 @@ export default function StepThreeCapital() {
               type="button"
               onClick={handleIgnoranceBypass}
               disabled={isSubmitting}
-              className="w-full group relative overflow-hidden bg-gradient-to-r from-amber-600/20 via-transparent to-yellow-600/20 border border-amber-500/30 p-[1px] rounded-xl hover:border-amber-500/60 hover:shadow-[0_0_30px_-10px_rgba(245,158,11,0.3)] transition-all duration-300"
+              className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/30 p-[1px] rounded-xl hover:border-[#C5A880]/70 hover:shadow-[0_0_25px_rgba(197,168,128,0.2)] transition-all duration-300 cursor-pointer"
             >
-              <div className="relative w-full bg-black/80 backdrop-blur-sm px-6 py-5 rounded-xl flex items-center justify-between group-hover:bg-zinc-900/80 transition-colors">
+              <div className="relative w-full bg-[#121215]/90 backdrop-blur-sm px-6 py-4 rounded-xl flex items-center justify-between group-hover:bg-[#161619] transition-colors">
                 <div className="flex items-center gap-4">
-                  <span className="text-3xl filter drop-shadow-[0_0_10px_rgba(245,158,11,0.3)] group-hover:scale-110 transition-transform">🤷‍♂️</span>
+                  <span className="text-2xl filter drop-shadow-[0_0_8px_rgba(197,168,128,0.4)] group-hover:scale-110 transition-transform">🤷‍♂️</span>
                   <div className="text-left">
-                    <p className="text-base font-medium text-white">I Honestly Don't Know</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">Skip this section. Have the V&amp;K Governance &amp; Financial team run an audit for me.</p>
+                    <p className="text-sm font-medium text-white tracking-wide">I Honestly Don't Know</p>
+                    <p className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Skip this section. Have the V&amp;K Governance &amp; Financial team run an audit for me.</p>
                   </div>
                 </div>
-                <span className="text-xs font-semibold text-amber-400 group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Request Audit →</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#C5A880] group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Request Audit →</span>
               </div>
             </button>
 
-            {/* Primary Action Button (Anchored Below Fast Track) */}
+            {/* Primary Action Button */}
             <div className="flex justify-between items-center pt-4">
               <button
                 type="button"
                 onClick={() => router.push('/onboarding/step-2')}
-                className="px-6 py-3 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors"
+                className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors"
               >
                 ← Back
               </button>
@@ -279,7 +279,7 @@ export default function StepThreeCapital() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-10 py-3.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-semibold rounded-xl hover:from-amber-400 hover:to-yellow-400 transition-all shadow-[0_0_25px_-5px_rgba(245,158,11,0.5)] hover:shadow-[0_0_35px_-5px_rgba(245,158,11,0.7)] active:scale-[0.98] disabled:opacity-50"
+                className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] text-[#050507] text-xs font-semibold uppercase tracking-[0.2em] rounded-xl hover:opacity-95 active:scale-[0.99] transition-all shadow-[0_4px_25px_rgba(197,168,128,0.15)] disabled:opacity-50 cursor-pointer"
               >
                 Continue →
               </button>

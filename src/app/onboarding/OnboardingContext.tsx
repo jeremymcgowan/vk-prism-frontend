@@ -23,7 +23,7 @@ export interface OnboardingData {
   // Step 3: Capital
   funding_stage?: string;
   target_raise?: string;
-  has_bylaws?: boolean | null;
+  has_bylaws?: string | null;
   
   // Step 4: Shield
   email_workspace_suite?: string;
@@ -101,7 +101,6 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   );
 }
 
-// THIS IS THE EXACT HOOK VERCEL CANNOT FIND right now:
 export function useOnboarding() {
   const context = useContext(OnboardingContext);
   if (!context) {
