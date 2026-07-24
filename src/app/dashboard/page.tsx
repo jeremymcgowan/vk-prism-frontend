@@ -78,8 +78,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <header className="md:hidden sticky top-0 z-50 w-full border-b border-zinc-900 bg-zinc-950 p-4 flex flex-col space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 rounded border border-amber-500/30 flex items-center justify-center text-amber-500 text-xs font-bold">VK</div>
-            <h1 className="text-xs font-bold tracking-widest text-zinc-200">V&K PRISM</h1>
+            <div className="w-6 h-6 rounded border border-[#C5A880]/40 flex items-center justify-center text-[#C5A880] text-xs font-bold shadow-[0_0_10px_rgba(197,168,128,0.2)]">VK</div>
+            <h1 className="text-xs font-bold tracking-widest text-zinc-200">V&amp;K PRISM</h1>
           </div>
           <div className="flex items-center space-x-3 max-w-[50%]">
             <span className="text-[10px] text-zinc-400 font-mono truncate capitalize">{userDisplayName}</span>
@@ -88,20 +88,20 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
         
         {/* Horizontal Sliding Tab Menu for Quick Mobile Thumb Navigation */}
-        <nav className="flex space-x-1 overflow-x-auto pb-1 scrollbar-none snap-x">
-          <Link href="/dashboard?id=0" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '0' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-500'}`}>
+        <nav className="flex space-x-1.5 overflow-x-auto pb-1 scrollbar-none snap-x">
+          <Link href="/dashboard?id=0" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '0' ? 'bg-[#121215] text-[#C5A880] border border-[#C5A880]/40 shadow-[0_0_15px_rgba(197,168,128,0.15)]' : 'text-zinc-500 hover:text-zinc-300'}`}>
             <span>🎛️</span> <span>OVERVIEW</span>
           </Link>
-          <Link href="/dashboard?id=1" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '1' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-500'}`}>
+          <Link href="/dashboard?id=1" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '1' ? 'bg-[#121215] text-[#C5A880] border border-[#C5A880]/40 shadow-[0_0_15px_rgba(197,168,128,0.15)]' : 'text-zinc-500 hover:text-zinc-300'}`}>
             <span>🏢</span> <span>CRM CORE</span>
           </Link>
-          <Link href="/dashboard?id=2" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '2' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-500'}`}>
+          <Link href="/dashboard?id=2" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '2' ? 'bg-[#121215] text-[#C5A880] border border-[#C5A880]/40 shadow-[0_0_15px_rgba(197,168,128,0.15)]' : 'text-zinc-500 hover:text-zinc-300'}`}>
             <span>💳</span> <span>BILLING</span>
           </Link>
-          <Link href="/dashboard?id=3" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '3' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-500'}`}>
+          <Link href="/dashboard?id=3" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '3' ? 'bg-[#121215] text-[#C5A880] border border-[#C5A880]/40 shadow-[0_0_15px_rgba(197,168,128,0.15)]' : 'text-zinc-500 hover:text-zinc-300'}`}>
             <span>📅</span> <span>CALENDAR</span>
           </Link>
-          <Link href="/dashboard?id=4" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '4' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-500'}`}>
+          <Link href="/dashboard?id=4" className={`snap-center shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition ${activeId === '4' ? 'bg-[#121215] text-[#C5A880] border border-[#C5A880]/40 shadow-[0_0_15px_rgba(197,168,128,0.15)]' : 'text-zinc-500 hover:text-zinc-300'}`}>
             <span>🔒</span> <span>INBOX</span>
           </Link>
         </nav>
@@ -111,27 +111,27 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <aside className="hidden md:flex w-72 border-r border-zinc-900 bg-zinc-950/40 p-6 flex-col justify-between shrink-0">
         <div className="space-y-8">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded border border-amber-500/30 flex items-center justify-center text-amber-500 font-sans font-bold">VK</div>
+            <div className="w-8 h-8 rounded border border-[#C5A880]/40 flex items-center justify-center text-[#C5A880] font-sans font-bold shadow-[0_0_12px_rgba(197,168,128,0.2)]">VK</div>
             <div>
-              <h1 className="text-sm font-bold tracking-widest text-zinc-200">V&K PARTNERS</h1>
-              <p className="text-[10px] font-bold tracking-[0.3em] text-amber-500/80">PRISM</p>
+              <h1 className="text-sm font-bold tracking-widest text-zinc-200">V&amp;K PARTNERS</h1>
+              <p className="text-[10px] font-bold tracking-[0.3em] text-[#C5A880]">PRISM</p>
             </div>
           </div>
 
-          <nav className="space-y-1">
-            <Link href="/dashboard?id=0" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded text-xs font-semibold tracking-wider transition ${activeId === '0' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-400 hover:text-zinc-200'}`}>
+          <nav className="space-y-1.5">
+            <Link href="/dashboard?id=0" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wider transition-all ${activeId === '0' ? 'bg-[#121215] text-[#C5A880] border border-[#C5A880]/40 shadow-[0_0_20px_rgba(197,168,128,0.15)]' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40'}`}>
               <span>🎛️</span> <span>ECOSYSTEM OVERVIEW</span>
             </Link>
-            <Link href="/dashboard?id=1" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded text-xs font-semibold tracking-wider transition ${activeId === '1' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-400 hover:text-zinc-200'}`}>
+            <Link href="/dashboard?id=1" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wider transition-all ${activeId === '1' ? 'bg-[#121215] text-[#C5A880] border border-[#C5A880]/40 shadow-[0_0_20px_rgba(197,168,128,0.15)]' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40'}`}>
               <span>🏢</span> <span>CRM CORE</span>
             </Link>
-            <Link href="/dashboard?id=2" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded text-xs font-semibold tracking-wider transition ${activeId === '2' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-400 hover:text-zinc-200'}`}>
-              <span>💳</span> <span>PROPOSALS & BILLING</span>
+            <Link href="/dashboard?id=2" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wider transition-all ${activeId === '2' ? 'bg-[#121215] text-[#C5A880] border border-[#C5A880]/40 shadow-[0_0_20px_rgba(197,168,128,0.15)]' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40'}`}>
+              <span>💳</span> <span>PROPOSALS &amp; BILLING</span>
             </Link>
-            <Link href="/dashboard?id=3" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded text-xs font-semibold tracking-wider transition ${activeId === '3' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-400 hover:text-zinc-200'}`}>
+            <Link href="/dashboard?id=3" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wider transition-all ${activeId === '3' ? 'bg-[#121215] text-[#C5A880] border border-[#C5A880]/40 shadow-[0_0_20px_rgba(197,168,128,0.15)]' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40'}`}>
               <span>📅</span> <span>COGNITIVE CALENDAR</span>
             </Link>
-            <Link href="/dashboard?id=4" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded text-xs font-semibold tracking-wider transition ${activeId === '4' ? 'bg-zinc-900 text-amber-400 border border-zinc-800' : 'text-zinc-400 hover:text-zinc-200'}`}>
+            <Link href="/dashboard?id=4" className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wider transition-all ${activeId === '4' ? 'bg-[#121215] text-[#C5A880] border border-[#C5A880]/40 shadow-[0_0_20px_rgba(197,168,128,0.15)]' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40'}`}>
               <span>🔒</span> <span>SECURE INBOX</span>
             </Link>
           </nav>
@@ -165,22 +165,22 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {/* VIEW 0: ECOSYSTEM OVERVIEW */}
           {activeId === '0' && (
              <div className="space-y-6 max-w-4xl">
-             <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 ${lora.className}`}>ECOSYSTEM OVERVIEW</h2>
-             <p className="text-xs md:text-sm text-zinc-400 leading-relaxed">Welcome to the V&K Prism master operations terminal. Live database telemetries and CRM views are synchronized.</p>
+             <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-[#C5A880] drop-shadow-[0_0_15px_rgba(197,168,128,0.25)] ${lora.className}`}>ECOSYSTEM OVERVIEW</h2>
+             <p className="text-xs md:text-sm text-zinc-300 leading-relaxed">Welcome to the V&amp;K Prism master operations terminal. Live database telemetries and CRM views are synchronized.</p>
              
              {/* Grid auto-collapses to single column on mobile, expansion triggered on desktops */}
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
-               <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40">
-                 <h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">OPERATIONAL STATUS</h3>
-                 <p className="text-xs text-zinc-500 leading-normal">System parameters verified. Core analytical functions running standard network telemetry.</p>
+               <div className="p-5 border border-[#27272A] rounded-xl bg-[#0A0A0C]/80 hover:border-[#C5A880]/40 transition-colors shadow-inner">
+                 <h3 className="text-xs font-extrabold tracking-widest text-[#C5A880] mb-2">OPERATIONAL STATUS</h3>
+                 <p className="text-xs text-zinc-400 leading-normal">System parameters verified. Core analytical functions running standard network telemetry.</p>
                </div>
-               <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40">
-                 <h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">COMPLIANCE LOGS</h3>
-                 <p className="text-xs text-zinc-500 leading-normal">Intake queues mapped. Client onboarding structures configured for deep corporate entity evaluations.</p>
+               <div className="p-5 border border-[#27272A] rounded-xl bg-[#0A0A0C]/80 hover:border-[#C5A880]/40 transition-colors shadow-inner">
+                 <h3 className="text-xs font-extrabold tracking-widest text-[#C5A880] mb-2">COMPLIANCE LOGS</h3>
+                 <p className="text-xs text-zinc-400 leading-normal">Intake queues mapped. Client onboarding structures configured for deep corporate entity evaluations.</p>
                </div>
-               <div className="p-5 border border-zinc-900 rounded-xl bg-zinc-950/40 sm:col-span-2 md:col-span-1">
-                 <h3 className="text-xs font-bold tracking-widest text-zinc-400 mb-2">REVENUE STREAMS</h3>
-                 <p className="text-xs text-zinc-500 leading-normal">Financial ledger initialized. Core payment processors stand ready to distribute billing metrics.</p>
+               <div className="p-5 border border-[#27272A] rounded-xl bg-[#0A0A0C]/80 sm:col-span-2 md:col-span-1 hover:border-[#C5A880]/40 transition-colors shadow-inner">
+                 <h3 className="text-xs font-extrabold tracking-widest text-[#C5A880] mb-2">REVENUE STREAMS</h3>
+                 <p className="text-xs text-zinc-400 leading-normal">Financial ledger initialized. Core payment processors stand ready to distribute billing metrics.</p>
                </div>
              </div>
            </div>
@@ -189,7 +189,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {/* VIEW 1: CRM CORE */}
           {activeId === '1' && (
             <div className="space-y-6">
-              <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 mb-4 md:mb-6 ${lora.className}`}>CRM CORE</h2>
+              <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-[#C5A880] drop-shadow-[0_0_15px_rgba(197,168,128,0.25)] mb-4 md:mb-6 ${lora.className}`}>CRM CORE</h2>
               <CrmCoreWorkspace initialData={crmData} />
             </div>
           )}
@@ -197,7 +197,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {/* VIEW 2: PROPOSALS & BILLING */}
           {activeId === '2' && (
             <div className="space-y-6">
-              <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 mb-4 md:mb-6 ${lora.className}`}>PROPOSALS & BILLING</h2>
+              <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-[#C5A880] drop-shadow-[0_0_15px_rgba(197,168,128,0.25)] mb-4 md:mb-6 ${lora.className}`}>PROPOSALS &amp; BILLING</h2>
               {billingData.length === 0 ? (
                 <div className="p-8 border border-dashed border-zinc-900 rounded-xl text-center text-xs text-zinc-500 font-mono">No active invoices or proposals recorded inside proposals_billing.</div>
               ) : (
@@ -234,12 +234,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {activeId === '3' && (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 md:mb-6">
-                <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 ${lora.className}`}>COGNITIVE CALENDAR</h2>
+                <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-[#C5A880] drop-shadow-[0_0_15px_rgba(197,168,128,0.25)] ${lora.className}`}>COGNITIVE CALENDAR</h2>
                 
                 <a 
                   href="/api/calendar/feed" 
                   target="_blank"
-                  className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-400 rounded-lg text-[10px] font-mono font-bold tracking-wider transition-all duration-200 text-center sm:text-left"
+                  className="px-3.5 py-2 bg-[#121215] hover:bg-[#161619] border border-[#C5A880]/40 hover:border-[#C5A880] text-[#C5A880] rounded-lg text-[10px] font-mono font-bold tracking-wider transition-all duration-200 text-center sm:text-left shadow-inner"
                 >
                   🔗 COPY GOOGLE CALENDAR SYNC LINK
                 </a>
@@ -269,7 +269,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           {/* VIEW 4: SECURE OPERATIONS INBOX VAULT */}
           {activeId === '4' && (
             <div className="space-y-6">
-              <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-zinc-100 mb-4 md:mb-6 ${lora.className}`}>SECURE OPERATIONS INBOX</h2>
+              <h2 className={`text-2xl md:text-3xl font-bold tracking-tight text-[#C5A880] drop-shadow-[0_0_15px_rgba(197,168,128,0.25)] mb-4 md:mb-6 ${lora.className}`}>SECURE OPERATIONS INBOX</h2>
               <PrismSecureInbox />
             </div>
           )}
