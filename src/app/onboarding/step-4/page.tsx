@@ -68,189 +68,197 @@ export default function StepFourShield() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-mono antialiased">
+    // UPGRADED: Changed font-mono to font-sans for a modern, secure executive banking feel
+    <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
       <OnboardingHeader currentStep={4} />
 
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
-        {/* Main Card */}
-        <div className="w-full max-w-2xl bg-[#0A0A0C]/90 glass-panel border border-[#1F1F1F] shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-8 my-6 relative overflow-hidden rounded-2xl">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
+        
+        {/* Responsive scaling container (max-w-3xl lg:max-w-4xl) with expanded halo wrapper */}
+        <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* Subtle Champagne Gold Glow */}
-          <div className="absolute -top-20 -left-20 w-40 h-40 bg-[#C5A880]/10 rounded-full blur-3xl pointer-events-none"></div>
+          {/* UPGRADED EXPANSIVE GOLD HALO: -inset-3 and blur-3xl for a wider, ambient aura */}
+          <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-xs font-bold tracking-[0.2em] text-[#C5A880] uppercase mb-2">
-              Step 4 of 6: VK Shield — IT &amp; Cyber Security
-            </h2>
-            <h1 className="text-2xl font-light text-white tracking-wide">
-              How is your fleet secured?
-            </h1>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleStandardNext} className="space-y-6">
+          {/* MAIN CARD: Obsidian glass panel with enhanced padding and double-layered gold glow */}
+          <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
-            {/* Email / Workspace Suite */}
-            <div>
-              <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
-                Primary Email &amp; Workspace Suite <span className="text-[#C5A880]">*</span>
-              </label>
-              <select 
-                name="email_workspace_suite"
-                required
-                value={formData.email_workspace_suite || ''}
-                onChange={handleChange}
-                className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
-              >
-                <option value="" disabled>Please Select Workspace Suite...</option>
-                <option value="GOOGLE_WORKSPACE">Google Workspace (Gmail, Docs, Drive)</option>
-                <option value="MICROSOFT_365">Microsoft 365 (Outlook, Teams, Office)</option>
-                <option value="ZOHO">Zoho Workplace</option>
-                <option value="PROTON">Proton Mail / Encrypted</option>
-                <option value="NEED_WORKSPACE">Need Workspace Provisioned (V&amp;K Setup)</option>
-                <option value="NONE">Other / Basic Webmail</option>
-              </select>
+            {/* Internal Corner Accent Glow */}
+            <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#C5A880]/20 rounded-full blur-3xl pointer-events-none"></div>
 
-              {formData.email_workspace_suite && formData.email_workspace_suite !== 'NONE' && formData.email_workspace_suite !== 'NEED_WORKSPACE' && (
-                <div className="mt-4">
-                  <VendorValueWedge 
-                    vendorName={formData.email_workspace_suite.replace('_', ' ')}
-                    data={workspaceAudit}
-                    onChange={handleWorkspaceAuditChange}
-                  />
-                </div>
-              )}
+            <div className="text-center mb-10">
+              <h2 className="text-xs font-bold tracking-[0.25em] text-[#C5A880] uppercase mb-3">
+                Step 4 of 6: VK Shield — IT &amp; Cyber Security
+              </h2>
+              <h1 className="text-3xl lg:text-4xl font-light text-white tracking-tight">
+                How is your fleet secured?
+              </h1>
             </div>
 
-            {/* MDM Provider with Tooltip */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-[11px] font-medium uppercase tracking-widest text-neutral-400">
-                  Mobile Device Management (MDM) <span className="text-[#C5A880]">*</span>
-                </label>
-                <div className="relative group flex items-center cursor-pointer">
-                  <span className="text-xs text-neutral-400 hover:text-neutral-200">What is MDM? ⓘ</span>
-                  <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-[#121215] border border-[#27272A] rounded-xl text-xs text-neutral-300 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all z-20">
-                    💡 Software that keeps company laptops &amp; mobile devices secure—allowing remote wipes, security updates, and compliance enforcement.
-                  </div>
-                </div>
-              </div>
-
-              <select 
-                name="mdm_provider"
-                required
-                value={formData.mdm_provider || ''}
-                onChange={handleChange}
-                className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
-              >
-                <option value="" disabled>Please Select MDM Provider...</option>
-                <option value="JAMF">Jamf Pro / Jamf Now (Apple)</option>
-                <option value="KANDJI">Kandji</option>
-                <option value="INTUNE">Microsoft Intune</option>
-                <option value="RIPPLING_MDM">Rippling IT / MDM</option>
-                <option value="NONE">No MDM / Manual Fleet</option>
-              </select>
-
-              {formData.mdm_provider && formData.mdm_provider !== 'NONE' && (
-                <div className="mt-4">
-                  <VendorValueWedge 
-                    vendorName={formData.mdm_provider.replace('_', ' ')}
-                    data={mdmAudit}
-                    onChange={handleMdmAuditChange}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleStandardNext} className="space-y-6">
+              
+              {/* Email / Workspace Suite */}
               <div>
-                <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
-                  Endpoint Protection (Antivirus) <span className="text-[#C5A880]">*</span>
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  Primary Email &amp; Workspace Suite <span className="text-[#C5A880]">*</span>
                 </label>
                 <select 
-                  name="antivirus_status"
+                  name="email_workspace_suite"
                   required
-                  value={formData.antivirus_status || ''}
+                  value={formData.email_workspace_suite || ''}
                   onChange={handleChange}
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                 >
-                  <option value="" disabled>Please Select Endpoint Protection...</option>
-                  <option value="ACTIVE_EDR">Managed EDR (CrowdStrike / Defender)</option>
-                  <option value="BASIC_AV">Basic Consumer Antivirus</option>
-                  <option value="NONE">Default OS Defense Only</option>
+                  <option value="" disabled>Please Select Workspace Suite...</option>
+                  <option value="GOOGLE_WORKSPACE">Google Workspace (Gmail, Docs, Drive)</option>
+                  <option value="MICROSOFT_365">Microsoft 365 (Outlook, Teams, Office)</option>
+                  <option value="ZOHO">Zoho Workplace</option>
+                  <option value="PROTON">Proton Mail / Encrypted</option>
+                  <option value="NEED_WORKSPACE">Need Workspace Provisioned (V&amp;K Setup)</option>
+                  <option value="NONE">Other / Basic Webmail</option>
                 </select>
+
+                {formData.email_workspace_suite && formData.email_workspace_suite !== 'NONE' && formData.email_workspace_suite !== 'NEED_WORKSPACE' && (
+                  <div className="mt-4">
+                    <VendorValueWedge 
+                      vendorName={formData.email_workspace_suite.replace('_', ' ')}
+                      data={workspaceAudit}
+                      onChange={handleWorkspaceAuditChange}
+                    />
+                  </div>
+                )}
               </div>
 
+              {/* MDM Provider with Tooltip */}
               <div>
-                <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
-                  Backup &amp; Disaster Recovery <span className="text-[#C5A880]">*</span>
-                </label>
-                <select 
-                  name="backup_frequency"
-                  required
-                  value={formData.backup_frequency || ''}
-                  onChange={handleChange}
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
-                >
-                  <option value="" disabled>Please Select Backup System...</option>
-                  <option value="DAILY_AUTOMATED">Daily Immutable Cloud Backups</option>
-                  <option value="WEEKLY">Weekly / Manual Backups</option>
-                  <option value="NONE">No Formal Backup System</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#27272A]/80"></div>
-              </div>
-              <div className="relative flex justify-center text-[10px] font-medium">
-                <span className="px-4 bg-[#0A0A0C] text-neutral-500 uppercase tracking-widest">OR</span>
-              </div>
-            </div>
-
-            {/* Shield Fast-Track Card */}
-            <button
-              type="button"
-              onClick={handleShieldBypass}
-              disabled={isSubmitting}
-              className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/30 p-[1px] rounded-xl hover:border-[#C5A880]/70 hover:shadow-[0_0_25px_rgba(197,168,128,0.2)] transition-all duration-300 cursor-pointer"
-            >
-              <div className="relative w-full bg-[#121215]/90 backdrop-blur-sm px-6 py-4 rounded-xl flex items-center justify-between group-hover:bg-[#161619] transition-colors">
-                <div className="flex items-center gap-4">
-                  <span className="text-2xl filter drop-shadow-[0_0_8px_rgba(197,168,128,0.4)] group-hover:scale-110 transition-transform">🛡️</span>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-white tracking-wide">I Need Turnkey IT &amp; Cyber Security!</p>
-                    <p className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Let VK Shield manage device MDM, antivirus, backups, and security policies.</p>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                    Mobile Device Management (MDM) <span className="text-[#C5A880]">*</span>
+                  </label>
+                  <div className="relative group flex items-center cursor-pointer">
+                    <span className="text-xs text-neutral-400 hover:text-neutral-200">What is MDM? ⓘ</span>
+                    <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-[#121215] border border-[#27272A] rounded-xl text-xs text-neutral-300 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all z-20">
+                      💡 Software that keeps company laptops &amp; mobile devices secure—allowing remote wipes, security updates, and compliance enforcement.
+                    </div>
                   </div>
                 </div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#C5A880] group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Deploy Shield →</span>
-              </div>
-            </button>
 
-            {/* Primary Action Button */}
-            <div className="flex justify-between items-center pt-4">
+                <select 
+                  name="mdm_provider"
+                  required
+                  value={formData.mdm_provider || ''}
+                  onChange={handleChange}
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                >
+                  <option value="" disabled>Please Select MDM Provider...</option>
+                  <option value="JAMF">Jamf Pro / Jamf Now (Apple)</option>
+                  <option value="KANDJI">Kandji</option>
+                  <option value="INTUNE">Microsoft Intune</option>
+                  <option value="RIPPLING_MDM">Rippling IT / MDM</option>
+                  <option value="NONE">No MDM / Manual Fleet</option>
+                </select>
+
+                {formData.mdm_provider && formData.mdm_provider !== 'NONE' && (
+                  <div className="mt-4">
+                    <VendorValueWedge 
+                      vendorName={formData.mdm_provider.replace('_', ' ')}
+                      data={mdmAudit}
+                      onChange={handleMdmAuditChange}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                    Endpoint Protection (Antivirus) <span className="text-[#C5A880]">*</span>
+                  </label>
+                  <select 
+                    name="antivirus_status"
+                    required
+                    value={formData.antivirus_status || ''}
+                    onChange={handleChange}
+                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                  >
+                    <option value="" disabled>Please Select Endpoint Protection...</option>
+                    <option value="ACTIVE_EDR">Managed EDR (CrowdStrike / Defender)</option>
+                    <option value="BASIC_AV">Basic Consumer Antivirus</option>
+                    <option value="NONE">Default OS Defense Only</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                    Backup &amp; Disaster Recovery <span className="text-[#C5A880]">*</span>
+                  </label>
+                  <select 
+                    name="backup_frequency"
+                    required
+                    value={formData.backup_frequency || ''}
+                    onChange={handleChange}
+                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                  >
+                    <option value="" disabled>Please Select Backup System...</option>
+                    <option value="DAILY_AUTOMATED">Daily Immutable Cloud Backups</option>
+                    <option value="WEEKLY">Weekly / Manual Backups</option>
+                    <option value="NONE">No Formal Backup System</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#27272A]/80"></div>
+                </div>
+                <div className="relative flex justify-center text-[10px] font-bold">
+                  <span className="px-4 bg-[#0A0A0C] text-neutral-500 uppercase tracking-[0.2em]">OR</span>
+                </div>
+              </div>
+
+              {/* Shield Fast-Track Card */}
               <button
                 type="button"
-                onClick={() => router.push('/onboarding/step-3')}
-                className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
-              >
-                ← Back
-              </button>
-
-              <button
-                type="submit"
+                onClick={handleShieldBypass}
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] text-[#050507] text-xs font-semibold uppercase tracking-[0.2em] rounded-xl hover:opacity-95 active:scale-[0.99] transition-all shadow-[0_4px_25px_rgba(197,168,128,0.15)] disabled:opacity-50 cursor-pointer"
+                className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/40 p-[1px] rounded-xl hover:border-[#C5A880] hover:shadow-[0_0_30px_rgba(197,168,128,0.25)] transition-all duration-300 cursor-pointer"
               >
-                Continue →
+                <div className="relative w-full bg-[#121215]/95 backdrop-blur-md px-6 py-5 rounded-xl flex items-center justify-between group-hover:bg-[#161619] transition-colors">
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl filter drop-shadow-[0_0_8px_rgba(197,168,128,0.4)] group-hover:scale-110 transition-transform">🛡️</span>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-white tracking-wide">I Need Turnkey IT &amp; Cyber Security!</p>
+                      <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">Let VK Shield manage device MDM, antivirus, backups, and security policies.</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#C5A880] group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Deploy Shield →</span>
+                </div>
               </button>
-            </div>
-          </form>
 
+              {/* UPGRADED PRIMARY ACTION BUTTON: Solid Champagne Gold background for 100% cross-browser reliability */}
+              <div className="flex justify-between items-center pt-4">
+                <button
+                  type="button"
+                  onClick={() => router.push('/onboarding/step-3')}
+                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+                >
+                  ← Back
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+                >
+                  Continue →
+                </button>
+              </div>
+            </form>
+
+          </div>
         </div>
+
       </div>
     </div>
   );
