@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import OnboardingHeader from '../components/OnboardingHeader';
 import { useOnboarding } from '@/app/onboarding/OnboardingContext';
@@ -25,6 +25,84 @@ export default function StepTwoIdentity() {
   );
   const [stateError, setStateError] = useState('');
   const [yearError, setYearError] = useState('');
+  const [isAddressVerified, setIsAddressVerified] = useState(
+    Boolean(formData.hq_address_verified_usps)
+  );
+
+  const addressInputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<any>(null);
+
+  // --- Google Places Autocomplete Script Loader ---
+  useEffect(() => {
+    if (skipAddress) return;
+
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return;
+
+    const initAutocomplete = () => {
+      if (!addressInputRef.current || !window.google?.maps?.places) return;
+
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(
+        addressInputRef.current,
+        {
+          types: ['address'],
+          componentRestrictions: { country: 'us' },
+          fields: ['address_components', 'formatted_address', 'geometry'],
+        }
+      );
+
+      autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current.getPlace();
+        if (!place.address_components) return;
+
+        let streetNumber = '';
+        let route = '';
+        let city = '';
+        let state = '';
+        let zip = '';
+
+        for (const component of place.address_components) {
+          const types = component.types;
+          if (types.includes('street_number')) streetNumber = component.long_name;
+          if (types.includes('route')) route = component.long_name;
+          if (types.includes('locality')) city = component.long_name;
+          else if (!city && types.includes('sublocality_level_1')) city = component.long_name;
+          if (types.includes('administrative_area_level_1')) state = component.short_name;
+          if (types.includes('postal_code')) zip = component.long_name;
+        }
+
+        const addressLine1 = streetNumber ? `${streetNumber} ${route}` : route;
+
+        updateFormData({
+          hq_address_line_1: addressLine1,
+          hq_city: city,
+          hq_state: state,
+          hq_postal_code: zip,
+          hq_address_verified_usps: true,
+        });
+
+        setIsAddressVerified(true);
+        setStateError('');
+      });
+    };
+
+    // Load Google Maps script if not already present
+    if (window.google?.maps?.places) {
+      initAutocomplete();
+    } else {
+      const existingScript = document.getElementById('google-maps-places-script');
+      if (!existingScript) {
+        const script = document.createElement('script');
+        script.id = 'google-maps-places-script';
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+        script.async = true;
+        script.onload = () => initAutocomplete();
+        document.head.appendChild(script);
+      } else {
+        existingScript.addEventListener('load', initAutocomplete);
+      }
+    }
+  }, [skipAddress]);
 
   if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
 
@@ -32,7 +110,8 @@ export default function StepTwoIdentity() {
   const handleStateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const uppercaseVal = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
     setStateError('');
-    updateFormData({ hq_state: uppercaseVal });
+    updateFormData({ hq_state: uppercaseVal, hq_address_verified_usps: false });
+    setIsAddressVerified(false);
   };
 
   const handleStateBlur = () => {
@@ -104,29 +183,56 @@ export default function StepTwoIdentity() {
 
     updateFormData({
       hq_address_type: skipAddress ? 'SKIP_VERIFY_LATER' : 'PHYSICAL',
-      hq_address_verified_usps: false
     });
 
     router.push('/onboarding/step-3');
   };
 
   return (
-    // UPGRADED: Changed font-mono to font-sans for a modern, secure executive banking feel
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
       <OnboardingHeader currentStep={2} />
 
+      {/* Inject custom CSS to style Google Places Autocomplete dropdown in Obsidian Dark Mode */}
+      <style jsx global>{`
+        .pac-container {
+          background-color: #0A0A0C !important;
+          border: 1px solid rgba(197, 168, 128, 0.4) !important;
+          border-radius: 0.75rem !important;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9) !important;
+          font-family: inherit !important;
+          margin-top: 6px !important;
+          z-index: 9999 !important;
+        }
+        .pac-item {
+          color: #E4E4E7 !important;
+          border-top: 1px solid #27272A !important;
+          padding: 10px 14px !important;
+          cursor: pointer !important;
+          font-size: 13px !important;
+        }
+        .pac-item:hover, .pac-item-selected {
+          background-color: #161619 !important;
+        }
+        .pac-item-query {
+          color: #FFFFFF !important;
+          font-weight: 600 !important;
+        }
+        .pac-matched {
+          color: #C5A880 !important;
+        }
+        .pac-icon {
+          display: none !important;
+        }
+      `}</style>
+
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
         
-        {/* Responsive scaling container (max-w-3xl lg:max-w-4xl) with expanded halo wrapper */}
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* UPGRADED EXPANSIVE GOLD HALO: -inset-3 and blur-3xl for a wider, ambient aura */}
           <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
-          {/* MAIN CARD: Obsidian glass panel with enhanced padding and double-layered gold glow */}
           <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
-            {/* Internal Corner Accent Glow */}
             <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#C5A880]/20 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="text-center mb-10">
@@ -188,9 +294,16 @@ export default function StepTwoIdentity() {
               {/* Address Input Section */}
               <div className="pt-2">
                 <div className="flex items-center justify-between mb-4">
-                  <label className="text-[11px] font-semibold uppercase tracking-widest text-neutral-300">HQ Physical Address</label>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-semibold uppercase tracking-widest text-neutral-300">HQ Physical Address</label>
+                    {isAddressVerified && (
+                      <span className="px-2 py-0.5 bg-[#C5A880]/15 border border-[#C5A880]/40 text-[#C5A880] text-[10px] font-bold rounded-full animate-fade-in flex items-center gap-1">
+                        ✓ Verified
+                      </span>
+                    )}
+                  </div>
                   
-                  {/* Skip Address Toggle with Tooltip */}
+                  {/* Skip Address Toggle */}
                   <div className="relative group flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -213,11 +326,15 @@ export default function StepTwoIdentity() {
                   <div className="space-y-4 animate-fade-in">
                     <div>
                       <input
+                        ref={addressInputRef}
                         type="text"
                         name="hq_address_line_1"
                         value={formData.hq_address_line_1 || ''}
-                        onChange={(e) => updateFormData({ hq_address_line_1: e.target.value })}
-                        placeholder="123 Business Blvd, Suite 400"
+                        onChange={(e) => {
+                          updateFormData({ hq_address_line_1: e.target.value, hq_address_verified_usps: false });
+                          setIsAddressVerified(false);
+                        }}
+                        placeholder="Start typing street address (e.g. 700 S Rosemary Ave)..."
                         className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                       />
                     </div>
@@ -228,7 +345,10 @@ export default function StepTwoIdentity() {
                           type="text"
                           name="hq_city"
                           value={formData.hq_city || ''}
-                          onChange={(e) => updateFormData({ hq_city: e.target.value })}
+                          onChange={(e) => {
+                            updateFormData({ hq_city: e.target.value, hq_address_verified_usps: false });
+                            setIsAddressVerified(false);
+                          }}
                           placeholder="City"
                           className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                         />
@@ -256,7 +376,10 @@ export default function StepTwoIdentity() {
                           name="hq_postal_code"
                           maxLength={10}
                           value={formData.hq_postal_code || ''}
-                          onChange={(e) => updateFormData({ hq_postal_code: e.target.value })}
+                          onChange={(e) => {
+                            updateFormData({ hq_postal_code: e.target.value, hq_address_verified_usps: false });
+                            setIsAddressVerified(false);
+                          }}
                           placeholder="ZIP Code"
                           className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                         />
@@ -295,7 +418,7 @@ export default function StepTwoIdentity() {
                 </div>
               </button>
 
-              {/* UPGRADED PRIMARY ACTION BUTTON: Solid Champagne Gold background for 100% cross-browser reliability */}
+              {/* PRIMARY ACTION BUTTON */}
               <div className="flex justify-between items-center pt-4">
                 <button
                   type="button"
