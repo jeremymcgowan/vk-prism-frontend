@@ -114,7 +114,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             <div className="w-8 h-8 rounded border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37] font-sans font-bold shadow-[0_0_12px_rgba(197,168,128,0.2)]">VK</div>
             <div>
               <h1 className="text-sm font-bold tracking-widest text-zinc-200">V&amp;K PARTNERS</h1>
-              <p className="text-[20px] font-bold tracking-[0.3em] text-[#D4AF37]">PRISM</p>
+              <p className="text-[24px] font-bold tracking-[0.3em] text-[#D4AF37] text-center">PRISM</p>
             </div>
           </div>
 
