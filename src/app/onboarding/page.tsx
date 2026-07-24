@@ -39,23 +39,22 @@ export default function StepOneGateway() {
   };
 
   return (
-    // UPGRADED: Changed font-mono to font-sans for an executive, secure banking feel
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
       <OnboardingHeader currentStep={1} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
         
-        {/* UPGRADED: Responsive scaling container (max-w-3xl lg:max-w-4xl) with external halo wrapper */}
+        {/* Responsive scaling container (max-w-3xl lg:max-w-4xl) with expanded halo wrapper */}
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* THE GOLD GRADIENT HALO: Ambient background glow that lifts the box off the black canvas */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-[#C5A880]/25 via-[#8B7325]/10 to-[#C5A880]/25 rounded-3xl blur-2xl opacity-75 pointer-events-none transition-all duration-700"></div>
+          {/* UPGRADED EXPANSIVE GOLD HALO: Increased to -inset-3 and blur-3xl for a wider, ambient aura */}
+          <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
-          {/* MAIN CARD: Obsidian glass panel with enhanced padding and gold-tinted shadow */}
-          <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/30 hover:border-[#C5A880]/50 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_30px_-10px_rgba(197,168,128,0.2)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
+          {/* MAIN CARD: Obsidian glass panel with enhanced padding and double-layered gold glow */}
+          <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
             {/* Internal Corner Accent Glow */}
-            <div className="absolute -top-24 -left-24 w-48 h-48 bg-[#C5A880]/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#C5A880]/20 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="text-center mb-10">
               <h2 className="text-xs font-bold tracking-[0.25em] text-[#C5A880] uppercase mb-3">
@@ -159,12 +158,12 @@ export default function StepOneGateway() {
                 </div>
               </button>
 
-              {/* Primary Action Button */}
+              {/* UPGRADED PRIMARY ACTION BUTTON: Solid Champagne Gold background for 100% cross-browser reliability */}
               <div className="flex justify-end pt-4">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full sm:w-auto px-10 py-3.5 bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] text-[#050507] text-xs font-bold uppercase tracking-[0.2em] rounded-xl hover:opacity-95 active:scale-[0.99] transition-all shadow-[0_4px_25px_rgba(197,168,128,0.2)] disabled:opacity-50 cursor-pointer"
+                  className="w-full sm:w-auto px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
                 >
                   Continue →
                 </button>
