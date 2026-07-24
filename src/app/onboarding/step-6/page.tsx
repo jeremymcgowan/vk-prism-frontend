@@ -127,151 +127,161 @@ export default function StepSixFlow() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-mono antialiased">
+    // UPGRADED: Changed font-mono to font-sans for a modern, secure executive banking feel
+    <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
       <OnboardingHeader currentStep={6} />
 
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-2xl bg-[#0A0A0C]/90 glass-panel border border-[#1F1F1F] shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-8 my-6 relative overflow-hidden rounded-2xl">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
+        
+        {/* Responsive scaling container (max-w-3xl lg:max-w-4xl) with expanded halo wrapper */}
+        <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* Subtle Champagne Gold Glow */}
-          <div className="absolute -top-20 -left-20 w-40 h-40 bg-[#C5A880]/10 rounded-full blur-3xl pointer-events-none"></div>
+          {/* UPGRADED EXPANSIVE GOLD HALO: -inset-3 and blur-3xl for a wider, ambient aura */}
+          <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-xs font-bold tracking-[0.2em] text-[#C5A880] uppercase mb-2">
-              Step 6 of 6: VK Flow — Workflows &amp; Automation
-            </h2>
-            <h1 className="text-2xl font-light text-white tracking-wide">
-              How does your business run day-to-day?
-            </h1>
-          </div>
+          {/* MAIN CARD: Obsidian glass panel with enhanced padding and double-layered gold glow */}
+          <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
+            
+            {/* Internal Corner Accent Glow */}
+            <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#C5A880]/20 rounded-full blur-3xl pointer-events-none"></div>
 
-          <form onSubmit={handleStandardSubmit} className="space-y-6">
-            <div>
-              <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
-                Primary CRM &amp; Customer Data System <span className="text-[#C5A880]">*</span>
-              </label>
-              <select 
-                name="crm_system"
-                required
-                value={formData.crm_system || ''}
-                onChange={handleChange}
-                className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
-              >
-                <option value="" disabled>Please Select CRM System...</option>
-                <option value="HUBSPOT">HubSpot</option>
-                <option value="SALESFORCE">Salesforce</option>
-                <option value="NOTION">Notion / Airtable</option>
-                <option value="OTHER">Other CRM</option>
-                <option value="NONE">No CRM / Spreadsheets Only</option>
-              </select>
+            <div className="text-center mb-10">
+              <h2 className="text-xs font-bold tracking-[0.25em] text-[#C5A880] uppercase mb-3">
+                Step 6 of 6: VK Flow — Workflows &amp; Automation
+              </h2>
+              <h1 className="text-3xl lg:text-4xl font-light text-white tracking-tight">
+                How does your business run day-to-day?
+              </h1>
+            </div>
 
-              {formData.crm_system && formData.crm_system !== 'NONE' && (
-                <div className="mt-4">
-                  <VendorValueWedge 
-                    vendorName={formData.crm_system}
-                    data={crmAudit}
-                    onChange={handleCrmAuditChange}
-                  />
+            <form onSubmit={handleStandardSubmit} className="space-y-6">
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  Primary CRM &amp; Customer Data System <span className="text-[#C5A880]">*</span>
+                </label>
+                <select 
+                  name="crm_system"
+                  required
+                  value={formData.crm_system || ''}
+                  onChange={handleChange}
+                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                >
+                  <option value="" disabled>Please Select CRM System...</option>
+                  <option value="HUBSPOT">HubSpot</option>
+                  <option value="SALESFORCE">Salesforce</option>
+                  <option value="NOTION">Notion / Airtable</option>
+                  <option value="OTHER">Other CRM</option>
+                  <option value="NONE">No CRM / Spreadsheets Only</option>
+                </select>
+
+                {formData.crm_system && formData.crm_system !== 'NONE' && (
+                  <div className="mt-4">
+                    <VendorValueWedge 
+                      vendorName={formData.crm_system}
+                      data={crmAudit}
+                      onChange={handleCrmAuditChange}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                    Team Communication <span className="text-[#C5A880]">*</span>
+                  </label>
+                  <select 
+                    name="collaboration_tool"
+                    required
+                    value={formData.collaboration_tool || ''}
+                    onChange={handleChange}
+                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                  >
+                    <option value="" disabled>Please Select Communication Tool...</option>
+                    <option value="SLACK">Slack</option>
+                    <option value="TEAMS">Microsoft Teams</option>
+                    <option value="DISCORD">Discord</option>
+                    <option value="EMAIL">Email / SMS Only</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                    Current Automation Level <span className="text-[#C5A880]">*</span>
+                  </label>
+                  <select 
+                    name="automation_status"
+                    required
+                    value={formData.automation_status || ''}
+                    onChange={handleChange}
+                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                  >
+                    <option value="" disabled>Please Select Automation Level...</option>
+                    <option value="MANUAL">100% Manual Processes</option>
+                    <option value="ZAPIER">Basic Zapier / Make Zaps</option>
+                    <option value="CUSTOM_AI">Custom AI &amp; API Workflows</option>
+                  </select>
+                </div>
+              </div>
+
+              {error && (
+                <div className="rounded-xl border border-red-900/40 bg-red-950/20 px-5 py-3 text-xs text-red-400 font-mono shadow-inner">
+                  SUBMISSION_ERROR // {error}
                 </div>
               )}
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
-                  Team Communication <span className="text-[#C5A880]">*</span>
-                </label>
-                <select 
-                  name="collaboration_tool"
-                  required
-                  value={formData.collaboration_tool || ''}
-                  onChange={handleChange}
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
-                >
-                  <option value="" disabled>Please Select Communication Tool...</option>
-                  <option value="SLACK">Slack</option>
-                  <option value="TEAMS">Microsoft Teams</option>
-                  <option value="DISCORD">Discord</option>
-                  <option value="EMAIL">Email / SMS Only</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-medium uppercase tracking-widest text-neutral-400 mb-2">
-                  Current Automation Level <span className="text-[#C5A880]">*</span>
-                </label>
-                <select 
-                  name="automation_status"
-                  required
-                  value={formData.automation_status || ''}
-                  onChange={handleChange}
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3 text-sm rounded-lg focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
-                >
-                  <option value="" disabled>Please Select Automation Level...</option>
-                  <option value="MANUAL">100% Manual Processes</option>
-                  <option value="ZAPIER">Basic Zapier / Make Zaps</option>
-                  <option value="CUSTOM_AI">Custom AI &amp; API Workflows</option>
-                </select>
-              </div>
-            </div>
-
-            {error && (
-              <div className="rounded border border-red-900/30 bg-red-950/10 px-4 py-2.5 text-xs text-red-400 font-mono">
-                SUBMISSION_ERROR // {error}
-              </div>
-            )}
-
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#27272A]/80"></div>
-              </div>
-              <div className="relative flex justify-center text-[10px] font-medium">
-                <span className="px-4 bg-[#0A0A0C] text-neutral-500 uppercase tracking-widest">OR</span>
-              </div>
-            </div>
-
-            {/* Flow Fast-Track Card */}
-            <button
-              type="button"
-              onClick={handleFlowBypass}
-              disabled={isSubmitting}
-              className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/30 p-[1px] rounded-xl hover:border-[#C5A880]/70 hover:shadow-[0_0_25px_rgba(197,168,128,0.2)] transition-all duration-300 cursor-pointer"
-            >
-              <div className="relative w-full bg-[#121215]/90 backdrop-blur-sm px-6 py-4 rounded-xl flex items-center justify-between group-hover:bg-[#161619] transition-colors">
-                <div className="flex items-center gap-4">
-                  <span className="text-2xl filter drop-shadow-[0_0_8px_rgba(197,168,128,0.4)] group-hover:scale-110 transition-transform">⚡</span>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-white tracking-wide">I Need Turnkey AI &amp; Workflows!</p>
-                    <p className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Automate operations with V&amp;K custom agents and automated software integrations.</p>
-                  </div>
+              {/* Divider */}
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#27272A]/80"></div>
                 </div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#C5A880] group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Automate Us →</span>
+                <div className="relative flex justify-center text-[10px] font-bold">
+                  <span className="px-4 bg-[#0A0A0C] text-neutral-500 uppercase tracking-[0.2em]">OR</span>
+                </div>
               </div>
-            </button>
 
-            {/* Primary Action Buttons */}
-            <div className="flex justify-between items-center pt-4">
+              {/* Flow Fast-Track Card */}
               <button
                 type="button"
-                onClick={() => router.push('/onboarding/step-5')}
-                className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
-              >
-                ← Back
-              </button>
-
-              <button
-                type="submit"
+                onClick={handleFlowBypass}
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-[#9A7B56] via-[#C5A880] to-[#7C643F] text-[#050507] text-xs font-semibold uppercase tracking-[0.2em] rounded-xl hover:opacity-95 active:scale-[0.99] transition-all shadow-[0_4px_25px_rgba(197,168,128,0.15)] disabled:opacity-50 cursor-pointer"
+                className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/40 p-[1px] rounded-xl hover:border-[#C5A880] hover:shadow-[0_0_30px_rgba(197,168,128,0.25)] transition-all duration-300 cursor-pointer"
               >
-                {isSubmitting ? 'Transmitting Dataset...' : 'Complete Onboarding ✨'}
+                <div className="relative w-full bg-[#121215]/95 backdrop-blur-md px-6 py-5 rounded-xl flex items-center justify-between group-hover:bg-[#161619] transition-colors">
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl filter drop-shadow-[0_0_8px_rgba(197,168,128,0.4)] group-hover:scale-110 transition-transform">⚡</span>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-white tracking-wide">I Need Turnkey AI &amp; Workflows!</p>
+                      <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">Automate operations with V&amp;K custom agents and automated software integrations.</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#C5A880] group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Automate Us →</span>
+                </div>
               </button>
-            </div>
-          </form>
 
+              {/* UPGRADED PRIMARY ACTION BUTTON: Solid Champagne Gold background for 100% cross-browser reliability */}
+              <div className="flex justify-between items-center pt-4">
+                <button
+                  type="button"
+                  onClick={() => router.push('/onboarding/step-5')}
+                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+                >
+                  ← Back
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+                >
+                  {isSubmitting ? 'Transmitting Dataset...' : 'Complete Onboarding ✨'}
+                </button>
+              </div>
+            </form>
+
+          </div>
         </div>
+
       </div>
     </div>
   );
