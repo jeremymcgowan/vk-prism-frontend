@@ -16,6 +16,22 @@ export default function StepOneGateway() {
     updateFormData({ [e.target.name]: e.target.value });
   };
 
+  // --- Auto-Formatting US Phone Number: (XXX) XXX-XXXX ---
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+    
+    let formatted = digits;
+    if (digits.length > 6) {
+      formatted = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+    } else if (digits.length > 3) {
+      formatted = `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    } else if (digits.length > 0) {
+      formatted = `(${digits}`;
+    }
+
+    updateFormData({ contact_phone: formatted });
+  };
+
   // Helper to persist draft payload before proceeding
   const saveDraftAndNavigate = (mode: 'EXPRESS_CONCIERGE' | 'STANDARD_AUDIT', isFastTrack: boolean) => {
     setIsSubmitting(true);
@@ -47,7 +63,7 @@ export default function StepOneGateway() {
         {/* Responsive scaling container (max-w-3xl lg:max-w-4xl) with expanded halo wrapper */}
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* UPGRADED EXPANSIVE GOLD HALO: Increased to -inset-3 and blur-3xl for a wider, ambient aura */}
+          {/* EXPANSIVE GOLD HALO: -inset-3 and blur-3xl for a wider, ambient aura */}
           <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
           {/* MAIN CARD: Obsidian glass panel with enhanced padding and double-layered gold glow */}
@@ -122,7 +138,7 @@ export default function StepOneGateway() {
                     type="tel"
                     name="contact_phone"
                     value={formData.contact_phone || ''}
-                    onChange={handleChange}
+                    onChange={handlePhoneChange}
                     placeholder="(555) 000-0000"
                     className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                   />
@@ -158,7 +174,7 @@ export default function StepOneGateway() {
                 </div>
               </button>
 
-              {/* UPGRADED PRIMARY ACTION BUTTON: Solid Champagne Gold background for 100% cross-browser reliability */}
+              {/* PRIMARY ACTION BUTTON: Solid Champagne Gold background */}
               <div className="flex justify-end pt-4">
                 <button
                   type="submit"
