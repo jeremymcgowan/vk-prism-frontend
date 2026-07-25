@@ -72,6 +72,13 @@ interface PlatformBanner {
   is_active: boolean
 }
 
+const US_STATES = [
+  'DE', 'CA', 'NY', 'TX', 'FL', 'NV', 'WY', 'IL', 'MA', 'WA', 'CO', 'GA', 'NC', 'OH', 
+  'PA', 'VA', 'AZ', 'MI', 'NJ', 'TN', 'OR', 'MO', 'UT', 'MD', 'MN', 'IN', 'SC', 'CT', 
+  'WI', 'AL', 'OK', 'KY', 'IA', 'LA', 'KS', 'AR', 'NE', 'MS', 'NM', 'ID', 'NH', 'WV', 
+  'HI', 'ME', 'RI', 'MT', 'ND', 'SD', 'AK', 'VT'
+]
+
 export default function EcosystemEntitiesManager() {
   const [nodes, setNodes] = useState<Pick<EntityTelemetry, 'id' | 'display_name' | 'status'>[]>([])
   const [selectedId, setSelectedId] = useState<string>('')
@@ -84,6 +91,20 @@ export default function EcosystemEntitiesManager() {
   const [saving, setSaving] = useState<boolean>(false)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  // Per-section edit locks (default locked)
+  const [editingSections, setEditingSections] = useState<Record<string, boolean>>({
+    sec01: false,
+    sec02: false,
+    sec03: false,
+    sec04: false,
+    sec05: false,
+    sec06: false,
+  })
+
+  const toggleSectionEdit = (secKey: string) => {
+    setEditingSections(prev => ({ ...prev, [secKey]: !prev[secKey] }))
+  }
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -93,14 +114,23 @@ export default function EcosystemEntitiesManager() {
     fetchInitialData()
   }, [])
 
-  // Helper function to safely parse numbers without exceeding Postgres 32-bit Integer limits (2,147,483,647)
   const safeParseInt = (val: string, maxVal: number = 2147483647): number => {
     const parsed = parseInt(val, 10)
     if (isNaN(parsed)) return 0
     return Math.min(parsed, maxVal)
   }
 
-  // Added preserveId parameter to lock client dropdown index state across read cycles
+  const formatEIN = (val: string): string => {
+    const digits = val.replace(/\D/g, '').slice(0, 9)
+    if (digits.length <= 2) return digits
+    return `${digits.slice(0, 2)}-${digits.slice(2)}`
+  }
+
+  const isValidEIN = (ein: string): boolean => {
+    const digits = ein.replace(/\D/g, '')
+    return digits.length === 9
+  }
+
   async function fetchInitialData(preserveId?: string) {
     setLoading(true)
     const { data: entData } = await supabase
@@ -176,9 +206,15 @@ export default function EcosystemEntitiesManager() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!telemetry || !assessment) return
+
+    // Strict EIN format validation guard
+    if (telemetry.ein_number && !isValidEIN(telemetry.ein_number)) {
+      triggerToast('error', 'EIN Validation Failed: Must contain exactly 9 numeric digits (XX-XXXXXXX).')
+      return
+    }
+
     setSaving(true)
 
-    // Explicitly strip immutable primary keys and auto-managed timestamps
     const { 
       id: entityUuid, 
       parent_entity_id, 
@@ -215,7 +251,8 @@ export default function EcosystemEntitiesManager() {
       triggerToast('error', `Write Rejected: ${err?.message} (${err?.details || err?.hint || 'Check DB schema'})`)
     } else {
       triggerToast('success', `All system configurations committed securely.`)
-      // Refetch while explicitly locking state to the modified node parameter
+      // Lock all sections back after a successful save
+      setEditingSections({ sec01: false, sec02: false, sec03: false, sec04: false, sec05: false, sec06: false })
       await fetchInitialData(telemetry.id)
     }
   }
@@ -243,7 +280,7 @@ export default function EcosystemEntitiesManager() {
 
   return (
     <div className="space-y-6">
-      {/* 🛠_ Master Filter Controller */}
+      {/* Master Filter Controller */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-zinc-900 bg-zinc-950/80 rounded-xl">
         <div className="space-y-1">
           <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block">Active Entity Target</label>
@@ -279,24 +316,54 @@ export default function EcosystemEntitiesManager() {
               
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 
-                {/* 🏢_ SECTION 01: CORPORATE BASELINE & CAPITAL VETTING */}
+                {/* 🏢 SECTION 01 */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
-                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
-                    Section 01 // Corporate Baseline & Capital Vetting
-                  </h3>
+                  <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                    <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
+                      Section 01 // Corporate Baseline & Capital Vetting
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionEdit('sec01')}
+                      className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors border ${
+                        editingSections.sec01
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-400 hover:bg-amber-500/30'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      {editingSections.sec01 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
+                    </button>
+                  </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">DISPLAY NAME</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.display_name || ''} onChange={e => setTelemetry({...telemetry, display_name: e.target.value})} />
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.display_name || ''} 
+                        onChange={e => setTelemetry({...telemetry, display_name: e.target.value})} 
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">LEGAL CORPORATE NAME</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.legal_name || ''} onChange={e => setTelemetry({...telemetry, legal_name: e.target.value})} />
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.legal_name || ''} 
+                        onChange={e => setTelemetry({...telemetry, legal_name: e.target.value})} 
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">LEGAL STRUCTURE</label>
-                      <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.legal_structure || ''} onChange={e => setTelemetry({...telemetry, legal_structure: e.target.value})}>
+                      <select 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.legal_structure || ''} 
+                        onChange={e => setTelemetry({...telemetry, legal_structure: e.target.value})}
+                      >
                         <option value="LLC">LLC</option>
                         <option value="C_CORP">C_CORP</option>
                         <option value="S_CORP">S_CORP</option>
@@ -304,30 +371,80 @@ export default function EcosystemEntitiesManager() {
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">REGISTRATION STATE</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" maxLength={2} value={telemetry.registration_state || ''} onChange={e => setTelemetry({...telemetry, registration_state: e.target.value})} />
+                      <select 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.registration_state || ''} 
+                        onChange={e => setTelemetry({...telemetry, registration_state: e.target.value})}
+                      >
+                        {US_STATES.map(st => (
+                          <option key={st} value={st}>{st}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">FORMATION YEAR</label>
-                      <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.formation_year || 0} onChange={e => setTelemetry({...telemetry, formation_year: safeParseInt(e.target.value)})} />
+                      <input 
+                        type="number" 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.formation_year || 0} 
+                        onChange={e => setTelemetry({...telemetry, formation_year: safeParseInt(e.target.value)})} 
+                      />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-mono text-zinc-500">EIN NUMBER</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.ein_number || ''} onChange={e => setTelemetry({...telemetry, ein_number: e.target.value})} />
+                      <label className="text-[10px] font-mono text-zinc-500">
+                        EIN NUMBER <span className="text-zinc-600">(XX-XXXXXXX)</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        maxLength={10}
+                        disabled={!editingSections.sec01}
+                        placeholder="12-3456789"
+                        className={`w-full bg-black border rounded px-2.5 py-1.5 text-xs font-mono disabled:opacity-50 disabled:cursor-not-allowed ${
+                          telemetry.ein_number && !isValidEIN(telemetry.ein_number)
+                            ? 'border-rose-800 text-rose-400 focus:border-rose-500'
+                            : 'border-zinc-800 text-zinc-200 focus:border-amber-500'
+                        }`} 
+                        value={telemetry.ein_number || ''} 
+                        onChange={e => setTelemetry({...telemetry, ein_number: formatEIN(e.target.value)})} 
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">INDUSTRY SECTOR</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.industry || ''} onChange={e => setTelemetry({...telemetry, industry: e.target.value})} />
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.industry || ''} 
+                        onChange={e => setTelemetry({...telemetry, industry: e.target.value})} 
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">NODE STATUS</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.status || ''} onChange={e => setTelemetry({...telemetry, status: e.target.value})} />
+                      <select 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.status || 'ACTIVE'} 
+                        onChange={e => setTelemetry({...telemetry, status: e.target.value})}
+                      >
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                        <option value="SUSPENDED">SUSPENDED</option>
+                      </select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 border-t border-zinc-900/60 pt-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">FUNDING STAGE</label>
-                      <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-purple-400 font-mono" value={telemetry.funding_stage || ''} onChange={e => setTelemetry({...telemetry, funding_stage: e.target.value})}>
+                      <select 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-purple-400 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.funding_stage || ''} 
+                        onChange={e => setTelemetry({...telemetry, funding_stage: e.target.value})}
+                      >
                         <option value="PRE_SEED">PRE_SEED</option>
                         <option value="SEED">SEED</option>
                         <option value="SERIES_A">SERIES_A</option>
@@ -336,11 +453,22 @@ export default function EcosystemEntitiesManager() {
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">TARGET CAPITAL ($)</label>
-                      <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.funding_target_amount || 0} onChange={e => setTelemetry({...telemetry, funding_target_amount: safeParseInt(e.target.value)})} />
+                      <input 
+                        type="number" 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.funding_target_amount || 0} 
+                        onChange={e => setTelemetry({...telemetry, funding_target_amount: safeParseInt(e.target.value)})} 
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">V&K AUDIT STATUS</label>
-                      <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-amber-400 font-mono" value={telemetry.vk_audit_status || ''} onChange={e => setTelemetry({...telemetry, vk_audit_status: e.target.value})}>
+                      <select 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-amber-400 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.vk_audit_status || ''} 
+                        onChange={e => setTelemetry({...telemetry, vk_audit_status: e.target.value})}
+                      >
                         <option value="PENDING">PENDING</option>
                         <option value="PASSED">PASSED</option>
                         <option value="FAILED">FAILED</option>
@@ -351,21 +479,21 @@ export default function EcosystemEntitiesManager() {
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-900/40">
                     <div className="space-y-2">
                       <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                        <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.is_seeking_funding} onChange={e => setTelemetry({...telemetry, is_seeking_funding: e.target.checked})} />
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.is_seeking_funding} onChange={e => setTelemetry({...telemetry, is_seeking_funding: e.target.checked})} />
                         <span>Seeking Funding</span>
                       </label>
                       <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                        <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.crunchbase_active} onChange={e => setTelemetry({...telemetry, crunchbase_active: e.target.checked})} />
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.crunchbase_active} onChange={e => setTelemetry({...telemetry, crunchbase_active: e.target.checked})} />
                         <span>Crunchbase Profile Verified</span>
                       </label>
                     </div>
                     <div className="space-y-2">
                       <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                        <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.sells_tangible_goods} onChange={e => setTelemetry({...telemetry, sells_tangible_goods: e.target.checked})} />
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.sells_tangible_goods} onChange={e => setTelemetry({...telemetry, sells_tangible_goods: e.target.checked})} />
                         <span>Sells Tangible Goods</span>
                       </label>
                       <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                        <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.has_duns_number} onChange={e => setTelemetry({...telemetry, has_duns_number: e.target.checked})} />
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.has_duns_number} onChange={e => setTelemetry({...telemetry, has_duns_number: e.target.checked})} />
                         <span>Has DUNS Tracker</span>
                       </label>
                     </div>
@@ -374,70 +502,171 @@ export default function EcosystemEntitiesManager() {
                   <div className="grid grid-cols-2 gap-4 border-t border-zinc-900/40 pt-2">
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">DUNS NUMBER ID</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.duns_number || ''} onChange={e => setTelemetry({...telemetry, duns_number: e.target.value})} />
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.duns_number || ''} 
+                        onChange={e => setTelemetry({...telemetry, duns_number: e.target.value})} 
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">BBB WEDGE SENTIMENT</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.bbb_wedge_sentiment || ''} onChange={e => setTelemetry({...telemetry, bbb_wedge_sentiment: e.target.value})} />
+                      <select 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.bbb_wedge_sentiment || 'SATISFIED'} 
+                        onChange={e => setTelemetry({...telemetry, bbb_wedge_sentiment: e.target.value})}
+                      >
+                        <option value="SATISFIED">SATISFIED</option>
+                        <option value="UNSATISFIED">UNSATISFIED</option>
+                        <option value="NEUTRAL">NEUTRAL</option>
+                        <option value="UNRATED">UNRATED</option>
+                      </select>
                     </div>
                   </div>
                 </div>
 
-                {/* 🛡️_ SECTION 02: THREAT VECTOR & SECURITY INFRASTRUCTURE (VK Shield) */}
+                {/* 🛡️ SECTION 02 */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
-                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
-                    Section 02 // Threat Vector & Security Infrastructure
-                  </h3>
+                  <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                    <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
+                      Section 02 // Threat Vector & Security Infrastructure
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionEdit('sec02')}
+                      className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors border ${
+                        editingSections.sec02
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-400 hover:bg-amber-500/30'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      {editingSections.sec02 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
+                    </button>
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">MANAGED IT VECTOR (MSP)</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.has_managed_it || ''} onChange={e => setTelemetry({...telemetry, has_managed_it: e.target.value})} />
+                      <select 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.has_managed_it || 'FALSE'} 
+                        onChange={e => setTelemetry({...telemetry, has_managed_it: e.target.value})}
+                      >
+                        <option value="TRUE">TRUE (MANAGED MSP)</option>
+                        <option value="FALSE">FALSE (INTERNAL / NONE)</option>
+                        <option value="HYBRID">HYBRID</option>
+                      </select>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">ANTIVIRUS ENGINE STATUS</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.it_antivirus_status || ''} onChange={e => setTelemetry({...telemetry, it_antivirus_status: e.target.value})} />
+                      <select 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.it_antivirus_status || 'ACTIVE'} 
+                        onChange={e => setTelemetry({...telemetry, it_antivirus_status: e.target.value})}
+                      >
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="DEGRADED">DEGRADED</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                      </select>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">ANTIVIRUS AGENT VENDOR</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.it_antivirus_vendor || ''} onChange={e => setTelemetry({...telemetry, it_antivirus_vendor: e.target.value})} />
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.it_antivirus_vendor || ''} 
+                        onChange={e => setTelemetry({...telemetry, it_antivirus_vendor: e.target.value})} 
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">MDM ENFORCEMENT LOG</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.it_mdm_status || ''} onChange={e => setTelemetry({...telemetry, it_mdm_status: e.target.value})} />
+                      <select 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.it_mdm_status || 'DEPLOYED'} 
+                        onChange={e => setTelemetry({...telemetry, it_mdm_status: e.target.value})}
+                      >
+                        <option value="DEPLOYED">DEPLOYED</option>
+                        <option value="PARTIAL">PARTIAL</option>
+                        <option value="NOT_ENFORCED">NOT_ENFORCED</option>
+                      </select>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">SSO GATEWAY VENDOR</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.it_sso_vendor || ''} onChange={e => setTelemetry({...telemetry, it_sso_vendor: e.target.value})} />
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.it_sso_vendor || ''} 
+                        onChange={e => setTelemetry({...telemetry, it_sso_vendor: e.target.value})} 
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">SSO GATEWAY STATUS</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.it_sso_status || ''} onChange={e => setTelemetry({...telemetry, it_sso_status: e.target.value})} />
+                      <select 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.it_sso_status || 'ACTIVE'} 
+                        onChange={e => setTelemetry({...telemetry, it_sso_status: e.target.value})}
+                      >
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="PARTIAL">PARTIAL</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                      </select>
                     </div>
                   </div>
                   
                   <div className="pt-2 border-t border-zinc-900/60">
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.it_encryption_enabled} onChange={e => setTelemetry({...telemetry, it_encryption_enabled: e.target.checked})} />
+                      <input type="checkbox" disabled={!editingSections.sec02} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.it_encryption_enabled} onChange={e => setTelemetry({...telemetry, it_encryption_enabled: e.target.checked})} />
                       <span>Local Device Storage Encryption Enforced</span>
                     </label>
                   </div>
                 </div>
 
-                {/* 👥_ SECTION 03: WORKFORCE ADMINISTRATION & COMPLIANCE EXPOSURE (VK People) */}
+                {/* 👥 SECTION 03 */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
-                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
-                    Section 03 // Workforce Administration & Compliance Exposure
-                  </h3>
+                  <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                    <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
+                      Section 03 // Workforce Administration & Compliance Exposure
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionEdit('sec03')}
+                      className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors border ${
+                        editingSections.sec03
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-400 hover:bg-amber-500/30'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      {editingSections.sec03 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
+                    </button>
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">PAYROLL PROCESSING PLATFORM</label>
-                      <input type="text" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200" value={telemetry.hr_payroll_platform || ''} onChange={e => setTelemetry({...telemetry, hr_payroll_platform: e.target.value})} />
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec03}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.hr_payroll_platform || ''} 
+                        onChange={e => setTelemetry({...telemetry, hr_payroll_platform: e.target.value})} 
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">MULTISTATE TAX EXPOSURE STATUS</label>
-                      <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-red-400 font-mono" value={telemetry.hr_multistate_tax_registered || ''} onChange={e => setTelemetry({...telemetry, hr_multistate_tax_registered: e.target.value})}>
+                      <select 
+                        disabled={!editingSections.sec03}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-red-400 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.hr_multistate_tax_registered || ''} 
+                        onChange={e => setTelemetry({...telemetry, hr_multistate_tax_registered: e.target.value})}
+                      >
                         <option value="CLEAR">CLEAR_NO_NEXUS</option>
                         <option value="EXPOSED">NEXUS_EXPOSED_RISK</option>
                       </select>
@@ -446,25 +675,38 @@ export default function EcosystemEntitiesManager() {
 
                   <div className="space-y-2 pt-2 border-t border-zinc-900/60">
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.hr_benefits_active} onChange={e => setTelemetry({...telemetry, hr_benefits_active: e.target.checked})} />
+                      <input type="checkbox" disabled={!editingSections.sec03} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.hr_benefits_active} onChange={e => setTelemetry({...telemetry, hr_benefits_active: e.target.checked})} />
                       <span>Active Group Benefits Network Infrastructure</span>
                     </label>
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.hr_all_staff_piia_signed} onChange={e => setTelemetry({...telemetry, hr_all_staff_piia_signed: e.target.checked})} />
+                      <input type="checkbox" disabled={!editingSections.sec03} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.hr_all_staff_piia_signed} onChange={e => setTelemetry({...telemetry, hr_all_staff_piia_signed: e.target.checked})} />
                       <span>Proprietary Information & Inventions Agreements Signed (PIIA)</span>
                     </label>
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.ins_commercial_policy_active} onChange={e => setTelemetry({...telemetry, ins_commercial_policy_active: e.target.checked})} />
+                      <input type="checkbox" disabled={!editingSections.sec03} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.ins_commercial_policy_active} onChange={e => setTelemetry({...telemetry, ins_commercial_policy_active: e.target.checked})} />
                       <span>Active General Commercial Liability Protection Policy</span>
                     </label>
                   </div>
                 </div>
 
-                {/* 📊_ SECTION 04: PIPELINE FRICTION & OPTIMIZATION ANALYTICS */}
+                {/* 📊 SECTION 04 */}
                 <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
-                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase border-b border-zinc-900 pb-2">
-                    Section 04 // Pipeline Friction & Optimization Analytics
-                  </h3>
+                  <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                    <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
+                      Section 04 // Pipeline Friction & Optimization Analytics
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionEdit('sec04')}
+                      className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors border ${
+                        editingSections.sec04
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-400 hover:bg-amber-500/30'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      {editingSections.sec04 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
+                    </button>
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -472,14 +714,20 @@ export default function EcosystemEntitiesManager() {
                       <input 
                         type="number" 
                         max={2147483647}
-                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" 
+                        disabled={!editingSections.sec04}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
                         value={telemetry.flow_disconnected_tool_count || 0} 
                         onChange={e => setTelemetry({...telemetry, flow_disconnected_tool_count: safeParseInt(e.target.value)})} 
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">WEB LAYOUT SATISFACTION</label>
-                      <select className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.web_design_satisfaction || ''} onChange={e => setTelemetry({...telemetry, web_design_satisfaction: e.target.value})}>
+                      <select 
+                        disabled={!editingSections.sec04}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={telemetry.web_design_satisfaction || ''} 
+                        onChange={e => setTelemetry({...telemetry, web_design_satisfaction: e.target.value})}
+                      >
                         <option value="SATISFIED">OPTIMIZED_CONVERSION</option>
                         <option value="UNSATISFIED">CONVERSION_FRICTION</option>
                       </select>
@@ -488,15 +736,15 @@ export default function EcosystemEntitiesManager() {
 
                   <div className="space-y-2 pt-2 border-t border-zinc-900/60">
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.flow_unstructured_pdf_parsing_manual} onChange={e => setTelemetry({...telemetry, flow_unstructured_pdf_parsing_manual: e.target.checked})} />
+                      <input type="checkbox" disabled={!editingSections.sec04} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.flow_unstructured_pdf_parsing_manual} onChange={e => setTelemetry({...telemetry, flow_unstructured_pdf_parsing_manual: e.target.checked})} />
                       <span>Manual Processing of Unstructured Document Formats Active</span>
                     </label>
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.web_yields_leads} onChange={e => setTelemetry({...telemetry, web_yields_leads: e.target.checked})} />
+                      <input type="checkbox" disabled={!editingSections.sec04} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.web_yields_leads} onChange={e => setTelemetry({...telemetry, web_yields_leads: e.target.checked})} />
                       <span>Inbound Capture Funnels Harvest Leads Effectively</span>
                     </label>
                     <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
-                      <input type="checkbox" className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800" checked={telemetry.web_analytics_active} onChange={e => setTelemetry({...telemetry, web_analytics_active: e.target.checked})} />
+                      <input type="checkbox" disabled={!editingSections.sec04} className="accent-amber-500 h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-50" checked={telemetry.web_analytics_active} onChange={e => setTelemetry({...telemetry, web_analytics_active: e.target.checked})} />
                       <span>Traffic Performance Analytics Trackers Active</span>
                     </label>
                   </div>
@@ -504,15 +752,28 @@ export default function EcosystemEntitiesManager() {
 
               </div>
 
-              {/* 📈_ SECTION 05: REGULATORY COMPLIANCE SYSTEM MATRIX (MODULE 5) */}
+              {/* 📈 SECTION 05 */}
               <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4 block w-full">
-                <div>
-                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
-                    Section 05 // Regulatory Compliance Matrix & Framework Safeguards (Module 5)
-                  </h3>
-                  <p className="text-[10px] text-zinc-600 mt-0.5 font-mono uppercase tracking-tight">
-                    System Vetting Ledger for Security and Jurisdictional Mandates
-                  </p>
+                <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                  <div>
+                    <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
+                      Section 05 // Regulatory Compliance Matrix & Framework Safeguards (Module 5)
+                    </h3>
+                    <p className="text-[10px] text-zinc-600 mt-0.5 font-mono uppercase tracking-tight">
+                      System Vetting Ledger for Security and Jurisdictional Mandates
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleSectionEdit('sec05')}
+                    className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors border ${
+                      editingSections.sec05
+                        ? 'bg-amber-500/20 border-amber-500 text-amber-400 hover:bg-amber-500/30'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    {editingSections.sec05 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-zinc-900/60 pb-4">
@@ -533,7 +794,8 @@ export default function EcosystemEntitiesManager() {
                           {f.label}
                         </span>
                         <select
-                          className={`bg-zinc-950 border px-3 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider text-center focus:outline-none min-w-[125px] transition-colors ${
+                          disabled={!editingSections.sec05}
+                          className={`bg-zinc-950 border px-3 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider text-center focus:outline-none min-w-[125px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                             isCompliant 
                               ? 'border-emerald-900 text-emerald-400 bg-emerald-950/10' 
                               : currentValue === 'no'
@@ -555,14 +817,21 @@ export default function EcosystemEntitiesManager() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">Accounting Ledger Platform</label>
-                    <input type="text" className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-amber-500" value={assessment.accounting_software_platform || ''} onChange={e => setAssessment({...assessment, accounting_software_platform: e.target.value})} />
+                    <input 
+                      type="text" 
+                      disabled={!editingSections.sec05}
+                      className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-amber-500 disabled:opacity-50 disabled:cursor-not-allowed" 
+                      value={assessment.accounting_software_platform || ''} 
+                      onChange={e => setAssessment({...assessment, accounting_software_platform: e.target.value})} 
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">Weekly Manual Friction (Hours)</label>
                     <input 
                       type="number" 
                       max={2147483647}
-                      className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-amber-500" 
+                      disabled={!editingSections.sec05}
+                      className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-amber-500 disabled:opacity-50 disabled:cursor-not-allowed" 
                       value={assessment.manual_data_hours_weekly || 0} 
                       onChange={e => setAssessment({...assessment, manual_data_hours_weekly: safeParseInt(e.target.value)})} 
                     />
@@ -570,7 +839,8 @@ export default function EcosystemEntitiesManager() {
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">VK Shield Security Sensitivity</label>
                     <select 
-                      className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-amber-500"
+                      disabled={!editingSections.sec05}
+                      className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       value={assessment.infrastructure_security_concerned ? 'true' : 'false'}
                       onChange={e => setAssessment({...assessment, infrastructure_security_concerned: e.target.value === 'true'})}
                     >
@@ -581,15 +851,28 @@ export default function EcosystemEntitiesManager() {
                 </div>
               </div>
 
-              {/* 🔄_ SECTION 06: GLOBAL PROMOTION ADVERTISING REGISTRY (MODULE 6) */}
+              {/* 🔄 SECTION 06 */}
               <div className="border border-zinc-900 bg-zinc-950/30 rounded-xl p-5 space-y-4">
-                <div>
-                  <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
-                    Section 06 // Dynamic Platform Banner & Ad Routing Registry (Module 6)
-                  </h3>
-                  <p className="text-[11px] text-zinc-600 mt-0.5">
-                    Configure contextual application updates and promo scripts running directly across consumer-facing dashboards.
-                  </p>
+                <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                  <div>
+                    <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
+                      Section 06 // Dynamic Platform Banner & Ad Routing Registry (Module 6)
+                    </h3>
+                    <p className="text-[11px] text-zinc-600 mt-0.5">
+                      Configure contextual application updates and promo scripts running directly across consumer-facing dashboards.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleSectionEdit('sec06')}
+                    className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors border ${
+                      editingSections.sec06
+                        ? 'bg-amber-500/20 border-amber-500 text-amber-400 hover:bg-amber-500/30'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    {editingSections.sec06 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
+                  </button>
                 </div>
 
                 <div className="space-y-3">
@@ -616,8 +899,9 @@ export default function EcosystemEntitiesManager() {
                         <div className="flex items-center shrink-0">
                           <button
                             type="button"
+                            disabled={!editingSections.sec06}
                             onClick={() => handleBannerToggle(b.id, !b.is_active)}
-                            className={`font-mono text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border ${
+                            className={`font-mono text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors border disabled:opacity-50 disabled:cursor-not-allowed ${
                               b.is_active 
                                 ? 'bg-emerald-950/30 border-emerald-900 text-emerald-400' 
                                 : 'bg-zinc-900/40 border-zinc-800 text-zinc-500'
@@ -632,7 +916,7 @@ export default function EcosystemEntitiesManager() {
                 </div>
               </div>
 
-              {/* ⚡ Absolute Button Hierarchy Placement */}
+              {/* Commit Button */}
               <div className="flex justify-end p-4 border border-zinc-900 bg-zinc-950/60 rounded-xl pt-4">
                 <button
                   type="submit"
