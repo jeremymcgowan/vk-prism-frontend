@@ -171,8 +171,8 @@ export default function EcosystemEntitiesManager() {
     if (!telemetry || !assessment) return
     setSaving(true)
 
-    // ES6 Destructuring: Explicitly strip immutable database primary keys to prevent write rejections
-    const { id: entityUuid, parent_entity_id, created_at, ...cleanTelemetryPayload } = telemetry as any
+    // UPDATED LINE:
+const { id: entityUuid, parent_entity_id, created_at, updated_at, ...cleanTelemetryPayload } = telemetry as any
     const { id: assessmentUuid, entity_id, ...cleanAssessmentPayload } = assessment as any
 
     const { error: entErr } = await supabase
