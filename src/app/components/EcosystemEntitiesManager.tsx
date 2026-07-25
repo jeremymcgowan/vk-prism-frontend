@@ -93,6 +93,13 @@ export default function EcosystemEntitiesManager() {
     fetchInitialData()
   }, [])
 
+  // Helper function to safely parse numbers without exceeding Postgres 32-bit Integer limits (2,147,483,647)
+  const safeParseInt = (val: string, maxVal: number = 2147483647): number => {
+    const parsed = parseInt(val, 10)
+    if (isNaN(parsed)) return 0
+    return Math.min(parsed, maxVal)
+  }
+
   // Added preserveId parameter to lock client dropdown index state across read cycles
   async function fetchInitialData(preserveId?: string) {
     setLoading(true)
@@ -171,9 +178,22 @@ export default function EcosystemEntitiesManager() {
     if (!telemetry || !assessment) return
     setSaving(true)
 
-    // UPDATED LINE:
-const { id: entityUuid, parent_entity_id, created_at, updated_at, ...cleanTelemetryPayload } = telemetry as any
-    const { id: assessmentUuid, entity_id, ...cleanAssessmentPayload } = assessment as any
+    // Explicitly strip immutable primary keys and auto-managed timestamps
+    const { 
+      id: entityUuid, 
+      parent_entity_id, 
+      created_at, 
+      updated_at, 
+      ...cleanTelemetryPayload 
+    } = telemetry as any
+
+    const { 
+      id: assessmentUuid, 
+      entity_id, 
+      created_at: assessCreated, 
+      updated_at: assessUpdated, 
+      ...cleanAssessmentPayload 
+    } = assessment as any
 
     const { error: entErr } = await supabase
       .from('crm_entities')
@@ -182,11 +202,17 @@ const { id: entityUuid, parent_entity_id, created_at, updated_at, ...cleanTeleme
 
     const { error: assessErr } = await supabase
       .from('crm_it_assessments')
-      .upsert({ entity_id: telemetry.id, ...cleanAssessmentPayload }, { onConflict: 'entity_id' })
+      .upsert(
+        { entity_id: telemetry.id, ...cleanAssessmentPayload }, 
+        { onConflict: 'entity_id' }
+      )
 
     setSaving(false)
+
     if (entErr || assessErr) {
-      triggerToast('error', `Write rejected: ${entErr?.message || assessErr?.message}`)
+      const err = entErr || assessErr
+      console.error('Supabase Write Rejected:', err)
+      triggerToast('error', `Write Rejected: ${err?.message} (${err?.details || err?.hint || 'Check DB schema'})`)
     } else {
       triggerToast('success', `All system configurations committed securely.`)
       // Refetch while explicitly locking state to the modified node parameter
@@ -208,7 +234,7 @@ const { id: entityUuid, parent_entity_id, created_at, updated_at, ...cleanTeleme
 
   const triggerToast = (type: 'success' | 'error', text: string) => {
     setStatusMessage({ type, text })
-    setTimeout(() => setStatusMessage(null), 4000)
+    setTimeout(() => setStatusMessage(null), 5000)
   }
 
   if (loading && nodes.length === 0) {
@@ -236,7 +262,7 @@ const { id: entityUuid, parent_entity_id, created_at, updated_at, ...cleanTeleme
         </div>
 
         {statusMessage && (
-          <div className={`text-[10px] font-mono px-4 py-2 rounded-lg border uppercase tracking-wider ${
+          <div className={`text-[10px] font-mono px-4 py-2 rounded-lg border uppercase tracking-wider max-w-xl ${
             statusMessage.type === 'success' ? 'bg-emerald-950/20 border-emerald-900 text-emerald-400' : 'bg-red-950/20 border-red-900 text-red-400'
           }`}>
             {statusMessage.text}
@@ -282,7 +308,7 @@ const { id: entityUuid, parent_entity_id, created_at, updated_at, ...cleanTeleme
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">FORMATION YEAR</label>
-                      <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.formation_year || 0} onChange={e => setTelemetry({...telemetry, formation_year: Number(e.target.value)})} />
+                      <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.formation_year || 0} onChange={e => setTelemetry({...telemetry, formation_year: safeParseInt(e.target.value)})} />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">EIN NUMBER</label>
@@ -310,7 +336,7 @@ const { id: entityUuid, parent_entity_id, created_at, updated_at, ...cleanTeleme
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">TARGET CAPITAL ($)</label>
-                      <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.funding_target_amount || 0} onChange={e => setTelemetry({...telemetry, funding_target_amount: Number(e.target.value)})} />
+                      <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.funding_target_amount || 0} onChange={e => setTelemetry({...telemetry, funding_target_amount: safeParseInt(e.target.value)})} />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">V&K AUDIT STATUS</label>
@@ -443,7 +469,13 @@ const { id: entityUuid, parent_entity_id, created_at, updated_at, ...cleanTeleme
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">DISCONNECTED UTILITY COUNTER</label>
-                      <input type="number" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" value={telemetry.flow_disconnected_tool_count || 0} onChange={e => setTelemetry({...telemetry, flow_disconnected_tool_count: Number(e.target.value)})} />
+                      <input 
+                        type="number" 
+                        max={2147483647}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono" 
+                        value={telemetry.flow_disconnected_tool_count || 0} 
+                        onChange={e => setTelemetry({...telemetry, flow_disconnected_tool_count: safeParseInt(e.target.value)})} 
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-500">WEB LAYOUT SATISFACTION</label>
@@ -527,7 +559,13 @@ const { id: entityUuid, parent_entity_id, created_at, updated_at, ...cleanTeleme
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">Weekly Manual Friction (Hours)</label>
-                    <input type="number" className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-amber-500" value={assessment.manual_data_hours_weekly || 0} onChange={e => setAssessment({...assessment, manual_data_hours_weekly: Number(e.target.value)})} />
+                    <input 
+                      type="number" 
+                      max={2147483647}
+                      className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-amber-500" 
+                      value={assessment.manual_data_hours_weekly || 0} 
+                      onChange={e => setAssessment({...assessment, manual_data_hours_weekly: safeParseInt(e.target.value)})} 
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">VK Shield Security Sensitivity</label>
@@ -594,7 +632,7 @@ const { id: entityUuid, parent_entity_id, created_at, updated_at, ...cleanTeleme
                 </div>
               </div>
 
-              {/* ⚡ Absolute Button Hierarchy Placement // Confirmed safely anchored beneath Section 06 */}
+              {/* ⚡ Absolute Button Hierarchy Placement */}
               <div className="flex justify-end p-4 border border-zinc-900 bg-zinc-950/60 rounded-xl pt-4">
                 <button
                   type="submit"
