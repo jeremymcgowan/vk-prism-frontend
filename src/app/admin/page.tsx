@@ -16,6 +16,9 @@ export default function AdminDashboard() {
   const [vendorCount, setVendorCount] = useState<number>(0)
   const [contractorCount, setContractorCount] = useState<number>(0)
   const [loading, setLoading] = useState<boolean>(true)
+  
+  // New state to hold the real logged-in user email
+  const [userEmail, setUserEmail] = useState<string>('AUTHENTICATING...')
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,6 +29,14 @@ export default function AdminDashboard() {
     async function calculateTelemetry() {
       setLoading(true)
       
+      // 0. Get active logged-in user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) {
+        setUserEmail(user.email)
+      } else {
+        setUserEmail('UNAUTHENTICATED')
+      }
+
       // 1. Count global entity nodes
       const { count: entities } = await supabase
         .from('crm_entities')
@@ -34,12 +45,13 @@ export default function AdminDashboard() {
       // 2. Count distinct human actors by their true database designations
       const { data: contacts } = await supabase
         .from('crm_contacts')
-        .select('actor_type')
+        .select('universal_routing_handle')
 
       if (contacts) {
-        setStaffCount(contacts.filter(c => c.actor_type === 'STAFF').length)
-        setVendorCount(contacts.filter(c => c.actor_type === 'VENDOR').length)
-        setContractorCount(contacts.filter(c => c.actor_type === 'CONTRACTOR').length)
+        // Updated to read from handle safely without 400 DB errors
+        setStaffCount(contacts.filter(c => c.universal_routing_handle?.includes('STAFF')).length)
+        setVendorCount(contacts.filter(c => c.universal_routing_handle?.includes('VENDOR')).length)
+        setContractorCount(contacts.filter(c => c.universal_routing_handle?.includes('CONTRACTOR')).length)
       }
 
       setEntityCount(entities || 0)
@@ -48,6 +60,14 @@ export default function AdminDashboard() {
 
     calculateTelemetry()
   }, [])
+
+  // Clean logout function
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    localStorage.clear()
+    sessionStorage.clear()
+    window.location.href = '/admin' // Force page refresh
+  }
 
   return (
     <div className="flex h-screen bg-black text-zinc-100 font-sans antialiased">
@@ -75,9 +95,18 @@ export default function AdminDashboard() {
           </nav>
         </div>
 
-        <div className="border-t border-zinc-900/60 pt-4 font-mono text-[10px] text-zinc-600 space-y-1">
-          <div>OPERATOR: j.mcgowan@hawkmail.hccfl.edu</div>
-          <div className="text-emerald-500/80 tracking-tight">CUSTODIAN MODE ACTIVE</div>
+        {/* Updated Dynamic Operator Block with Logout */}
+        <div className="border-t border-zinc-900/60 pt-4 font-mono text-[10px] text-zinc-600 space-y-2">
+          <div className="truncate text-zinc-400">OPERATOR: {userEmail}</div>
+          <div className="flex items-center justify-between">
+            <span className="text-emerald-500/80 tracking-tight">CUSTODIAN MODE ACTIVE</span>
+            <button 
+              onClick={handleLogout}
+              className="text-red-400 hover:text-red-300 bg-red-950/30 border border-red-900/50 px-1.5 py-0.5 rounded transition"
+            >
+              LOGOUT
+            </button>
+          </div>
         </div>
       </div>
 
