@@ -53,7 +53,7 @@ export default function StepOneGateway() {
       is_fast_track: isFastTrack,
       onboarding_mode: mode,
       step_completed: 1,
-      industry: formData.industry || 'B2B SaaS' // Default safeguard
+      industry: formData.industry || ''
     });
 
     router.push('/onboarding/step-2');
@@ -100,7 +100,7 @@ export default function StepOneGateway() {
               {/* Row 1: Company Name & Primary Contact */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Company Name <span className="text-[#C5A880]">*</span>
                   </label>
                   <input
@@ -110,12 +110,12 @@ export default function StepOneGateway() {
                     value={formData.company_name || ''}
                     onChange={handleChange}
                     placeholder="e.g. Acme Industries, Inc."
-                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Primary Contact Name <span className="text-[#C5A880]">*</span>
                   </label>
                   <input
@@ -125,7 +125,7 @@ export default function StepOneGateway() {
                     value={formData.contact_name || ''}
                     onChange={handleChange}
                     placeholder="e.g. Jane Doe"
-                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                   />
                 </div>
               </div>
@@ -133,16 +133,19 @@ export default function StepOneGateway() {
               {/* Row 2: Industry Sector Dropdown & Corporate Email */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Primary Industry Sector <span className="text-[#C5A880]">*</span>
                   </label>
                   <select
                     name="industry"
                     required
-                    value={formData.industry || 'B2B SaaS'}
+                    value={formData.industry || ''}
                     onChange={handleChange}
-                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-medium p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                   >
+                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
+                      Please Select
+                    </option>
                     {INDUSTRY_SECTORS.map((sec) => (
                       <option key={sec} value={sec} className="bg-[#0A0A0C] text-white">
                         {sec}
@@ -152,7 +155,7 @@ export default function StepOneGateway() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Corporate Email <span className="text-[#C5A880]">*</span>
                   </label>
                   <input
@@ -162,14 +165,14 @@ export default function StepOneGateway() {
                     value={formData.contact_email || ''}
                     onChange={handleChange}
                     placeholder="jane@company.com"
-                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                   />
                 </div>
               </div>
 
               {/* Row 3: Phone Number */}
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                   Phone Number
                 </label>
                 <input
@@ -178,7 +181,7 @@ export default function StepOneGateway() {
                   value={formData.contact_phone || ''}
                   onChange={handlePhoneChange}
                   placeholder="(555) 000-0000"
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                  className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                 />
               </div>
 
