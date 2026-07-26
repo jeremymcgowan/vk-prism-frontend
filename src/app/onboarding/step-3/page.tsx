@@ -6,6 +6,21 @@ import OnboardingHeader from '../components/OnboardingHeader';
 import VendorValueWedge from '../components/VendorValueWedge';
 import { useOnboarding } from '@/app/onboarding/OnboardingContext';
 
+// Helper Tooltip Component
+function Tooltip({ text }: { text: string }) {
+  return (
+    <span className="relative group inline-block ml-1 cursor-help">
+      <span className="text-[#C5A880] text-xs font-bold hover:text-white transition-colors">ⓘ</span>
+      <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-30 w-max max-w-[260px] animate-fadeIn">
+        <span className="bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] text-center leading-tight whitespace-normal">
+          {text}
+        </span>
+        <span className="w-2 h-2 bg-[#18181B] border-r border-b border-[#C5A880]/40 rotate-45 -mt-1"></span>
+      </span>
+    </span>
+  );
+}
+
 export default function StepThreeCapital() {
   const router = useRouter();
   const { formData, updateFormData, isHydrated } = useOnboarding();
@@ -37,11 +52,21 @@ export default function StepThreeCapital() {
     }
   };
 
-  // --- Auto-Currency Formatting, Rounding Up & Threshold Validation ---
+  // --- Auto-Currency Formatting, Leading Zero Stripping & Max Bounds ($999M) ---
   const handleRaiseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawVal = e.target.value.replace(/[^0-9.]/g, '');
-    setFormattedRaise(e.target.value); // Allow free typing while focused
-    updateFormData({ target_raise: rawVal });
+    // Strip everything except numbers and remove leading zeros
+    const digits = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    if (!digits) {
+      setFormattedRaise('');
+      updateFormData({ target_raise: '' });
+      setRaiseError('');
+      return;
+    }
+
+    // Clamp input to max $999,999,999
+    const numVal = Math.min(999999999, parseInt(digits, 10));
+    setFormattedRaise(numVal.toString());
+    updateFormData({ target_raise: numVal.toString() });
     setRaiseError('');
   };
 
@@ -55,10 +80,11 @@ export default function StepThreeCapital() {
 
     const numVal = parseFloat(rawVal);
     if (!isNaN(numVal) && numVal > 0) {
-      // Round UP to the next multiple of 10 ending in .00 (e.g., 5201.13 -> 5210.00)
-      const roundedVal = Math.ceil(numVal / 10) * 10;
+      // Clamp to max $999,999,999
+      const clampedVal = Math.min(999999999, numVal);
+      // Round UP to nearest $10 USD
+      const roundedVal = Math.ceil(clampedVal / 10) * 10;
       
-      // Update both visible UI string and underlying stored data
       setFormattedRaise(`$${roundedVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
       updateFormData({ target_raise: roundedVal.toString() });
       
@@ -145,7 +171,7 @@ export default function StepThreeCapital() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                    Funding Stage <span className="text-[#C5A880]">*</span>
+                    Funding Stage <span className="text-[#C5A880]">*</span> <Tooltip text="Select your current capitalization phase so V&K can align governance requirements." />
                   </label>
                   <select 
                     name="funding_stage"
@@ -170,7 +196,7 @@ export default function StepThreeCapital() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200">
-                      Target Raise ($ USD)
+                      Target Raise ($ USD) <Tooltip text="Enter your planned capital target in USD ($5,000 minimum up to $999M)." />
                     </label>
                     {!isSelfFunded && (
                       <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Min: $5,000.00</span>
@@ -199,7 +225,7 @@ export default function StepThreeCapital() {
 
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                  Are your Corporate Bylaws &amp; Board Resolutions up to date? <span className="text-[#C5A880]">*</span>
+                  Are your Corporate Bylaws &amp; Board Resolutions up to date? <span className="text-[#C5A880]">*</span> <Tooltip text="Corporate Bylaws (Corps) or Operating Agreements (LLCs) dictate official governance rules." />
                 </label>
                 <select 
                   name="has_bylaws"
@@ -218,7 +244,7 @@ export default function StepThreeCapital() {
               {/* Accounting Software & Value Wedge */}
               <div className="pt-2">
                 <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                  Primary Accounting &amp; Bookkeeping Software <span className="text-[#C5A880]">*</span>
+                  Primary Accounting &amp; Bookkeeping Software <span className="text-[#C5A880]">*</span> <Tooltip text="Your primary bookkeeping tool used for general ledger management and financial reporting." />
                 </label>
                 <select 
                   name="accounting_software"
