@@ -1,5 +1,13 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Scratchpad & temporary directories
+/fucked_src/
+/temp/
+
+# Large local zip archives
+*.zip
+drive-download-*.zip
+
 # dependencies
 /node_modules
 /.pnp
@@ -39,3 +47,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Google Drive temp sync
+.tmp.driveupload/
