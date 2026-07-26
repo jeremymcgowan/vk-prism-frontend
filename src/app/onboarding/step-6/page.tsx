@@ -7,6 +7,21 @@ import OnboardingHeader from '../components/OnboardingHeader';
 import VendorValueWedge from '../components/VendorValueWedge';
 import { useOnboarding } from '@/app/onboarding/OnboardingContext';
 
+// Helper Tooltip Component
+function Tooltip({ text }: { text: string }) {
+  return (
+    <span className="relative group inline-block ml-1 cursor-help">
+      <span className="text-[#C5A880] text-xs font-bold hover:text-white transition-colors">ⓘ</span>
+      <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-30 w-max max-w-[270px] animate-fadeIn">
+        <span className="bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] text-center leading-tight whitespace-normal">
+          {text}
+        </span>
+        <span className="w-2 h-2 bg-[#18181B] border-r border-b border-[#C5A880]/40 rotate-45 -mt-1"></span>
+      </span>
+    </span>
+  );
+}
+
 export default function StepSixFlow() {
   const router = useRouter();
   const { formData, updateFormData, clearFormData, isHydrated } = useOnboarding();
@@ -87,13 +102,16 @@ export default function StepSixFlow() {
         accounting_software: formData.accounting_software || null,
         accounting_vendor_audit: formData.accounting_vendor_audit || null,
 
-        // Step 4: Shield Security
+        // Step 4: Shield Security & Remote Telemetry
         email_workspace_suite: formData.email_workspace_suite || null,
         workspace_vendor_audit: formData.workspace_vendor_audit || null,
         mdm_provider: formData.mdm_provider || null,
         mdm_vendor_audit: formData.mdm_vendor_audit || null,
         antivirus_status: formData.antivirus_status || null,
         backup_frequency: formData.backup_frequency || null,
+        has_remote_workers: formData.has_remote_workers || 'NO',
+        has_vpn: formData.has_vpn || 'NO',
+        vpn_lead_flag: formData.vpn_lead_flag || false,
 
         // Step 5: People & Workforce
         headcount_range: formData.headcount_range || null,
@@ -178,7 +196,7 @@ export default function StepSixFlow() {
             <form onSubmit={handleStandardSubmit} className="space-y-6">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                  Primary CRM &amp; Customer Data System <span className="text-[#C5A880]">*</span>
+                  Primary CRM &amp; Customer Data System <span className="text-[#C5A880]">*</span> <Tooltip text="The central platform used to manage prospective client leads, pipelines, and deals." />
                 </label>
                 <select 
                   name="crm_system"
@@ -209,7 +227,7 @@ export default function StepSixFlow() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                    Team Communication <span className="text-[#C5A880]">*</span>
+                    Team Communication <span className="text-[#C5A880]">*</span> <Tooltip text="Primary messaging platform for internal team collaboration and operational alerts." />
                   </label>
                   <select 
                     name="collaboration_tool"
@@ -228,7 +246,7 @@ export default function StepSixFlow() {
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                    Current Automation Level <span className="text-[#C5A880]">*</span>
+                    Current Automation Level <span className="text-[#C5A880]">*</span> <Tooltip text="Measures how much of your daily routine data transfer is handled automatically." />
                   </label>
                   <select 
                     name="automation_status"
