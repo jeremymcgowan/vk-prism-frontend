@@ -56,36 +56,58 @@ export default function StepSixFlow() {
         contact_name: formData.contact_name || null,
         contact_email: formData.contact_email || null,
         contact_phone: formData.contact_phone || null,
-        legal_structure: formData.legal_structure || null,
-        formation_year: formData.formation_year || null,
-        hq_address_line_1: formData.hq_address_line_1 || null,
+        industry: formData.industry || null,
+
+        // Step 2: Governance & Operations
+        legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
+        registration_state: formData.registration_state || 'UNDECIDED',
+        formation_year: formData.formation_year ? String(formData.formation_year) : null,
+        ein_number: formData.ein_number || 'Startup - Need EIN',
+        fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
+
+        // Step 2: Workforce Breakdown
+        employee_count_w2_ft: formData.employee_count_w2_ft ?? 1,
+        employee_count_w2_pt: formData.employee_count_w2_pt ?? 0,
+        contractor_count_1099: formData.contractor_count_1099 ?? 0,
+
+        // Step 2: Headquarters & Virtual HQ Flags
+        has_physical_hq: formData.has_physical_hq !== false,
+        is_virtual_hq_candidate: formData.is_virtual_hq_candidate || false,
+        hq_address_line1: formData.hq_address_line1 || null,
+        hq_address_line_1: formData.hq_address_line1 || null, // Map alias
         hq_city: formData.hq_city || null,
-        hq_state: formData.hq_state || null,
-        hq_postal_code: formData.hq_postal_code || null,
-        hq_address_type: formData.hq_address_type || null,
+        hq_state: formData.hq_state || formData.registration_state || null,
+        hq_zip: formData.hq_zip || null,
+        hq_postal_code: formData.hq_zip || null, // Map alias
+
+        // Step 3: Capital & Governance
         funding_stage: formData.funding_stage || null,
-        target_raise: formData.target_raise || null,
-        has_bylaws: formData.has_bylaws || null,
+        target_raise: formData.target_raise ? String(formData.target_raise) : null,
+        has_bylaws: formData.has_bylaws ? String(formData.has_bylaws) : null,
         accounting_software: formData.accounting_software || null,
         accounting_vendor_audit: formData.accounting_vendor_audit || null,
+
+        // Step 4: Shield Security
         email_workspace_suite: formData.email_workspace_suite || null,
         workspace_vendor_audit: formData.workspace_vendor_audit || null,
         mdm_provider: formData.mdm_provider || null,
         mdm_vendor_audit: formData.mdm_vendor_audit || null,
         antivirus_status: formData.antivirus_status || null,
         backup_frequency: formData.backup_frequency || null,
+
+        // Step 5: People & Workforce
         headcount_range: formData.headcount_range || null,
         payroll_provider: formData.payroll_provider || null,
         payroll_vendor_audit: formData.payroll_vendor_audit || null,
-        benefits_offered: formData.benefits_offered || null,
-        
-        // Step 6 Fields
+        benefits_offered: formData.benefits_offered || [], // Text Array ['MEDICAL', 'DENTAL']
+
+        // Step 6: Flow & Automation
         crm_system: formData.crm_system || (flowOptIn ? 'NONE' : null),
         crm_vendor_audit: formData.crm_system && formData.crm_system !== 'NONE' ? crmAudit : null,
         collaboration_tool: formData.collaboration_tool || (flowOptIn ? 'SLACK' : null),
         automation_status: formData.automation_status || (flowOptIn ? 'MANUAL' : null),
 
-        // Full Raw JSON Audit Backup
+        // Full Raw JSON Audit Snapshot
         raw_step_payloads: {
           ...formData,
           flow_managed_service_opt_in: flowOptIn,
