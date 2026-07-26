@@ -76,11 +76,12 @@ export default function StepTwoStructure() {
 
         const line1 = `${streetNumber} ${route}`.trim() || place.formatted_address || '';
 
+        // Standardized on hq_address_line_1 and hq_postal_code
         updateFormData({
-          hq_address_line1: line1,
+          hq_address_line_1: line1,
           hq_city: city,
           hq_state: state,
-          hq_zip: zip,
+          hq_postal_code: zip,
         });
       });
     } catch (err) {
@@ -160,11 +161,14 @@ export default function StepTwoStructure() {
 
     setIsSubmitting(true);
 
+    const currentLine1 = (formData.hq_address_line_1 || formData.hq_address_line1 || '').trim();
+    const currentPostalCode = (formData.hq_postal_code || formData.hq_zip || '').trim();
+
     // Physical Address Blank Fallback Check
     const isAddressBlank =
-      !formData.hq_address_line1?.trim() &&
+      !currentLine1 &&
       !formData.hq_city?.trim() &&
-      !formData.hq_zip?.trim();
+      !currentPostalCode;
 
     const effectiveHasPhysical = hasPhysicalHq && !isAddressBlank;
 
@@ -179,7 +183,11 @@ export default function StepTwoStructure() {
       employee_count_w2_pt: Math.min(99999, Math.max(0, formData.employee_count_w2_pt ?? 0)),
       contractor_count_1099: Math.min(99999, Math.max(0, formData.contractor_count_1099 ?? 0)),
       has_physical_hq: effectiveHasPhysical,
-      is_virtual_hq_candidate: !effectiveHasPhysical
+      is_virtual_hq_candidate: !effectiveHasPhysical,
+      hq_address_line_1: effectiveHasPhysical ? currentLine1 : null,
+      hq_city: effectiveHasPhysical ? (formData.hq_city || null) : null,
+      hq_state: effectiveHasPhysical ? (formData.hq_state || null) : null,
+      hq_postal_code: effectiveHasPhysical ? currentPostalCode : null,
     });
 
     router.push('/onboarding/step-3');
@@ -417,9 +425,9 @@ export default function StepTwoStructure() {
                       <input
                         ref={addressInputRef}
                         type="text"
-                        name="hq_address_line1"
+                        name="hq_address_line_1"
                         placeholder="100 Tech Boulevard, Suite 400"
-                        value={formData.hq_address_line1 || ''}
+                        value={formData.hq_address_line_1 || formData.hq_address_line1 || ''}
                         onChange={handleChange}
                         className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
                       />
@@ -457,9 +465,9 @@ export default function StepTwoStructure() {
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">Zip Code</label>
                         <input
                           type="text"
-                          name="hq_zip"
+                          name="hq_postal_code"
                           placeholder="94107"
-                          value={formData.hq_zip || ''}
+                          value={formData.hq_postal_code || formData.hq_zip || ''}
                           onChange={handleChange}
                           className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
                         />
