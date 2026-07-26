@@ -6,6 +6,21 @@ import OnboardingHeader from '../components/OnboardingHeader';
 import VendorValueWedge from '../components/VendorValueWedge';
 import { useOnboarding } from '@/app/onboarding/OnboardingContext';
 
+// Helper Tooltip Component
+function Tooltip({ text }: { text: string }) {
+  return (
+    <span className="relative group inline-block ml-1 cursor-help">
+      <span className="text-[#C5A880] text-xs font-bold hover:text-white transition-colors">ⓘ</span>
+      <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-30 w-max max-w-[270px] animate-fadeIn">
+        <span className="bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] text-center leading-tight whitespace-normal">
+          {text}
+        </span>
+        <span className="w-2 h-2 bg-[#18181B] border-r border-b border-[#C5A880]/40 rotate-45 -mt-1"></span>
+      </span>
+    </span>
+  );
+}
+
 export default function StepFourShield() {
   const router = useRouter();
   const { formData, updateFormData, isHydrated } = useOnboarding();
@@ -48,7 +63,9 @@ export default function StepFourShield() {
       email_workspace_suite: formData.email_workspace_suite || 'NEED_WORKSPACE',
       mdm_provider: formData.mdm_provider || 'NONE',
       antivirus_status: formData.antivirus_status || 'NONE',
-      backup_frequency: formData.backup_frequency || 'NONE'
+      backup_frequency: formData.backup_frequency || 'NONE',
+      has_remote_workers: formData.has_remote_workers || 'NO',
+      has_vpn: formData.has_vpn || 'NO'
     });
 
     router.push('/onboarding/step-5');
@@ -61,7 +78,9 @@ export default function StepFourShield() {
     updateFormData({
       workspace_vendor_audit: formData.email_workspace_suite !== 'NONE' ? workspaceAudit : null,
       mdm_vendor_audit: formData.mdm_provider !== 'NONE' ? mdmAudit : null,
-      shield_managed_service_opt_in: false
+      shield_managed_service_opt_in: false,
+      has_remote_workers: formData.has_remote_workers || 'NO',
+      has_vpn: formData.has_vpn || 'NO'
     });
 
     router.push('/onboarding/step-5');
@@ -99,7 +118,7 @@ export default function StepFourShield() {
               {/* Email / Workspace Suite */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                  Primary Email &amp; Workspace Suite <span className="text-[#C5A880]">*</span>
+                  Primary Email &amp; Workspace Suite <span className="text-[#C5A880]">*</span> <Tooltip text="The core cloud email and document ecosystem used across your company." />
                 </label>
                 <select 
                   name="email_workspace_suite"
@@ -128,19 +147,11 @@ export default function StepFourShield() {
                 )}
               </div>
 
-              {/* MDM Provider with Tooltip */}
+              {/* MDM Provider with Standardized Tooltip */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-200">
-                    Mobile Device Management (MDM) <span className="text-[#C5A880]">*</span>
-                  </label>
-                  <div className="relative group flex items-center cursor-pointer">
-                    <span className="text-xs text-neutral-400 hover:text-neutral-200">What is MDM? ⓘ</span>
-                    <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-[#121215] border border-[#27272A] rounded-xl text-xs text-neutral-300 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all z-20">
-                      💡 Software that keeps company laptops &amp; mobile devices secure—allowing remote wipes, security updates, and compliance enforcement.
-                    </div>
-                  </div>
-                </div>
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                  Mobile Device Management (MDM) <span className="text-[#C5A880]">*</span> <Tooltip text="Software that keeps company laptops & mobile devices secure—allowing remote wipes, security updates, and compliance enforcement." />
+                </label>
 
                 <select 
                   name="mdm_provider"
@@ -168,10 +179,11 @@ export default function StepFourShield() {
                 )}
               </div>
 
+              {/* Endpoint Protection & Backups */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                    Endpoint Protection (Antivirus) <span className="text-[#C5A880]">*</span>
+                    Endpoint Protection (Antivirus) <span className="text-[#C5A880]">*</span> <Tooltip text="Managed Antivirus/EDR prevents ransomware and unauthorized execution on fleet devices." />
                   </label>
                   <select 
                     name="antivirus_status"
@@ -189,7 +201,7 @@ export default function StepFourShield() {
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                    Backup &amp; Disaster Recovery <span className="text-[#C5A880]">*</span>
+                    Backup &amp; Disaster Recovery <span className="text-[#C5A880]">*</span> <Tooltip text="Automated backups ensure business continuity in the event of hardware failure or loss." />
                   </label>
                   <select 
                     name="backup_frequency"
@@ -202,6 +214,44 @@ export default function StepFourShield() {
                     <option value="DAILY_AUTOMATED" className="bg-[#0A0A0C] text-white">Daily Immutable Cloud Backups</option>
                     <option value="WEEKLY" className="bg-[#0A0A0C] text-white">Weekly / Manual Backups</option>
                     <option value="NONE" className="bg-[#0A0A0C] text-white">No Formal Backup System</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* NEW SECTION: Remote Workers & Corporate VPN */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-[#27272A]/80">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                    Remote / Hybrid Workforce <span className="text-[#C5A880]">*</span> <Tooltip text="Indicate if employees or contractors access corporate systems outside the main office." />
+                  </label>
+                  <select 
+                    name="has_remote_workers"
+                    required
+                    value={formData.has_remote_workers || ''}
+                    onChange={handleChange}
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
+                  >
+                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Do you have remote workers?</option>
+                    <option value="YES" className="bg-[#0A0A0C] text-white">Yes, remote or hybrid team</option>
+                    <option value="NO" className="bg-[#0A0A0C] text-white">No, 100% on-site in physical office</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                    Corporate VPN Infrastructure <span className="text-[#C5A880]">*</span> <Tooltip text="A Corporate VPN encrypts internet traffic from remote laptops, protecting sensitive client data and internal systems from untrusted public Wi-Fi networks." />
+                  </label>
+                  <select 
+                    name="has_vpn"
+                    required
+                    value={formData.has_vpn || ''}
+                    onChange={handleChange}
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
+                  >
+                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Do you enforce a VPN?</option>
+                    <option value="YES" className="bg-[#0A0A0C] text-white">Yes, Corporate VPN enforced</option>
+                    <option value="NO" className="bg-[#0A0A0C] text-white">No VPN / Direct Internet</option>
+                    <option value="NOT_APPLICABLE" className="bg-[#0A0A0C] text-white">N/A (All On-Site / No Remote Access)</option>
                   </select>
                 </div>
               </div>
