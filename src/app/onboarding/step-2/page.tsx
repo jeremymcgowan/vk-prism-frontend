@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import OnboardingHeader from '../components/OnboardingHeader';
 import { useOnboarding } from '@/app/onboarding/OnboardingContext';
@@ -21,6 +21,51 @@ export default function StepTwoStructure() {
   const router = useRouter();
   const { formData, updateFormData, isHydrated } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement>(null);
+
+  const hasPhysicalHq = formData.has_physical_hq !== false; // Default true
+
+  // --- Google Places Autocomplete Address Lookup Hook ---
+  useEffect(() => {
+    if (!hasPhysicalHq || typeof window === 'undefined') return;
+
+    const google = (window as any).google;
+    if (google?.maps?.places && addressInputRef.current) {
+      const autocomplete = new google.maps.places.Autocomplete(addressInputRef.current, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+      });
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (!place || !place.address_components) return;
+
+        let streetNumber = '';
+        let route = '';
+        let city = '';
+        let state = '';
+        let zip = '';
+
+        for (const component of place.address_components) {
+          const types = component.types;
+          if (types.includes('street_number')) streetNumber = component.long_name;
+          if (types.includes('route')) route = component.long_name;
+          if (types.includes('locality')) city = component.long_name;
+          if (types.includes('administrative_area_level_1')) state = component.short_name;
+          if (types.includes('postal_code')) zip = component.long_name;
+        }
+
+        const line1 = `${streetNumber} ${route}`.trim() || place.formatted_address || '';
+
+        updateFormData({
+          hq_address_line1: line1,
+          hq_city: city,
+          hq_state: state,
+          hq_zip: zip,
+        });
+      });
+    }
+  }, [hasPhysicalHq]);
 
   if (!isHydrated) return null; // Prevents UI flicker while loading context
 
@@ -28,13 +73,13 @@ export default function StepTwoStructure() {
     updateFormData({ [e.target.name]: e.target.value });
   };
 
-  // Fixed Leading Zero Handler (e.g. 030 -> 30)
+  // Fixed Leading Zero & Upper Bound Clamping (0 - 99,999)
   const handleNumberChange = (name: string, val: string) => {
     if (val === '') {
       updateFormData({ [name]: 0 });
       return;
     }
-    const cleanNum = Math.max(0, parseInt(val, 10) || 0);
+    const cleanNum = Math.min(99999, Math.max(0, parseInt(val, 10) || 0));
     updateFormData({ [name]: cleanNum });
   };
 
@@ -46,6 +91,20 @@ export default function StepTwoStructure() {
       formatted = `${digits.slice(0, 2)}-${digits.slice(2)}`;
     }
     updateFormData({ ein_number: formatted });
+  };
+
+  // Formation Year Sanitization & Clamping
+  const sanitizeFormationYear = (val: string): string => {
+    const trimmed = (val || '').trim();
+    if (!trimmed || trimmed.toUpperCase() === 'N/A') return 'N/A';
+    const num = parseInt(trimmed, 10);
+    if (!isNaN(num)) {
+      const currentYear = new Date().getFullYear();
+      if (num < 1900) return '1900';
+      if (num > currentYear + 1) return String(currentYear);
+      return String(num);
+    }
+    return trimmed;
   };
 
   // HQ Toggle Logic
@@ -60,21 +119,30 @@ export default function StepTwoStructure() {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Physical Address Blank Fallback Check
+    const isAddressBlank =
+      !formData.hq_address_line1?.trim() &&
+      !formData.hq_city?.trim() &&
+      !formData.hq_zip?.trim();
+
+    const effectiveHasPhysical = hasPhysicalHq && !isAddressBlank;
+
     updateFormData({
       step_completed: 2,
       legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
       registration_state: formData.registration_state || 'UNDECIDED',
+      formation_year: sanitizeFormationYear(formData.formation_year || ''),
       ein_number: formData.ein_number || 'Startup - Need EIN',
       fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
-      employee_count_w2_ft: formData.employee_count_w2_ft ?? 1, // Default 1-person startup
-      employee_count_w2_pt: formData.employee_count_w2_pt ?? 0,
-      contractor_count_1099: formData.contractor_count_1099 ?? 0
+      employee_count_w2_ft: Math.min(99999, Math.max(0, formData.employee_count_w2_ft ?? 1)),
+      employee_count_w2_pt: Math.min(99999, Math.max(0, formData.employee_count_w2_pt ?? 0)),
+      contractor_count_1099: Math.min(99999, Math.max(0, formData.contractor_count_1099 ?? 0)),
+      has_physical_hq: effectiveHasPhysical,
+      is_virtual_hq_candidate: !effectiveHasPhysical
     });
 
     router.push('/onboarding/step-3');
   };
-
-  const hasPhysicalHq = formData.has_physical_hq !== false; // Default true
 
   return (
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
@@ -182,8 +250,7 @@ export default function StepTwoStructure() {
                       onChange={handleEINChange}
                       className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner font-mono"
                     />
-                    {/* Tooltip for EIN */}
-                    <div className="absolute top-full mt-1 left-0 hidden group-hover:block bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 z-10 shadow-lg">
+                    <div className="absolute top-full mt-1 left-0 hidden group-hover:block bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 z-10 shadow-lg pointer-events-none">
                       Don't have an EIN yet? Leave blank to flag as "Startup - Need EIN".
                     </div>
                   </div>
@@ -228,6 +295,7 @@ export default function StepTwoStructure() {
                     <input
                       type="number"
                       min={0}
+                      max={99999}
                       value={formData.employee_count_w2_ft ?? 1}
                       onChange={(e) => handleNumberChange('employee_count_w2_ft', e.target.value)}
                       className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
@@ -241,6 +309,7 @@ export default function StepTwoStructure() {
                     <input
                       type="number"
                       min={0}
+                      max={99999}
                       value={formData.employee_count_w2_pt ?? 0}
                       onChange={(e) => handleNumberChange('employee_count_w2_pt', e.target.value)}
                       className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
@@ -254,6 +323,7 @@ export default function StepTwoStructure() {
                     <input
                       type="number"
                       min={0}
+                      max={99999}
                       value={formData.contractor_count_1099 ?? 0}
                       onChange={(e) => handleNumberChange('contractor_count_1099', e.target.value)}
                       className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
@@ -276,7 +346,7 @@ export default function StepTwoStructure() {
 
                   {/* Dynamic Hover Tooltip Container */}
                   <label 
-                    title={hasPhysicalHq ? "Do not have an office address? Unselect this box" : "Select this box to enter your office address"}
+                    title={hasPhysicalHq ? "Unselect this box if you operate virtually or use a remote mail service" : "Select this box to enter your office address"}
                     className="group relative flex items-center gap-3 cursor-pointer bg-[#121215] border border-[#27272A] px-4 py-2 rounded-xl hover:border-[#C5A880]/50 transition-colors self-start sm:self-auto"
                   >
                     <input
@@ -290,9 +360,9 @@ export default function StepTwoStructure() {
                     </span>
 
                     {/* Styled Obsidian & Gold Hover Tooltip */}
-                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-20 w-max max-w-[240px] animate-fadeIn">
+                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-20 w-max max-w-[260px] animate-fadeIn">
                       <div className="bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] text-center leading-tight whitespace-normal">
-                        {hasPhysicalHq ? "Do not have an office address? Unselect this box" : "Select this box to enter your office address"}
+                        {hasPhysicalHq ? "Unselect this box if you operate virtually or use a remote mail service" : "Select this box to enter your office address"}
                       </div>
                       <div className="w-2 h-2 bg-[#18181B] border-r border-b border-[#C5A880]/40 rotate-45 -mt-1"></div>
                     </div>
@@ -306,6 +376,7 @@ export default function StepTwoStructure() {
                         Street Address
                       </label>
                       <input
+                        ref={addressInputRef}
                         type="text"
                         name="hq_address_line1"
                         placeholder="100 Tech Boulevard, Suite 400"
