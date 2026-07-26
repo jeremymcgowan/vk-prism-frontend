@@ -57,9 +57,9 @@ export default function StepTwoStructure() {
 
     updateFormData({
       step_completed: 2,
-      legal_structure: formData.legal_structure || 'C_CORP',
-      registration_state: formData.registration_state || 'DE',
-      fiscal_year_end_month: formData.fiscal_year_end_month || 'December'
+      legal_structure: formData.legal_structure || '',
+      registration_state: formData.registration_state || '',
+      fiscal_year_end_month: formData.fiscal_year_end_month || ''
     });
 
     router.push('/onboarding/step-3');
@@ -104,39 +104,47 @@ export default function StepTwoStructure() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                      Entity Structure
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                      Entity Structure <span className="text-[#C5A880]">*</span>
                     </label>
                     <select
                       name="legal_structure"
-                      value={formData.legal_structure || 'C_CORP'}
+                      required
+                      value={formData.legal_structure || ''}
                       onChange={handleChange}
-                      className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
                     >
-                      <option value="C_CORP">C-Corporation</option>
-                      <option value="S_CORP">S-Corporation</option>
-                      <option value="LLC">LLC</option>
+                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
+                        Please Select
+                      </option>
+                      <option value="C_CORP" className="bg-[#0A0A0C] text-white">C-Corporation</option>
+                      <option value="S_CORP" className="bg-[#0A0A0C] text-white">S-Corporation</option>
+                      <option value="LLC" className="bg-[#0A0A0C] text-white">LLC</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                      Formation State
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                      Formation State <span className="text-[#C5A880]">*</span>
                     </label>
                     <select
                       name="registration_state"
-                      value={formData.registration_state || 'DE'}
+                      required
+                      value={formData.registration_state || ''}
                       onChange={handleChange}
-                      className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
                     >
+                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
+                        Please Select
+                      </option>
                       {US_STATES.map((st) => (
-                        <option key={st} value={st}>{st}</option>
+                        <option key={st} value={st} className="bg-[#0A0A0C] text-white">{st}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                       Formation Year
                     </label>
                     <input
@@ -146,14 +154,14 @@ export default function StepTwoStructure() {
                       max={new Date().getFullYear() + 2}
                       value={formData.formation_year || new Date().getFullYear()}
                       onChange={(e) => handleNumberChange('formation_year', e.target.value)}
-                      className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                       EIN Tax ID (XX-XXXXXXX)
                     </label>
                     <input
@@ -163,22 +171,26 @@ export default function StepTwoStructure() {
                       placeholder="12-3456789"
                       value={formData.ein_number || ''}
                       onChange={handleEINChange}
-                      className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner font-mono"
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                      Fiscal Year-End Month
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                      Fiscal Year-End Month <span className="text-[#C5A880]">*</span>
                     </label>
                     <select
                       name="fiscal_year_end_month"
-                      value={formData.fiscal_year_end_month || 'December'}
+                      required
+                      value={formData.fiscal_year_end_month || ''}
                       onChange={handleChange}
-                      className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
                     >
+                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
+                        Please Select
+                      </option>
                       {MONTHS.map((m) => (
-                        <option key={m} value={m}>{m}</option>
+                        <option key={m} value={m} className="bg-[#0A0A0C] text-white">{m}</option>
                       ))}
                     </select>
                   </div>
@@ -198,7 +210,7 @@ export default function StepTwoStructure() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-[#121215] border border-[#27272A] p-4 rounded-xl space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200">
                       W2 Full-Time
                     </label>
                     <input
@@ -206,12 +218,12 @@ export default function StepTwoStructure() {
                       min={0}
                       value={formData.employee_count_w2_ft ?? 0}
                       onChange={(e) => handleNumberChange('employee_count_w2_ft', e.target.value)}
-                      className="w-full bg-[#0A0A0C] border border-[#27272A] text-emerald-400 font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
+                      className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
                     />
                   </div>
 
                   <div className="bg-[#121215] border border-[#27272A] p-4 rounded-xl space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200">
                       W2 Part-Time
                     </label>
                     <input
@@ -219,12 +231,12 @@ export default function StepTwoStructure() {
                       min={0}
                       value={formData.employee_count_w2_pt ?? 0}
                       onChange={(e) => handleNumberChange('employee_count_w2_pt', e.target.value)}
-                      className="w-full bg-[#0A0A0C] border border-[#27272A] text-emerald-400 font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
+                      className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
                     />
                   </div>
 
                   <div className="bg-[#121215] border border-[#27272A] p-4 rounded-xl space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200">
                       1099 Contractors
                     </label>
                     <input
@@ -232,7 +244,7 @@ export default function StepTwoStructure() {
                       min={0}
                       value={formData.contractor_count_1099 ?? 0}
                       onChange={(e) => handleNumberChange('contractor_count_1099', e.target.value)}
-                      className="w-full bg-[#0A0A0C] border border-[#27272A] text-purple-400 font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
+                      className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -257,7 +269,7 @@ export default function StepTwoStructure() {
                       onChange={(e) => handleHqToggle(e.target.checked)}
                       className="accent-[#C5A880] h-4 w-4 rounded cursor-pointer"
                     />
-                    <span className="text-xs font-semibold text-white tracking-wide">
+                    <span className="text-xs font-bold text-white tracking-wide">
                       Physical HQ
                     </span>
                   </label>
@@ -266,7 +278,7 @@ export default function StepTwoStructure() {
                 {hasPhysicalHq ? (
                   <div className="space-y-4 bg-[#121215]/60 p-5 rounded-xl border border-[#27272A] animate-fadeIn">
                     <div>
-                      <label className="block text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1.5">
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">
                         Street Address
                       </label>
                       <input
@@ -275,13 +287,13 @@ export default function StepTwoStructure() {
                         placeholder="100 Tech Boulevard, Suite 400"
                         value={formData.hq_address_line1 || ''}
                         onChange={handleChange}
-                        className="w-full bg-[#0A0A0C] border border-[#27272A] text-white p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
+                        className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1.5">
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">
                           City
                         </label>
                         <input
@@ -290,28 +302,31 @@ export default function StepTwoStructure() {
                           placeholder="San Francisco"
                           value={formData.hq_city || ''}
                           onChange={handleChange}
-                          className="w-full bg-[#0A0A0C] border border-[#27272A] text-white p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
+                          className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1.5">
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">
                           State
                         </label>
                         <select
                           name="hq_state"
-                          value={formData.hq_state || 'DE'}
+                          value={formData.hq_state || ''}
                           onChange={handleChange}
-                          className="w-full bg-[#0A0A0C] border border-[#27272A] text-white p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none cursor-pointer"
+                          className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none cursor-pointer"
                         >
+                          <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
+                            Please Select
+                          </option>
                           {US_STATES.map((st) => (
-                            <option key={st} value={st}>{st}</option>
+                            <option key={st} value={st} className="bg-[#0A0A0C] text-white">{st}</option>
                           ))}
                         </select>
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1.5">
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">
                           Zip Code
                         </label>
                         <input
@@ -320,7 +335,7 @@ export default function StepTwoStructure() {
                           placeholder="94107"
                           value={formData.hq_zip || ''}
                           onChange={handleChange}
-                          className="w-full bg-[#0A0A0C] border border-[#27272A] text-white p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
+                          className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
                         />
                       </div>
                     </div>
