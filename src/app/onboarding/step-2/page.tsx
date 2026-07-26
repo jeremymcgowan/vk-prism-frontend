@@ -28,12 +28,17 @@ export default function StepTwoStructure() {
     updateFormData({ [e.target.name]: e.target.value });
   };
 
+  // Fixed Leading Zero Handler (e.g. 030 -> 30)
   const handleNumberChange = (name: string, val: string) => {
-    const num = Math.max(0, parseInt(val, 10) || 0);
-    updateFormData({ [name]: num });
+    if (val === '') {
+      updateFormData({ [name]: 0 });
+      return;
+    }
+    const cleanNum = Math.max(0, parseInt(val, 10) || 0);
+    updateFormData({ [name]: cleanNum });
   };
 
-  // --- Auto-Formatting EIN Tax ID: XX-XXXXXXX ---
+  // Auto-Formatting EIN Tax ID: XX-XXXXXXX
   const handleEINChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
     let formatted = digits;
@@ -43,7 +48,7 @@ export default function StepTwoStructure() {
     updateFormData({ ein_number: formatted });
   };
 
-  // --- HQ Toggle Logic ---
+  // HQ Toggle Logic
   const handleHqToggle = (hasPhysical: boolean) => {
     updateFormData({
       has_physical_hq: hasPhysical,
@@ -57,9 +62,13 @@ export default function StepTwoStructure() {
 
     updateFormData({
       step_completed: 2,
-      legal_structure: formData.legal_structure || '',
-      registration_state: formData.registration_state || '',
-      fiscal_year_end_month: formData.fiscal_year_end_month || ''
+      legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
+      registration_state: formData.registration_state || 'UNDECIDED',
+      ein_number: formData.ein_number || 'Startup - Need EIN',
+      fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
+      employee_count_w2_ft: formData.employee_count_w2_ft ?? 1, // Default 1-person startup
+      employee_count_w2_pt: formData.employee_count_w2_pt ?? 0,
+      contractor_count_1099: formData.contractor_count_1099 ?? 0
     });
 
     router.push('/onboarding/step-3');
@@ -105,11 +114,10 @@ export default function StepTwoStructure() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      Entity Structure <span className="text-[#C5A880]">*</span>
+                      Entity Structure
                     </label>
                     <select
                       name="legal_structure"
-                      required
                       value={formData.legal_structure || ''}
                       onChange={handleChange}
                       className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
@@ -117,6 +125,7 @@ export default function StepTwoStructure() {
                       <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
                         Please Select
                       </option>
+                      <option value="STARTUP_NOT_FORMED" className="bg-[#0A0A0C] text-white">Startup / Not Yet Formed</option>
                       <option value="C_CORP" className="bg-[#0A0A0C] text-white">C-Corporation</option>
                       <option value="S_CORP" className="bg-[#0A0A0C] text-white">S-Corporation</option>
                       <option value="LLC" className="bg-[#0A0A0C] text-white">LLC</option>
@@ -125,11 +134,10 @@ export default function StepTwoStructure() {
 
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      Formation State <span className="text-[#C5A880]">*</span>
+                      Formation State
                     </label>
                     <select
                       name="registration_state"
-                      required
                       value={formData.registration_state || ''}
                       onChange={handleChange}
                       className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
@@ -137,6 +145,7 @@ export default function StepTwoStructure() {
                       <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
                         Please Select
                       </option>
+                      <option value="UNDECIDED" className="bg-[#0A0A0C] text-white">Undecided / N/A</option>
                       {US_STATES.map((st) => (
                         <option key={st} value={st} className="bg-[#0A0A0C] text-white">{st}</option>
                       ))}
@@ -148,40 +157,43 @@ export default function StepTwoStructure() {
                       Formation Year
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       name="formation_year"
-                      min={1900}
-                      max={new Date().getFullYear() + 2}
-                      value={formData.formation_year || new Date().getFullYear()}
-                      onChange={(e) => handleNumberChange('formation_year', e.target.value)}
-                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                      placeholder="e.g. 2026 or N/A"
+                      value={formData.formation_year || ''}
+                      onChange={handleChange}
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      EIN Tax ID (XX-XXXXXXX)
+                  <div className="relative group">
+                    <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                      <span>EIN Tax ID (XX-XXXXXXX)</span>
+                      <span className="text-neutral-500 hover:text-[#C5A880] cursor-help">ⓘ</span>
                     </label>
                     <input
                       type="text"
                       name="ein_number"
                       maxLength={10}
-                      placeholder="12-3456789"
+                      placeholder="12-3456789 (or leave blank if pending)"
                       value={formData.ein_number || ''}
                       onChange={handleEINChange}
                       className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner font-mono"
                     />
+                    {/* Tooltip for EIN */}
+                    <div className="absolute top-full mt-1 left-0 hidden group-hover:block bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 z-10 shadow-lg">
+                      Don't have an EIN yet? Leave blank to flag as "Startup - Need EIN".
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      Fiscal Year-End Month <span className="text-[#C5A880]">*</span>
+                      Fiscal Year-End Month
                     </label>
                     <select
                       name="fiscal_year_end_month"
-                      required
                       value={formData.fiscal_year_end_month || ''}
                       onChange={handleChange}
                       className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
@@ -211,12 +223,12 @@ export default function StepTwoStructure() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-[#121215] border border-[#27272A] p-4 rounded-xl space-y-2">
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200">
-                      W2 Full-Time
+                      W2 Full-Time (Default: 1 Founder)
                     </label>
                     <input
                       type="number"
                       min={0}
-                      value={formData.employee_count_w2_ft ?? 0}
+                      value={formData.employee_count_w2_ft ?? 1}
                       onChange={(e) => handleNumberChange('employee_count_w2_ft', e.target.value)}
                       className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
                     />
