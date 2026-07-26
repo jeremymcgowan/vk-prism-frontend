@@ -262,7 +262,11 @@ export default function StepTwoStructure() {
                     </p>
                   </div>
 
-                  <label className="flex items-center gap-3 cursor-pointer bg-[#121215] border border-[#27272A] px-4 py-2 rounded-xl hover:border-[#C5A880]/50 transition-colors self-start sm:self-auto">
+                  {/* Dynamic Hover Tooltip Container */}
+                  <label 
+                    title={hasPhysicalHq ? "Do not have an office address? Unselect this box" : "Select this box to enter your office address"}
+                    className="group relative flex items-center gap-3 cursor-pointer bg-[#121215] border border-[#27272A] px-4 py-2 rounded-xl hover:border-[#C5A880]/50 transition-colors self-start sm:self-auto"
+                  >
                     <input
                       type="checkbox"
                       checked={hasPhysicalHq}
@@ -272,6 +276,14 @@ export default function StepTwoStructure() {
                     <span className="text-xs font-bold text-white tracking-wide">
                       Physical HQ
                     </span>
+
+                    {/* Styled Obsidian & Gold Hover Tooltip */}
+                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-20 w-max max-w-[240px] animate-fadeIn">
+                      <div className="bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] text-center leading-tight whitespace-normal">
+                        {hasPhysicalHq ? "Do not have an office address? Unselect this box" : "Select this box to enter your office address"}
+                      </div>
+                      <div className="w-2 h-2 bg-[#18181B] border-r border-b border-[#C5A880]/40 rotate-45 -mt-1"></div>
+                    </div>
                   </label>
                 </div>
 
