@@ -184,10 +184,10 @@ export default function StepTwoStructure() {
       contractor_count_1099: Math.min(99999, Math.max(0, formData.contractor_count_1099 ?? 0)),
       has_physical_hq: effectiveHasPhysical,
       is_virtual_hq_candidate: !effectiveHasPhysical,
-      hq_address_line_1: effectiveHasPhysical ? currentLine1 : null,
-      hq_city: effectiveHasPhysical ? (formData.hq_city || null) : null,
-      hq_state: effectiveHasPhysical ? (formData.hq_state || null) : null,
-      hq_postal_code: effectiveHasPhysical ? currentPostalCode : null,
+      hq_address_line_1: effectiveHasPhysical ? currentLine1 : '',
+      hq_city: effectiveHasPhysical ? (formData.hq_city || '') : '',
+      hq_state: effectiveHasPhysical ? (formData.hq_state || '') : '',
+      hq_postal_code: effectiveHasPhysical ? currentPostalCode : '',
     });
 
     router.push('/onboarding/step-3');
