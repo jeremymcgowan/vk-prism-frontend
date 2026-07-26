@@ -38,7 +38,14 @@ export default function StepFourShield() {
   if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    updateFormData({ [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Auto-adjust VPN value if remote workforce changes to YES and VPN was previously set to NOT_APPLICABLE
+    if (name === 'has_remote_workers' && value === 'YES' && formData.has_vpn === 'NOT_APPLICABLE') {
+      updateFormData({ [name]: value, has_vpn: '' });
+    } else {
+      updateFormData({ [name]: value });
+    }
   };
 
   const handleWorkspaceAuditChange = (field: 'satisfaction' | 'costPerception', value: string) => {
@@ -53,6 +60,8 @@ export default function StepFourShield() {
     updateFormData({ mdm_vendor_audit: updated });
   };
 
+  const isVpnNeeded = formData.has_vpn === 'NEED_VPN';
+
   const handleShieldBypass = async () => {
     setIsSubmitting(true);
     
@@ -65,7 +74,8 @@ export default function StepFourShield() {
       antivirus_status: formData.antivirus_status || 'NONE',
       backup_frequency: formData.backup_frequency || 'NONE',
       has_remote_workers: formData.has_remote_workers || 'NO',
-      has_vpn: formData.has_vpn || 'NO'
+      has_vpn: formData.has_vpn || 'NEED_VPN',
+      vpn_lead_flag: true
     });
 
     router.push('/onboarding/step-5');
@@ -80,11 +90,14 @@ export default function StepFourShield() {
       mdm_vendor_audit: formData.mdm_provider !== 'NONE' ? mdmAudit : null,
       shield_managed_service_opt_in: false,
       has_remote_workers: formData.has_remote_workers || 'NO',
-      has_vpn: formData.has_vpn || 'NO'
+      has_vpn: formData.has_vpn || 'NO',
+      vpn_lead_flag: isVpnNeeded
     });
 
     router.push('/onboarding/step-5');
   };
+
+  const isRemoteTeam = formData.has_remote_workers === 'YES';
 
   return (
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
@@ -218,7 +231,7 @@ export default function StepFourShield() {
                 </div>
               </div>
 
-              {/* NEW SECTION: Remote Workers & Corporate VPN */}
+              {/* Dynamic Section: Remote Workers & Corporate VPN */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-[#27272A]/80">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
@@ -249,12 +262,28 @@ export default function StepFourShield() {
                     className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                   >
                     <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Do you enforce a VPN?</option>
+                    
+                    {/* Hide N/A option when company operates with remote/hybrid workers */}
+                    {!isRemoteTeam && (
+                      <option value="NOT_APPLICABLE" className="bg-[#0A0A0C] text-white">N/A (100% On-Site / No Remote Access)</option>
+                    )}
+                    
                     <option value="YES" className="bg-[#0A0A0C] text-white">Yes, Corporate VPN enforced</option>
-                    <option value="NO" className="bg-[#0A0A0C] text-white">No VPN / Direct Internet</option>
-                    <option value="NOT_APPLICABLE" className="bg-[#0A0A0C] text-white">N/A (All On-Site / No Remote Access)</option>
+                    <option value="NEED_VPN" className="bg-[#0A0A0C] text-white">No VPN / We need one!</option>
                   </select>
                 </div>
               </div>
+
+              {/* Lead Alert Banner if VPN Needed */}
+              {isVpnNeeded && (
+                <div className="p-4 bg-[#C5A880]/10 border border-[#C5A880]/40 rounded-xl text-xs text-[#C5A880] flex items-center gap-3 animate-fadeIn">
+                  <span className="text-lg">🛡️</span>
+                  <div>
+                    <p className="font-bold uppercase tracking-wider">V&amp;K Shield Corporate VPN Provisioning Lead Flagged</p>
+                    <p className="text-neutral-300 mt-0.5">Operating remote teams without a VPN leaves corporate traffic unencrypted. V&amp;K Shield will automatically evaluate a zero-trust VPN solution for your team.</p>
+                  </div>
+                </div>
+              )}
 
               {/* Divider */}
               <div className="relative my-8">
