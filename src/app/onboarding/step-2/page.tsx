@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Script from 'next/script';
 import OnboardingHeader from '../components/OnboardingHeader';
 import { useOnboarding } from '@/app/onboarding/OnboardingContext';
 
@@ -17,20 +18,38 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+// Helper Tooltip Component
+function Tooltip({ text }: { text: string }) {
+  return (
+    <span className="relative group inline-block ml-1 cursor-help">
+      <span className="text-[#C5A880] text-xs font-bold hover:text-white transition-colors">ⓘ</span>
+      <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-30 w-max max-w-[250px] animate-fadeIn">
+        <span className="bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] text-center leading-tight whitespace-normal">
+          {text}
+        </span>
+        <span className="w-2 h-2 bg-[#18181B] border-r border-b border-[#C5A880]/40 rotate-45 -mt-1"></span>
+      </span>
+    </span>
+  );
+}
+
 export default function StepTwoStructure() {
   const router = useRouter();
   const { formData, updateFormData, isHydrated } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
   const addressInputRef = useRef<HTMLInputElement>(null);
 
   const hasPhysicalHq = formData.has_physical_hq !== false; // Default true
 
-  // --- Google Places Autocomplete Address Lookup Hook ---
-  useEffect(() => {
-    if (!hasPhysicalHq || typeof window === 'undefined') return;
-
+  // --- Initialize Google Places Autocomplete ---
+  const initAutocomplete = () => {
+    if (!addressInputRef.current || typeof window === 'undefined') return;
     const google = (window as any).google;
-    if (google?.maps?.places && addressInputRef.current) {
+    if (!google?.maps?.places) return;
+
+    try {
       const autocomplete = new google.maps.places.Autocomplete(addressInputRef.current, {
         types: ['address'],
         componentRestrictions: { country: 'us' },
@@ -64,27 +83,39 @@ export default function StepTwoStructure() {
           hq_zip: zip,
         });
       });
+    } catch (err) {
+      console.warn('Google Places Init Notice:', err);
     }
-  }, [hasPhysicalHq]);
+  };
 
-  if (!isHydrated) return null; // Prevents UI flicker while loading context
+  useEffect(() => {
+    if (hasPhysicalHq && (googleScriptLoaded || (window as any).google?.maps?.places)) {
+      initAutocomplete();
+    }
+  }, [hasPhysicalHq, googleScriptLoaded]);
+
+  if (!isHydrated) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setValidationError(null);
     updateFormData({ [e.target.name]: e.target.value });
   };
 
-  // Fixed Leading Zero & Upper Bound Clamping (0 - 99,999)
+  // Eradicate Leading Zeros (e.g., 0434 -> 434) & Clamp (0 - 99,999)
   const handleNumberChange = (name: string, val: string) => {
-    if (val === '') {
+    setValidationError(null);
+    const sanitizedStr = val.replace(/^0+(?=\d)/, '');
+    if (sanitizedStr === '') {
       updateFormData({ [name]: 0 });
       return;
     }
-    const cleanNum = Math.min(99999, Math.max(0, parseInt(val, 10) || 0));
+    const cleanNum = Math.min(99999, Math.max(0, parseInt(sanitizedStr, 10) || 0));
     updateFormData({ [name]: cleanNum });
   };
 
   // Auto-Formatting EIN Tax ID: XX-XXXXXXX
   const handleEINChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValidationError(null);
     const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
     let formatted = digits;
     if (digits.length > 2) {
@@ -109,6 +140,7 @@ export default function StepTwoStructure() {
 
   // HQ Toggle Logic
   const handleHqToggle = (hasPhysical: boolean) => {
+    setValidationError(null);
     updateFormData({
       has_physical_hq: hasPhysical,
       is_virtual_hq_candidate: !hasPhysical
@@ -117,6 +149,15 @@ export default function StepTwoStructure() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError(null);
+
+    // Validate Partial EIN Entry
+    const rawEinDigits = (formData.ein_number || '').replace(/\D/g, '');
+    if (rawEinDigits.length > 0 && rawEinDigits.length < 9) {
+      setValidationError('EIN Tax ID must be exactly 9 digits (XX-XXXXXXX) or left blank for pending startups.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Physical Address Blank Fallback Check
@@ -132,7 +173,7 @@ export default function StepTwoStructure() {
       legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
       registration_state: formData.registration_state || 'UNDECIDED',
       formation_year: sanitizeFormationYear(formData.formation_year || ''),
-      ein_number: formData.ein_number || 'Startup - Need EIN',
+      ein_number: rawEinDigits.length === 9 ? formData.ein_number : 'Startup - Need EIN',
       fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
       employee_count_w2_ft: Math.min(99999, Math.max(0, formData.employee_count_w2_ft ?? 1)),
       employee_count_w2_pt: Math.min(99999, Math.max(0, formData.employee_count_w2_pt ?? 0)),
@@ -144,13 +185,26 @@ export default function StepTwoStructure() {
     router.push('/onboarding/step-3');
   };
 
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+
   return (
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
+      {/* Load Google Maps Places Library Script */}
+      {apiKey && (
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`}
+          strategy="afterInteractive"
+          onLoad={() => {
+            setGoogleScriptLoaded(true);
+            initAutocomplete();
+          }}
+        />
+      )}
+
       <OnboardingHeader currentStep={2} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
         
-        {/* Responsive Container */}
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
           {/* EXPANSIVE GOLD HALO */}
@@ -159,7 +213,6 @@ export default function StepTwoStructure() {
           {/* MAIN CARD */}
           <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
-            {/* Internal Accent Glow */}
             <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#C5A880]/20 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="text-center mb-10">
@@ -170,6 +223,14 @@ export default function StepTwoStructure() {
                 Corporate Structure &amp; Workforce
               </h1>
             </div>
+
+            {/* Validation Banner */}
+            {validationError && (
+              <div className="mb-6 p-4 bg-red-950/50 border border-red-500/50 rounded-xl text-red-200 text-xs font-semibold flex items-center gap-3 animate-fadeIn">
+                <span>⚠️</span>
+                <span>{validationError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-8">
               
@@ -182,7 +243,7 @@ export default function StepTwoStructure() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      Entity Structure
+                      Entity Structure <Tooltip text="Select your registered legal structure or flag as 'Startup / Not Yet Formed'." />
                     </label>
                     <select
                       name="legal_structure"
@@ -190,9 +251,7 @@ export default function StepTwoStructure() {
                       onChange={handleChange}
                       className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
                     >
-                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
-                        Please Select
-                      </option>
+                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select</option>
                       <option value="STARTUP_NOT_FORMED" className="bg-[#0A0A0C] text-white">Startup / Not Yet Formed</option>
                       <option value="C_CORP" className="bg-[#0A0A0C] text-white">C-Corporation</option>
                       <option value="S_CORP" className="bg-[#0A0A0C] text-white">S-Corporation</option>
@@ -202,7 +261,7 @@ export default function StepTwoStructure() {
 
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      Formation State
+                      Formation State <Tooltip text="Primary jurisdiction where corporate filing documents are registered." />
                     </label>
                     <select
                       name="registration_state"
@@ -210,9 +269,7 @@ export default function StepTwoStructure() {
                       onChange={handleChange}
                       className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
                     >
-                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
-                        Please Select
-                      </option>
+                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select</option>
                       <option value="UNDECIDED" className="bg-[#0A0A0C] text-white">Undecided / N/A</option>
                       {US_STATES.map((st) => (
                         <option key={st} value={st} className="bg-[#0A0A0C] text-white">{st}</option>
@@ -222,7 +279,7 @@ export default function StepTwoStructure() {
 
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      Formation Year
+                      Formation Year <Tooltip text="Year of incorporation or legal state registration." />
                     </label>
                     <input
                       type="text"
@@ -236,10 +293,9 @@ export default function StepTwoStructure() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                  <div className="relative group">
-                    <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      <span>EIN Tax ID (XX-XXXXXXX)</span>
-                      <span className="text-neutral-500 hover:text-[#C5A880] cursor-help">ⓘ</span>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                      EIN Tax ID (XX-XXXXXXX) <Tooltip text="9-digit IRS Federal Tax ID. Leave blank if pending." />
                     </label>
                     <input
                       type="text"
@@ -250,14 +306,11 @@ export default function StepTwoStructure() {
                       onChange={handleEINChange}
                       className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner font-mono"
                     />
-                    <div className="absolute top-full mt-1 left-0 hidden group-hover:block bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 z-10 shadow-lg pointer-events-none">
-                      Don't have an EIN yet? Leave blank to flag as "Startup - Need EIN".
-                    </div>
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      Fiscal Year-End Month
+                      Fiscal Year-End Month <Tooltip text="The closing month of your annual financial accounting cycle." />
                     </label>
                     <select
                       name="fiscal_year_end_month"
@@ -265,9 +318,7 @@ export default function StepTwoStructure() {
                       onChange={handleChange}
                       className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
                     >
-                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
-                        Please Select
-                      </option>
+                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select</option>
                       {MONTHS.map((m) => (
                         <option key={m} value={m} className="bg-[#0A0A0C] text-white">{m}</option>
                       ))}
@@ -280,7 +331,7 @@ export default function StepTwoStructure() {
               <div className="space-y-4 border-b border-[#27272A]/80 pb-6">
                 <div>
                   <h3 className="text-xs font-bold tracking-[0.2em] text-[#C5A880] uppercase">
-                    02 // 👥 Workforce &amp; Team Distribution
+                    02 // 👥 Workforce &amp; Team Distribution <Tooltip text="Enter active headcount numbers across your W2 payroll and 1099 contractor workforce." />
                   </h3>
                   <p className="text-xs text-neutral-400 mt-1">
                     Quantify active staffing assets across your corporate perimeter.
@@ -337,18 +388,14 @@ export default function StepTwoStructure() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-xs font-bold tracking-[0.2em] text-[#C5A880] uppercase">
-                      03 // 🏢 Principal Headquarters
+                      03 // 🏢 Principal Headquarters <Tooltip text="Unselect if operating virtually to flag entity for V&K Virtual HQ & Registered Agent forwarding." />
                     </h3>
                     <p className="text-xs text-neutral-400 mt-0.5">
                       Does your organization maintain a physical headquarters facility?
                     </p>
                   </div>
 
-                  {/* Dynamic Hover Tooltip Container */}
-                  <label 
-                    title={hasPhysicalHq ? "Unselect this box if you operate virtually or use a remote mail service" : "Select this box to enter your office address"}
-                    className="group relative flex items-center gap-3 cursor-pointer bg-[#121215] border border-[#27272A] px-4 py-2 rounded-xl hover:border-[#C5A880]/50 transition-colors self-start sm:self-auto"
-                  >
+                  <label className="flex items-center gap-3 cursor-pointer bg-[#121215] border border-[#27272A] px-4 py-2 rounded-xl hover:border-[#C5A880]/50 transition-colors self-start sm:self-auto">
                     <input
                       type="checkbox"
                       checked={hasPhysicalHq}
@@ -358,14 +405,6 @@ export default function StepTwoStructure() {
                     <span className="text-xs font-bold text-white tracking-wide">
                       Physical HQ
                     </span>
-
-                    {/* Styled Obsidian & Gold Hover Tooltip */}
-                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-20 w-max max-w-[260px] animate-fadeIn">
-                      <div className="bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] text-center leading-tight whitespace-normal">
-                        {hasPhysicalHq ? "Unselect this box if you operate virtually or use a remote mail service" : "Select this box to enter your office address"}
-                      </div>
-                      <div className="w-2 h-2 bg-[#18181B] border-r border-b border-[#C5A880]/40 rotate-45 -mt-1"></div>
-                    </div>
                   </label>
                 </div>
 
@@ -373,7 +412,7 @@ export default function StepTwoStructure() {
                   <div className="space-y-4 bg-[#121215]/60 p-5 rounded-xl border border-[#27272A] animate-fadeIn">
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">
-                        Street Address
+                        Street Address (Start typing for Google Places Autocomplete)
                       </label>
                       <input
                         ref={addressInputRef}
@@ -388,9 +427,7 @@ export default function StepTwoStructure() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">
-                          City
-                        </label>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">City</label>
                         <input
                           type="text"
                           name="hq_city"
@@ -402,18 +439,14 @@ export default function StepTwoStructure() {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">
-                          State
-                        </label>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">State</label>
                         <select
                           name="hq_state"
                           value={formData.hq_state || ''}
                           onChange={handleChange}
                           className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none cursor-pointer"
                         >
-                          <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
-                            Please Select
-                          </option>
+                          <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select</option>
                           {US_STATES.map((st) => (
                             <option key={st} value={st} className="bg-[#0A0A0C] text-white">{st}</option>
                           ))}
@@ -421,9 +454,7 @@ export default function StepTwoStructure() {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">
-                          Zip Code
-                        </label>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">Zip Code</label>
                         <input
                           type="text"
                           name="hq_zip"
