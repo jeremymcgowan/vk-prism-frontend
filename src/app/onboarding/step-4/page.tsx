@@ -68,19 +68,18 @@ export default function StepFourShield() {
   };
 
   return (
-    // UPGRADED: Changed font-mono to font-sans for a modern, secure executive banking feel
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
       <OnboardingHeader currentStep={4} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
         
-        {/* Responsive scaling container (max-w-3xl lg:max-w-4xl) with expanded halo wrapper */}
+        {/* Responsive scaling container */}
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* UPGRADED EXPANSIVE GOLD HALO: -inset-3 and blur-3xl for a wider, ambient aura */}
+          {/* EXPANSIVE GOLD HALO */}
           <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
-          {/* MAIN CARD: Obsidian glass panel with enhanced padding and double-layered gold glow */}
+          {/* MAIN CARD */}
           <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
             {/* Internal Corner Accent Glow */}
@@ -99,7 +98,7 @@ export default function StepFourShield() {
               
               {/* Email / Workspace Suite */}
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                   Primary Email &amp; Workspace Suite <span className="text-[#C5A880]">*</span>
                 </label>
                 <select 
@@ -107,15 +106,15 @@ export default function StepFourShield() {
                   required
                   value={formData.email_workspace_suite || ''}
                   onChange={handleChange}
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                  className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                 >
-                  <option value="" disabled>Please Select Workspace Suite...</option>
-                  <option value="GOOGLE_WORKSPACE">Google Workspace (Gmail, Docs, Drive)</option>
-                  <option value="MICROSOFT_365">Microsoft 365 (Outlook, Teams, Office)</option>
-                  <option value="ZOHO">Zoho Workplace</option>
-                  <option value="PROTON">Proton Mail / Encrypted</option>
-                  <option value="NEED_WORKSPACE">Need Workspace Provisioned (V&amp;K Setup)</option>
-                  <option value="NONE">Other / Basic Webmail</option>
+                  <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select Workspace Suite...</option>
+                  <option value="GOOGLE_WORKSPACE" className="bg-[#0A0A0C] text-white">Google Workspace (Gmail, Docs, Drive)</option>
+                  <option value="MICROSOFT_365" className="bg-[#0A0A0C] text-white">Microsoft 365 (Outlook, Teams, Office)</option>
+                  <option value="ZOHO" className="bg-[#0A0A0C] text-white">Zoho Workplace</option>
+                  <option value="PROTON" className="bg-[#0A0A0C] text-white">Proton Mail / Encrypted</option>
+                  <option value="NEED_WORKSPACE" className="bg-[#0A0A0C] text-white">Need Workspace Provisioned (V&amp;K Setup)</option>
+                  <option value="NONE" className="bg-[#0A0A0C] text-white">Other / Basic Webmail</option>
                 </select>
 
                 {formData.email_workspace_suite && formData.email_workspace_suite !== 'NONE' && formData.email_workspace_suite !== 'NEED_WORKSPACE' && (
@@ -132,7 +131,7 @@ export default function StepFourShield() {
               {/* MDM Provider with Tooltip */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-200">
                     Mobile Device Management (MDM) <span className="text-[#C5A880]">*</span>
                   </label>
                   <div className="relative group flex items-center cursor-pointer">
@@ -148,14 +147,14 @@ export default function StepFourShield() {
                   required
                   value={formData.mdm_provider || ''}
                   onChange={handleChange}
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                  className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                 >
-                  <option value="" disabled>Please Select MDM Provider...</option>
-                  <option value="JAMF">Jamf Pro / Jamf Now (Apple)</option>
-                  <option value="KANDJI">Kandji</option>
-                  <option value="INTUNE">Microsoft Intune</option>
-                  <option value="RIPPLING_MDM">Rippling IT / MDM</option>
-                  <option value="NONE">No MDM / Manual Fleet</option>
+                  <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select MDM Provider...</option>
+                  <option value="JAMF" className="bg-[#0A0A0C] text-white">Jamf Pro / Jamf Now (Apple)</option>
+                  <option value="KANDJI" className="bg-[#0A0A0C] text-white">Kandji</option>
+                  <option value="INTUNE" className="bg-[#0A0A0C] text-white">Microsoft Intune</option>
+                  <option value="RIPPLING_MDM" className="bg-[#0A0A0C] text-white">Rippling IT / MDM</option>
+                  <option value="NONE" className="bg-[#0A0A0C] text-white">No MDM / Manual Fleet</option>
                 </select>
 
                 {formData.mdm_provider && formData.mdm_provider !== 'NONE' && (
@@ -171,7 +170,7 @@ export default function StepFourShield() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Endpoint Protection (Antivirus) <span className="text-[#C5A880]">*</span>
                   </label>
                   <select 
@@ -179,17 +178,17 @@ export default function StepFourShield() {
                     required
                     value={formData.antivirus_status || ''}
                     onChange={handleChange}
-                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                   >
-                    <option value="" disabled>Please Select Endpoint Protection...</option>
-                    <option value="ACTIVE_EDR">Managed EDR (CrowdStrike / Defender)</option>
-                    <option value="BASIC_AV">Basic Consumer Antivirus</option>
-                    <option value="NONE">Default OS Defense Only</option>
+                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select Endpoint Protection...</option>
+                    <option value="ACTIVE_EDR" className="bg-[#0A0A0C] text-white">Managed EDR (CrowdStrike / Defender)</option>
+                    <option value="BASIC_AV" className="bg-[#0A0A0C] text-white">Basic Consumer Antivirus</option>
+                    <option value="NONE" className="bg-[#0A0A0C] text-white">Default OS Defense Only</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Backup &amp; Disaster Recovery <span className="text-[#C5A880]">*</span>
                   </label>
                   <select 
@@ -197,12 +196,12 @@ export default function StepFourShield() {
                     required
                     value={formData.backup_frequency || ''}
                     onChange={handleChange}
-                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                   >
-                    <option value="" disabled>Please Select Backup System...</option>
-                    <option value="DAILY_AUTOMATED">Daily Immutable Cloud Backups</option>
-                    <option value="WEEKLY">Weekly / Manual Backups</option>
-                    <option value="NONE">No Formal Backup System</option>
+                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select Backup System...</option>
+                    <option value="DAILY_AUTOMATED" className="bg-[#0A0A0C] text-white">Daily Immutable Cloud Backups</option>
+                    <option value="WEEKLY" className="bg-[#0A0A0C] text-white">Weekly / Manual Backups</option>
+                    <option value="NONE" className="bg-[#0A0A0C] text-white">No Formal Backup System</option>
                   </select>
                 </div>
               </div>
@@ -236,12 +235,12 @@ export default function StepFourShield() {
                 </div>
               </button>
 
-              {/* UPGRADED PRIMARY ACTION BUTTON: Solid Champagne Gold background for 100% cross-browser reliability */}
-              <div className="flex justify-between items-center pt-4">
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center pt-4 border-t border-[#27272A]/80">
                 <button
                   type="button"
                   onClick={() => router.push('/onboarding/step-3')}
-                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
                 >
                   ← Back
                 </button>

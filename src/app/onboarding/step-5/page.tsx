@@ -16,14 +16,18 @@ export default function StepFivePeople() {
     costPerception: formData.payroll_vendor_audit?.costPerception || 'FAIR',
   });
   
+  // Default to empty array (unchecked) if no prior session selection exists
   const [selectedBenefits, setSelectedBenefits] = useState<string[]>(
     formData.benefits_offered && Array.isArray(formData.benefits_offered)
       ? formData.benefits_offered
-      : ['HEALTH_VISION_DENTAL']
+      : []
   );
 
+  // Unbundled individual medical, dental, and vision options
   const benefitOptions = [
-    { id: 'HEALTH_VISION_DENTAL', label: '🏥 Medical / Dental / Vision' },
+    { id: 'MEDICAL', label: '🏥 Medical Insurance' },
+    { id: 'DENTAL', label: '🦷 Dental Coverage' },
+    { id: 'VISION', label: '👓 Vision Coverage' },
     { id: 'RETIREMENT_401K', label: '💰 401(k) / Roth 401(k)' },
     { id: 'SIMPLE_IRA', label: '📈 SIMPLE IRA / SEP IRA' },
     { id: 'EQUITY_ESOP', label: '📊 Stock Options (ESOP / Equity Pool)' },
@@ -79,19 +83,18 @@ export default function StepFivePeople() {
   };
 
   return (
-    // UPGRADED: Changed font-mono to font-sans for a modern, secure executive banking feel
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
       <OnboardingHeader currentStep={5} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
         
-        {/* Responsive scaling container (max-w-3xl lg:max-w-4xl) with expanded halo wrapper */}
+        {/* Responsive scaling container */}
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* UPGRADED EXPANSIVE GOLD HALO: -inset-3 and blur-3xl for a wider, ambient aura */}
+          {/* EXPANSIVE GOLD HALO */}
           <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
-          {/* MAIN CARD: Obsidian glass panel with enhanced padding and double-layered gold glow */}
+          {/* MAIN CARD */}
           <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
             {/* Internal Corner Accent Glow */}
@@ -110,7 +113,7 @@ export default function StepFivePeople() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Team Headcount <span className="text-[#C5A880]">*</span>
                   </label>
                   <select 
@@ -118,19 +121,19 @@ export default function StepFivePeople() {
                     required
                     value={formData.headcount_range || ''}
                     onChange={handleChange}
-                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                   >
-                    <option value="" disabled>Please Select Headcount...</option>
-                    <option value="SOLO">1 (Founder Only)</option>
-                    <option value="1_TO_5">2 – 5 Employees</option>
-                    <option value="6_TO_20">6 – 20 Employees</option>
-                    <option value="21_TO_50">21 – 50 Employees</option>
-                    <option value="50_PLUS">50+ Employees</option>
+                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select Headcount...</option>
+                    <option value="SOLO" className="bg-[#0A0A0C] text-white">1 (Founder Only)</option>
+                    <option value="1_TO_5" className="bg-[#0A0A0C] text-white">2 – 5 Employees</option>
+                    <option value="6_TO_20" className="bg-[#0A0A0C] text-white">6 – 20 Employees</option>
+                    <option value="21_TO_50" className="bg-[#0A0A0C] text-white">21 – 50 Employees</option>
+                    <option value="50_PLUS" className="bg-[#0A0A0C] text-white">50+ Employees</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Payroll System <span className="text-[#C5A880]">*</span>
                   </label>
                   <select 
@@ -138,15 +141,15 @@ export default function StepFivePeople() {
                     required
                     value={formData.payroll_provider || ''}
                     onChange={handleChange}
-                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                   >
-                    <option value="" disabled>Please Select Payroll System...</option>
-                    <option value="GUSTO">Gusto</option>
-                    <option value="RIPPLING">Rippling</option>
-                    <option value="ADP">ADP</option>
-                    <option value="PAYCHEX">Paychex</option>
-                    <option value="QUICKBOOKS_PAYROLL">QuickBooks Payroll</option>
-                    <option value="NONE">Manual / No Payroll Yet</option>
+                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select Payroll System...</option>
+                    <option value="GUSTO" className="bg-[#0A0A0C] text-white">Gusto</option>
+                    <option value="RIPPLING" className="bg-[#0A0A0C] text-white">Rippling</option>
+                    <option value="ADP" className="bg-[#0A0A0C] text-white">ADP</option>
+                    <option value="PAYCHEX" className="bg-[#0A0A0C] text-white">Paychex</option>
+                    <option value="QUICKBOOKS_PAYROLL" className="bg-[#0A0A0C] text-white">QuickBooks Payroll</option>
+                    <option value="NONE" className="bg-[#0A0A0C] text-white">Manual / No Payroll Yet</option>
                   </select>
                 </div>
               </div>
@@ -163,7 +166,9 @@ export default function StepFivePeople() {
 
               {/* Benefits Suite Checkboxes */}
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-300 mb-3">Corporate Benefits &amp; Incentives Offered</label>
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-3">
+                  Corporate Benefits &amp; Incentives Offered
+                </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {benefitOptions.map((b) => {
                     const isChecked = selectedBenefits.includes(b.id);
@@ -172,7 +177,7 @@ export default function StepFivePeople() {
                         key={b.id}
                         type="button"
                         onClick={() => toggleBenefit(b.id)}
-                        className={`p-3.5 rounded-xl border text-xs font-medium text-left transition-all flex items-center justify-between cursor-pointer ${
+                        className={`p-3.5 rounded-xl border text-xs font-semibold text-left transition-all flex items-center justify-between cursor-pointer ${
                           isChecked 
                             ? 'bg-[#C5A880]/15 border-[#C5A880] text-[#C5A880] shadow-[0_0_15px_rgba(197,168,128,0.15)]' 
                             : 'bg-[#121215] border-[#27272A] text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 shadow-inner'
@@ -219,12 +224,12 @@ export default function StepFivePeople() {
                 </div>
               </button>
 
-              {/* UPGRADED PRIMARY ACTION BUTTON: Solid Champagne Gold background for 100% cross-browser reliability */}
-              <div className="flex justify-between items-center pt-4">
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center pt-4 border-t border-[#27272A]/80">
                 <button
                   type="button"
                   onClick={() => router.push('/onboarding/step-4')}
-                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
                 >
                   ← Back
                 </button>

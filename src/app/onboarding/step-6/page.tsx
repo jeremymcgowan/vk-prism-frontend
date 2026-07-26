@@ -127,19 +127,18 @@ export default function StepSixFlow() {
   };
 
   return (
-    // UPGRADED: Changed font-mono to font-sans for a modern, secure executive banking feel
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
       <OnboardingHeader currentStep={6} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
         
-        {/* Responsive scaling container (max-w-3xl lg:max-w-4xl) with expanded halo wrapper */}
+        {/* Responsive scaling container */}
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* UPGRADED EXPANSIVE GOLD HALO: -inset-3 and blur-3xl for a wider, ambient aura */}
+          {/* EXPANSIVE GOLD HALO */}
           <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
-          {/* MAIN CARD: Obsidian glass panel with enhanced padding and double-layered gold glow */}
+          {/* MAIN CARD */}
           <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
             {/* Internal Corner Accent Glow */}
@@ -156,7 +155,7 @@ export default function StepSixFlow() {
 
             <form onSubmit={handleStandardSubmit} className="space-y-6">
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                   Primary CRM &amp; Customer Data System <span className="text-[#C5A880]">*</span>
                 </label>
                 <select 
@@ -164,14 +163,14 @@ export default function StepSixFlow() {
                   required
                   value={formData.crm_system || ''}
                   onChange={handleChange}
-                  className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                  className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                 >
-                  <option value="" disabled>Please Select CRM System...</option>
-                  <option value="HUBSPOT">HubSpot</option>
-                  <option value="SALESFORCE">Salesforce</option>
-                  <option value="NOTION">Notion / Airtable</option>
-                  <option value="OTHER">Other CRM</option>
-                  <option value="NONE">No CRM / Spreadsheets Only</option>
+                  <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select CRM System...</option>
+                  <option value="HUBSPOT" className="bg-[#0A0A0C] text-white">HubSpot</option>
+                  <option value="SALESFORCE" className="bg-[#0A0A0C] text-white">Salesforce</option>
+                  <option value="NOTION" className="bg-[#0A0A0C] text-white">Notion / Airtable</option>
+                  <option value="OTHER" className="bg-[#0A0A0C] text-white">Other CRM</option>
+                  <option value="NONE" className="bg-[#0A0A0C] text-white">No CRM / Spreadsheets Only</option>
                 </select>
 
                 {formData.crm_system && formData.crm_system !== 'NONE' && (
@@ -187,7 +186,7 @@ export default function StepSixFlow() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Team Communication <span className="text-[#C5A880]">*</span>
                   </label>
                   <select 
@@ -195,18 +194,18 @@ export default function StepSixFlow() {
                     required
                     value={formData.collaboration_tool || ''}
                     onChange={handleChange}
-                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                   >
-                    <option value="" disabled>Please Select Communication Tool...</option>
-                    <option value="SLACK">Slack</option>
-                    <option value="TEAMS">Microsoft Teams</option>
-                    <option value="DISCORD">Discord</option>
-                    <option value="EMAIL">Email / SMS Only</option>
+                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select Communication Tool...</option>
+                    <option value="SLACK" className="bg-[#0A0A0C] text-white">Slack</option>
+                    <option value="TEAMS" className="bg-[#0A0A0C] text-white">Microsoft Teams</option>
+                    <option value="DISCORD" className="bg-[#0A0A0C] text-white">Discord</option>
+                    <option value="EMAIL" className="bg-[#0A0A0C] text-white">Email / SMS Only</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Current Automation Level <span className="text-[#C5A880]">*</span>
                   </label>
                   <select 
@@ -214,12 +213,12 @@ export default function StepSixFlow() {
                     required
                     value={formData.automation_status || ''}
                     onChange={handleChange}
-                    className="w-full bg-[#121215] border border-[#27272A] text-white p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                   >
-                    <option value="" disabled>Please Select Automation Level...</option>
-                    <option value="MANUAL">100% Manual Processes</option>
-                    <option value="ZAPIER">Basic Zapier / Make Zaps</option>
-                    <option value="CUSTOM_AI">Custom AI &amp; API Workflows</option>
+                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select Automation Level...</option>
+                    <option value="MANUAL" className="bg-[#0A0A0C] text-white">100% Manual Processes</option>
+                    <option value="ZAPIER" className="bg-[#0A0A0C] text-white">Basic Zapier / Make Zaps</option>
+                    <option value="CUSTOM_AI" className="bg-[#0A0A0C] text-white">Custom AI &amp; API Workflows</option>
                   </select>
                 </div>
               </div>
@@ -259,12 +258,12 @@ export default function StepSixFlow() {
                 </div>
               </button>
 
-              {/* UPGRADED PRIMARY ACTION BUTTON: Solid Champagne Gold background for 100% cross-browser reliability */}
-              <div className="flex justify-between items-center pt-4">
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center pt-4 border-t border-[#27272A]/80">
                 <button
                   type="button"
                   onClick={() => router.push('/onboarding/step-5')}
-                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-semibold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
                 >
                   ← Back
                 </button>
