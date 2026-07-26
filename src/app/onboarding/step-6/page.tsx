@@ -85,13 +85,13 @@ export default function StepSixFlow() {
         employee_count_w2_pt: formData.employee_count_w2_pt ?? 0,
         contractor_count_1099: formData.contractor_count_1099 ?? 0,
 
-        // Step 2: Headquarters & Virtual HQ Flags
+        // Step 2: Headquarters & Virtual HQ Flags (Standardized column names)
         has_physical_hq: formData.has_physical_hq !== false,
         is_virtual_hq_candidate: formData.is_virtual_hq_candidate || false,
-        hq_address_line1: formData.hq_address_line1 || null,
+        hq_address_line_1: formData.hq_address_line_1 || formData.hq_address_line1 || null,
         hq_city: formData.hq_city || null,
         hq_state: formData.hq_state || formData.registration_state || null,
-        hq_zip: formData.hq_zip || null,
+        hq_postal_code: formData.hq_postal_code || formData.hq_zip || null,
 
         // Step 3: Capital & Governance
         funding_stage: formData.funding_stage || null,
