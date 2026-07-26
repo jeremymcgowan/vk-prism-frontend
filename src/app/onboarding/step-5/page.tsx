@@ -1,10 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import OnboardingHeader from '../components/OnboardingHeader';
 import VendorValueWedge from '../components/VendorValueWedge';
 import { useOnboarding } from '@/app/onboarding/OnboardingContext';
+
+// Helper Tooltip Component
+function Tooltip({ text }: { text: string }) {
+  return (
+    <span className="relative group inline-block ml-1 cursor-help">
+      <span className="text-[#C5A880] text-xs font-bold hover:text-white transition-colors">ⓘ</span>
+      <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-30 w-max max-w-[270px] animate-fadeIn">
+        <span className="bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] text-center leading-tight whitespace-normal">
+          {text}
+        </span>
+        <span className="w-2 h-2 bg-[#18181B] border-r border-b border-[#C5A880]/40 rotate-45 -mt-1"></span>
+      </span>
+    </span>
+  );
+}
 
 export default function StepFivePeople() {
   const router = useRouter();
@@ -33,6 +48,25 @@ export default function StepFivePeople() {
     { id: 'EQUITY_ESOP', label: '📊 Stock Options (ESOP / Equity Pool)' },
     { id: 'STIPEND_PERKS', label: '🌴 Remote Work / Health Stipends' },
   ];
+
+  // Auto-align headcount range from Step 2 workforce numbers if not explicitly set
+  useEffect(() => {
+    if (isHydrated && !formData.headcount_range) {
+      const ft = formData.employee_count_w2_ft ?? 1;
+      const pt = formData.employee_count_w2_pt ?? 0;
+      const contractors = formData.contractor_count_1099 ?? 0;
+      const total = ft + pt + contractors;
+
+      let calculatedRange = '1_TO_5';
+      if (total <= 1) calculatedRange = 'SOLO';
+      else if (total <= 5) calculatedRange = '1_TO_5';
+      else if (total <= 20) calculatedRange = '6_TO_20';
+      else if (total <= 50) calculatedRange = '21_TO_50';
+      else calculatedRange = '50_PLUS';
+
+      updateFormData({ headcount_range: calculatedRange });
+    }
+  }, [isHydrated]);
 
   if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
 
@@ -114,7 +148,7 @@ export default function StepFivePeople() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                    Team Headcount <span className="text-[#C5A880]">*</span>
+                    Team Headcount <span className="text-[#C5A880]">*</span> <Tooltip text="Organizational headcount range calculated from active payroll and contract staffing numbers." />
                   </label>
                   <select 
                     name="headcount_range"
@@ -134,7 +168,7 @@ export default function StepFivePeople() {
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                    Payroll System <span className="text-[#C5A880]">*</span>
+                    Payroll System <span className="text-[#C5A880]">*</span> <Tooltip text="The primary platform used for employee compensation, tax withholding, and W2/1099 filings." />
                   </label>
                   <select 
                     name="payroll_provider"
@@ -167,7 +201,7 @@ export default function StepFivePeople() {
               {/* Benefits Suite Checkboxes */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-3">
-                  Corporate Benefits &amp; Incentives Offered
+                  Corporate Benefits &amp; Incentives Offered <Tooltip text="Select all active health, retirement, and equity compensation plans offered to your team." />
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {benefitOptions.map((b) => {
