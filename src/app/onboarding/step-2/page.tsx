@@ -99,7 +99,14 @@ export default function StepTwoStructure() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setValidationError(null);
-    updateFormData({ [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // Auto-select DE state if user picks Delaware C-Corp
+    if (name === 'legal_structure' && value === 'DELAWARE_C_CORP') {
+      updateFormData({ legal_structure: value, registration_state: 'DE' });
+    } else {
+      updateFormData({ [name]: value });
+    }
   };
 
   // Eradicate Leading Zeros (e.g., 0434 -> 434) & Clamp (0 - 99,999)
@@ -261,7 +268,8 @@ export default function StepTwoStructure() {
                     >
                       <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select</option>
                       <option value="STARTUP_NOT_FORMED" className="bg-[#0A0A0C] text-white">Startup / Not Yet Formed</option>
-                      <option value="C_CORP" className="bg-[#0A0A0C] text-white">C-Corporation</option>
+                      <option value="DELAWARE_C_CORP" className="bg-[#0A0A0C] text-white">Delaware C-Corporation</option>
+                      <option value="C_CORP" className="bg-[#0A0A0C] text-white">C-Corporation (Other State)</option>
                       <option value="S_CORP" className="bg-[#0A0A0C] text-white">S-Corporation</option>
                       <option value="LLC" className="bg-[#0A0A0C] text-white">LLC</option>
                     </select>
