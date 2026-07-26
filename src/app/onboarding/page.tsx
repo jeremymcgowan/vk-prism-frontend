@@ -31,6 +31,31 @@ export default function StepOneGateway() {
     updateFormData({ [e.target.name]: e.target.value });
   };
 
+  // --- Auto-Format Contact Name (Initials -> UPPERCASE, Words -> Title Case) ---
+  const formatContactName = (rawName: string): string => {
+    const trimmed = rawName.trim();
+    if (!trimmed) return '';
+
+    return trimmed
+      .split(/\s+/)
+      .map((part) => {
+        // Handle initials e.g. "jp" -> "JP"
+        if (/^[a-zA-Z\.]{2,4}$/.test(part) && !part.includes('.')) {
+          if (part.length <= 3) return part.toUpperCase();
+        }
+        if (/^[a-zA-Z]$/.test(part)) return part.toUpperCase();
+        return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+      })
+      .join(' ');
+  };
+
+  const handleNameBlur = () => {
+    if (formData.contact_name) {
+      const formatted = formatContactName(formData.contact_name);
+      updateFormData({ contact_name: formatted });
+    }
+  };
+
   // --- Auto-Formatting US Phone Number: (XXX) XXX-XXXX ---
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValidationError(null);
@@ -48,16 +73,23 @@ export default function StepOneGateway() {
     updateFormData({ contact_phone: formatted });
   };
 
-  // --- Strict Email & Phone Validation Check ---
+  // --- Strict Email, Phone & Name Validation Check ---
   const validateStepOne = (): boolean => {
     if (!formData.company_name?.trim()) {
       setValidationError('Please enter your Company Name.');
       return false;
     }
-    if (!formData.contact_name?.trim()) {
-      setValidationError('Please enter your Primary Contact Name.');
+
+    // Strict Contact Name Check: Alpha, spaces, hyphens, dots, apostrophes only; min 2 alpha chars
+    const rawName = (formData.contact_name || '').trim();
+    const nameRegex = /^[a-zA-Z\s\-\'\.]+$/;
+    const alphaCount = rawName.replace(/[^a-zA-Z]/g, '').length;
+
+    if (!rawName || !nameRegex.test(rawName) || alphaCount < 2) {
+      setValidationError('Please enter a valid Primary Contact Name (minimum 2 letters, no numbers or special symbols).');
       return false;
     }
+
     if (!formData.industry) {
       setValidationError('Please select your Primary Industry Sector.');
       return false;
@@ -85,7 +117,11 @@ export default function StepOneGateway() {
 
     setIsSubmitting(true);
     
+    // Auto-format name before proceeding
+    const formattedName = formatContactName(formData.contact_name || '');
+
     updateFormData({
+      contact_name: formattedName,
       is_fast_track: isFastTrack,
       onboarding_mode: mode,
       step_completed: 1,
@@ -166,7 +202,8 @@ export default function StepOneGateway() {
                     required
                     value={formData.contact_name || ''}
                     onChange={handleChange}
-                    placeholder="e.g. Jane Doe"
+                    onBlur={handleNameBlur}
+                    placeholder="e.g. Jane Doe or J.P."
                     className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                   />
                 </div>
