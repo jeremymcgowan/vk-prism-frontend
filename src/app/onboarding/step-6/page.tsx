@@ -64,8 +64,8 @@ export default function StepSixFlow() {
         // Fallback for anonymous or unauthenticated sessions
       }
 
-      // 2. Map all collected form state into exact database columns
-      const dbPayload = {
+      // 2. Map strictly matching DB table columns
+      const dbPayload: Record<string, any> = {
         user_id: userId,
         company_name: formData.company_name || 'Unspecified Entity',
         contact_name: formData.contact_name || null,
@@ -89,11 +89,9 @@ export default function StepSixFlow() {
         has_physical_hq: formData.has_physical_hq !== false,
         is_virtual_hq_candidate: formData.is_virtual_hq_candidate || false,
         hq_address_line1: formData.hq_address_line1 || null,
-        hq_address_line_1: formData.hq_address_line1 || null, // Map alias
         hq_city: formData.hq_city || null,
         hq_state: formData.hq_state || formData.registration_state || null,
         hq_zip: formData.hq_zip || null,
-        hq_postal_code: formData.hq_zip || null, // Map alias
 
         // Step 3: Capital & Governance
         funding_stage: formData.funding_stage || null,
@@ -102,22 +100,19 @@ export default function StepSixFlow() {
         accounting_software: formData.accounting_software || null,
         accounting_vendor_audit: formData.accounting_vendor_audit || null,
 
-        // Step 4: Shield Security & Remote Telemetry
+        // Step 4: Shield Security
         email_workspace_suite: formData.email_workspace_suite || null,
         workspace_vendor_audit: formData.workspace_vendor_audit || null,
         mdm_provider: formData.mdm_provider || null,
         mdm_vendor_audit: formData.mdm_vendor_audit || null,
         antivirus_status: formData.antivirus_status || null,
         backup_frequency: formData.backup_frequency || null,
-        has_remote_workers: formData.has_remote_workers || 'NO',
-        has_vpn: formData.has_vpn || 'NO',
-        vpn_lead_flag: formData.vpn_lead_flag || false,
 
         // Step 5: People & Workforce
         headcount_range: formData.headcount_range || null,
         payroll_provider: formData.payroll_provider || null,
         payroll_vendor_audit: formData.payroll_vendor_audit || null,
-        benefits_offered: formData.benefits_offered || [], // Text Array ['MEDICAL', 'DENTAL']
+        benefits_offered: formData.benefits_offered || [],
 
         // Step 6: Flow & Automation
         crm_system: formData.crm_system || (flowOptIn ? 'NONE' : null),
@@ -125,7 +120,7 @@ export default function StepSixFlow() {
         collaboration_tool: formData.collaboration_tool || (flowOptIn ? 'SLACK' : null),
         automation_status: formData.automation_status || (flowOptIn ? 'MANUAL' : null),
 
-        // Full Raw JSON Audit Snapshot
+        // Full Raw JSON Audit Snapshot (stores remote workers, VPN status, lead flags, etc.)
         raw_step_payloads: {
           ...formData,
           flow_managed_service_opt_in: flowOptIn,
@@ -139,11 +134,14 @@ export default function StepSixFlow() {
           .insert([dbPayload]);
 
         if (insertError) {
-          console.warn('Supabase DB Insert Notice:', insertError.message);
+          console.error('Supabase DB Insert Error:', insertError.message);
+          throw new Error(`Database insert failed: ${insertError.message}`);
         }
+      } else {
+        throw new Error('Supabase client credentials missing.');
       }
 
-      // 3. Clear both session context and any legacy local storage cache
+      // 3. Clear session context and local storage draft
       clearFormData();
       localStorage.removeItem('prism_onboarding_draft');
 
@@ -172,7 +170,6 @@ export default function StepSixFlow() {
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
         
-        {/* Responsive scaling container */}
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
           {/* EXPANSIVE GOLD HALO */}
@@ -181,7 +178,6 @@ export default function StepSixFlow() {
           {/* MAIN CARD */}
           <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
-            {/* Internal Corner Accent Glow */}
             <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#C5A880]/20 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="text-center mb-10">
@@ -264,7 +260,7 @@ export default function StepSixFlow() {
               </div>
 
               {error && (
-                <div className="rounded-xl border border-red-900/40 bg-red-950/20 px-5 py-3 text-xs text-red-400 font-mono shadow-inner">
+                <div className="rounded-xl border border-red-900/40 bg-red-950/20 px-5 py-3 text-xs text-red-400 font-mono shadow-inner animate-fadeIn">
                   SUBMISSION_ERROR // {error}
                 </div>
               )}
