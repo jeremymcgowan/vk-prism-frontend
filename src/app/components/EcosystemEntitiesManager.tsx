@@ -292,29 +292,29 @@ export default function EcosystemEntitiesManager() {
       hq_address_line1,
       hq_zip,
 
-      // UI Transient Keys — Strip ONLY what genuinely does not exist in the DB columns
+      // UI Transient Keys — Strip ONLY UI aliases that map to other DB columns
       email_workspace_suite,
       mdm_provider,
       antivirus_status,
       backup_frequency,
       payroll_provider,
       has_bylaws,
-      employee_count_w2_ft,
-      employee_count_w2_pt,
-      contractor_count_1099,
-      benefits_offered,
-      crm_system,
-      collaboration_tool,
-      automation_status,
       has_physical_hq,
       is_virtual_hq_candidate,
 
       ...rawTelemetryPayload 
     } = telemetry as any
 
-    // Map UI selections directly to verified physical columns (including Column 114 and 101-103)
+    // Map UI selections directly to verified physical columns
     const cleanTelemetryPayload = {
       ...rawTelemetryPayload,
+      employee_count_w2_ft: telemetry.employee_count_w2_ft ?? 1,
+      employee_count_w2_pt: telemetry.employee_count_w2_pt ?? 0,
+      contractor_count_1099: telemetry.contractor_count_1099 ?? 0,
+      benefits_offered: Array.isArray(telemetry.benefits_offered) ? telemetry.benefits_offered : [],
+      crm_system: telemetry.crm_system || 'HUBSPOT',
+      collaboration_tool: telemetry.collaboration_tool || 'SLACK',
+      automation_status: telemetry.automation_status || 'MANUAL',
       fiscal_year_end_month: telemetry.fiscal_year_end_month || 'December',
       hq_address_line_1: telemetry.hq_address_line_1 || hq_address_line1 || null,
       hq_city: telemetry.hq_city || null,
@@ -326,7 +326,7 @@ export default function EcosystemEntitiesManager() {
       it_backup_strategy: backup_frequency || telemetry.it_backup_strategy || null,
       hr_payroll_platform: payroll_provider || telemetry.hr_payroll_platform || 'GUSTO',
       bylaws_resolutions_active: has_bylaws === 'YES',
-      hr_benefits_active: Array.isArray(benefits_offered) && benefits_offered.length > 0
+      hr_benefits_active: Array.isArray(telemetry.benefits_offered) && telemetry.benefits_offered.length > 0
     }
 
     const { 
