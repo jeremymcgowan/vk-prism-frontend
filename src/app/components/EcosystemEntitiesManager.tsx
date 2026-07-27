@@ -292,8 +292,7 @@ export default function EcosystemEntitiesManager() {
       hq_address_line1,
       hq_zip,
 
-      // UI Transient Keys — Explicitly stripped from crm_entities patch
-      fiscal_year_end_month,
+      // UI Transient Keys — Strip ONLY what genuinely does not exist in the DB columns
       email_workspace_suite,
       mdm_provider,
       antivirus_status,
@@ -313,10 +312,13 @@ export default function EcosystemEntitiesManager() {
       ...rawTelemetryPayload 
     } = telemetry as any
 
-    // Map UI selections to valid physical columns in table crm_entities
+    // Map UI selections directly to verified physical columns (including Column 114 and 101-103)
     const cleanTelemetryPayload = {
       ...rawTelemetryPayload,
+      fiscal_year_end_month: telemetry.fiscal_year_end_month || 'December',
       hq_address_line_1: telemetry.hq_address_line_1 || hq_address_line1 || null,
+      hq_city: telemetry.hq_city || null,
+      hq_state: telemetry.hq_state || null,
       hq_postal_code: telemetry.hq_postal_code || hq_zip || null,
       it_groupware_platform: email_workspace_suite || telemetry.it_groupware_platform || null,
       it_mdm_vendor: mdm_provider || telemetry.it_mdm_vendor || null,
