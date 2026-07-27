@@ -68,6 +68,7 @@ export default function StepSixFlow() {
       const dbPayload: Record<string, any> = {
         user_id: userId,
         company_name: formData.company_name || 'Unspecified Entity',
+        company_url: formData.company_url || null, // Handled in Step 1
         contact_name: formData.contact_name || null,
         contact_email: formData.contact_email || null,
         contact_phone: formData.contact_phone || null,
