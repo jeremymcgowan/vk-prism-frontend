@@ -365,6 +365,58 @@ export default function EcosystemEntitiesManager() {
 
   return (
     <div className="space-y-6">
+      
+      {/* 📊 Top 4 KPI Metrics Header Cards with Brand Gold Borders (#C5A880) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div 
+          className="bg-zinc-950/80 p-4 rounded-xl border-2 shadow-[0_0_15px_rgba(197,168,128,0.15)] flex flex-col justify-between"
+          style={{ borderColor: '#C5A880' }}
+        >
+          <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest font-bold block">
+            Total Entity Nodes
+          </span>
+          <span className="text-2xl font-mono font-extrabold text-[#C5A880] mt-1">
+            {nodes.length}
+          </span>
+        </div>
+
+        <div 
+          className="bg-zinc-950/80 p-4 rounded-xl border-2 shadow-[0_0_15px_rgba(197,168,128,0.15)] flex flex-col justify-between"
+          style={{ borderColor: '#C5A880' }}
+        >
+          <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest font-bold block">
+            Internal Employees
+          </span>
+          <span className="text-2xl font-mono font-extrabold text-white mt-1">
+            {(telemetry?.employee_count_w2_ft ?? 1) + (telemetry?.employee_count_w2_pt ?? 0)}
+          </span>
+        </div>
+
+        <div 
+          className="bg-zinc-950/80 p-4 rounded-xl border-2 shadow-[0_0_15px_rgba(197,168,128,0.15)] flex flex-col justify-between"
+          style={{ borderColor: '#C5A880' }}
+        >
+          <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">
+            Verified Vendors
+          </span>
+          <span className="text-2xl font-mono font-extrabold text-[#C5A880] mt-1">
+            1
+          </span>
+        </div>
+
+        <div 
+          className="bg-zinc-950/80 p-4 rounded-xl border-2 shadow-[0_0_15px_rgba(197,168,128,0.15)] flex flex-col justify-between"
+          style={{ borderColor: '#C5A880' }}
+        >
+          <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">
+            Contractors Linked
+          </span>
+          <span className="text-2xl font-mono font-extrabold text-[#C5A880] mt-1">
+            {telemetry?.contractor_count_1099 ?? 0}
+          </span>
+        </div>
+      </div>
+
       {/* Master Filter Controller with Direct Gold Border (#C5A880) */}
       <div 
         className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border-2 bg-zinc-950/80 rounded-xl shadow-[0_0_20px_rgba(197,168,128,0.15)]"
@@ -387,22 +439,22 @@ export default function EcosystemEntitiesManager() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Active Entity Search Box */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest block font-bold">Search Matrix Nodes</label>
+          {/* Active Entity Search Box — Formatted Same as Target Dropdown */}
+          <div className="space-y-1 flex-1 max-w-xs">
+            <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Search Matrix Nodes</label>
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search name, status, ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-black border border-zinc-800 text-zinc-200 placeholder-zinc-500 font-mono text-xs rounded-lg pl-3 pr-8 py-2 w-48 sm:w-60 focus:outline-none focus:border-[#C5A880] transition-colors"
+                className="bg-black border border-zinc-800 text-[#C5A880] placeholder-zinc-600 font-mono text-xs rounded-lg pl-3 pr-8 py-2 w-full focus:outline-none focus:border-[#C5A880] font-bold transition-colors"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-zinc-500 hover:text-zinc-200"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#C5A880] hover:text-white"
                 >
                   ✕
                 </button>
@@ -431,7 +483,7 @@ export default function EcosystemEntitiesManager() {
               
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 
-                {/* 🏢 SECTION 01 — Outer Section Explicit Gold Border (#C5A880) */}
+                {/* 🏢 SECTION 01 */}
                 <div 
                   className="border-2 bg-zinc-950/40 rounded-xl p-5 space-y-4 shadow-[0_0_15px_rgba(197,168,128,0.1)]"
                   style={{ borderColor: '#C5A880' }}
@@ -563,7 +615,7 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  {/* Principal HQ Telemetry & Address — Internal sub-box remains zinc border */}
+                  {/* Principal HQ Telemetry & Address */}
                   <div className="pt-3 border-t border-zinc-800/80 space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
@@ -696,7 +748,7 @@ export default function EcosystemEntitiesManager() {
                   </div>
                 </div>
 
-                {/* 🛡️ SECTION 02 — Outer Section Explicit Gold Border (#C5A880) */}
+                {/* 🛡️ SECTION 02 */}
                 <div 
                   className="border-2 bg-zinc-950/40 rounded-xl p-5 space-y-4 shadow-[0_0_15px_rgba(197,168,128,0.1)]"
                   style={{ borderColor: '#C5A880' }}
@@ -782,7 +834,7 @@ export default function EcosystemEntitiesManager() {
                   </div>
                 </div>
 
-                {/* 👥 SECTION 03 — Outer Section Explicit Gold Border (#C5A880) */}
+                {/* 👥 SECTION 03 */}
                 <div 
                   className="border-2 bg-zinc-950/40 rounded-xl p-5 space-y-4 shadow-[0_0_15px_rgba(197,168,128,0.1)]"
                   style={{ borderColor: '#C5A880' }}
@@ -873,7 +925,7 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  {/* Unbundled Benefits Badges — Active state uses Ultra-Bright Neon Green (#00FF66) */}
+                  {/* Unbundled Benefits Badges */}
                   <div className="space-y-2 pt-2 border-t border-zinc-800/80">
                     <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Active Group Benefits Infrastructure</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -901,7 +953,7 @@ export default function EcosystemEntitiesManager() {
                   </div>
                 </div>
 
-                {/* 📊 SECTION 04 — Outer Section Explicit Gold Border (#C5A880) */}
+                {/* 📊 SECTION 04 */}
                 <div 
                   className="border-2 bg-zinc-950/40 rounded-xl p-5 space-y-4 shadow-[0_0_15px_rgba(197,168,128,0.1)]"
                   style={{ borderColor: '#C5A880' }}
@@ -973,7 +1025,7 @@ export default function EcosystemEntitiesManager() {
 
               </div>
 
-              {/* 📈 SECTION 05 — Outer Section Explicit Gold Border (#C5A880) */}
+              {/* 📈 SECTION 05 */}
               <div 
                 className="border-2 bg-zinc-950/40 rounded-xl p-5 space-y-4 block w-full shadow-[0_0_15px_rgba(197,168,128,0.1)]"
                 style={{ borderColor: '#C5A880' }}
@@ -1071,7 +1123,7 @@ export default function EcosystemEntitiesManager() {
                 </div>
               </div>
 
-              {/* 🔄 SECTION 06 — Outer Section Explicit Gold Border (#C5A880) */}
+              {/* 🔄 SECTION 06 */}
               <div 
                 className="border-2 bg-zinc-950/40 rounded-xl p-5 space-y-4 shadow-[0_0_15px_rgba(197,168,128,0.1)]"
                 style={{ borderColor: '#C5A880' }}
@@ -1136,7 +1188,7 @@ export default function EcosystemEntitiesManager() {
                 </div>
               </div>
 
-              {/* Commit Button Box with Explicit Gold Border (#C5A880) */}
+              {/* Commit Button Box */}
               <div 
                 className="flex justify-end p-4 border-2 bg-zinc-950/60 rounded-xl pt-4 shadow-[0_0_20px_rgba(197,168,128,0.15)]"
                 style={{ borderColor: '#C5A880' }}
