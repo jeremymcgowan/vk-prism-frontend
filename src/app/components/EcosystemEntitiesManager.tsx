@@ -293,6 +293,7 @@ export default function EcosystemEntitiesManager() {
       hq_zip,
 
       // UI Transient Keys — Explicitly stripped from crm_entities patch
+      fiscal_year_end_month,
       email_workspace_suite,
       mdm_provider,
       antivirus_status,
@@ -319,6 +320,7 @@ export default function EcosystemEntitiesManager() {
       hq_postal_code: telemetry.hq_postal_code || hq_zip || null,
       it_groupware_platform: email_workspace_suite || telemetry.it_groupware_platform || null,
       it_mdm_vendor: mdm_provider || telemetry.it_mdm_vendor || null,
+      it_antivirus_status: antivirus_status || telemetry.it_antivirus_status || 'ACTIVE',
       it_backup_strategy: backup_frequency || telemetry.it_backup_strategy || null,
       hr_payroll_platform: payroll_provider || telemetry.hr_payroll_platform || 'GUSTO',
       bylaws_resolutions_active: has_bylaws === 'YES',
