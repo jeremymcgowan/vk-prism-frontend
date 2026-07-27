@@ -130,7 +130,7 @@ const BENEFIT_TOGGLES = [
 ]
 
 export default function EcosystemEntitiesManager() {
-  const [nodes, setNodes] = useState<Pick<EntityTelemetry, 'id' | 'display_name' | 'status' | 'node_id'>[]>([])
+  const [nodes, setNodes] = useState<any[]>([])
   const [selectedId, setSelectedId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState<string>('')
   
@@ -138,6 +138,7 @@ export default function EcosystemEntitiesManager() {
   const [assessment, setAssessment] = useState<ITAssessment | null>(null)
   const [banners, setBanners] = useState<PlatformBanner[]>([])
   
+  const [originalEin, setOriginalEin] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
   const [saving, setSaving] = useState<boolean>(false)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -172,12 +173,6 @@ export default function EcosystemEntitiesManager() {
     return Math.min(parsed, maxVal)
   }
 
-  const isValidEIN = (ein: string): boolean => {
-    if (!ein || ein === 'Startup - Need EIN') return true
-    const digits = ein.replace(/\D/g, '')
-    return digits.length === 9
-  }
-
   const copyNodeIdToClipboard = (nodeIdText: string) => {
     navigator.clipboard.writeText(nodeIdText)
     setCopiedNodeId(true)
@@ -187,9 +182,10 @@ export default function EcosystemEntitiesManager() {
   async function fetchInitialData(preserveId?: string) {
     setLoading(true)
     
+    // Expanded select fields to make matrix search robust
     const { data: entData, error: entErr } = await supabase
       .from('crm_entities')
-      .select('id, display_name, status')
+      .select('id, display_name, legal_name, ein_number, status')
       .order('display_name', { ascending: true })
 
     if (entErr) {
@@ -226,7 +222,10 @@ export default function EcosystemEntitiesManager() {
       .eq('entity_id', id)
       .maybeSingle()
 
-    if (ent) setTelemetry(ent)
+    if (ent) {
+      setTelemetry(ent)
+      setOriginalEin(ent.ein_number || 'Startup - Need EIN')
+    }
     
     if (assess) {
       setAssessment(assess)
@@ -271,13 +270,33 @@ export default function EcosystemEntitiesManager() {
     setTelemetry({ ...telemetry, benefits_offered: updated, hr_benefits_active: updated.length > 0 })
   }
 
+  // Enforce XX-XXXXXXX format strictly on blur and revert if invalid
+  const handleEinBlur = () => {
+    if (!telemetry) return
+    const currentEin = (telemetry.ein_number || '').trim()
+    if (!currentEin || currentEin === 'Startup - Need EIN') return
+
+    const einRegex = /^\d{2}-\d{7}$/
+    if (!einRegex.test(currentEin)) {
+      alert('EIN Validation Error: Format must be exactly XX-XXXXXXX (2 digits, hyphen, 7 digits). Reverting to original value.')
+      triggerToast('error', 'EIN Format Error: Must be exactly XX-XXXXXXX. Reverted.')
+      setTelemetry({ ...telemetry, ein_number: originalEin })
+    }
+  }
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!telemetry || !assessment) return
 
-    if (telemetry.ein_number && telemetry.ein_number !== 'Startup - Need EIN' && !isValidEIN(telemetry.ein_number)) {
-      triggerToast('error', 'EIN Validation Failed: Must contain exactly 9 numeric digits (XX-XXXXXXX).')
-      return
+    // Strict EIN check prior to database commit
+    if (telemetry.ein_number && telemetry.ein_number !== 'Startup - Need EIN') {
+      const einRegex = /^\d{2}-\d{7}$/
+      if (!einRegex.test(telemetry.ein_number.trim())) {
+        alert('EIN Validation Error: Format must be exactly XX-XXXXXXX (2 digits, hyphen, 7 digits). Reverting to original value.')
+        triggerToast('error', 'EIN Format Error: Must be exactly XX-XXXXXXX. Reverted.')
+        setTelemetry({ ...telemetry, ein_number: originalEin })
+        return
+      }
     }
 
     setSaving(true)
@@ -357,6 +376,7 @@ export default function EcosystemEntitiesManager() {
       triggerToast('error', `Write Rejected: ${err?.message} (${err?.details || err?.hint || 'Check DB schema'})`)
     } else {
       triggerToast('success', `All system configurations committed securely.`)
+      setOriginalEin(cleanTelemetryPayload.ein_number || 'Startup - Need EIN')
       setEditingSections({ sec01: false, sec02: false, sec03: false, sec04: false, sec05: false, sec06: false })
       await fetchInitialData(telemetry.id)
     }
@@ -379,15 +399,20 @@ export default function EcosystemEntitiesManager() {
     setTimeout(() => setStatusMessage(null), 5000)
   }
 
-  // Filter entities list based on search query
+  // Filter entities list across name, legal name, status, EIN, ID, and VK badge prefix
   const filteredNodes = nodes.filter((n) => {
     const q = searchQuery.toLowerCase().trim()
     if (!q) return true
+    const badge = `vk-${(n.id || '').slice(0, 8).toLowerCase()}`
+    const shortBadge = `vk-${(n.id || '').slice(0, 6).toLowerCase()}`
     return (
       n.display_name?.toLowerCase().includes(q) ||
+      n.legal_name?.toLowerCase().includes(q) ||
       n.status?.toLowerCase().includes(q) ||
-      (n.node_id && n.node_id.toLowerCase().includes(q)) ||
-      n.id.toLowerCase().includes(q)
+      n.ein_number?.toLowerCase().includes(q) ||
+      n.id?.toLowerCase().includes(q) ||
+      badge.includes(q) ||
+      shortBadge.includes(q)
     )
   })
 
@@ -400,56 +425,7 @@ export default function EcosystemEntitiesManager() {
   return (
     <div className="space-y-6">
       
-      {/* 📊 Top 4 KPI Metrics Header Cards with Brand Gold Borders (#C5A880) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div 
-          className="bg-zinc-950/80 p-4 rounded-xl border-2 shadow-[0_0_15px_rgba(197,168,128,0.15)] flex flex-col justify-between"
-          style={{ borderColor: '#C5A880' }}
-        >
-          <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest font-bold block">
-            Total Entity Nodes
-          </span>
-          <span className="text-2xl font-mono font-extrabold text-[#C5A880] mt-1">
-            {nodes.length}
-          </span>
-        </div>
-
-        <div 
-          className="bg-zinc-950/80 p-4 rounded-xl border-2 shadow-[0_0_15px_rgba(197,168,128,0.15)] flex flex-col justify-between"
-          style={{ borderColor: '#C5A880' }}
-        >
-          <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest font-bold block">
-            Internal Employees
-          </span>
-          <span className="text-2xl font-mono font-extrabold text-white mt-1">
-            {(telemetry?.employee_count_w2_ft ?? 1) + (telemetry?.employee_count_w2_pt ?? 0)}
-          </span>
-        </div>
-
-        <div 
-          className="bg-zinc-950/80 p-4 rounded-xl border-2 shadow-[0_0_15px_rgba(197,168,128,0.15)] flex flex-col justify-between"
-          style={{ borderColor: '#C5A880' }}
-        >
-          <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">
-            Verified Vendors
-          </span>
-          <span className="text-2xl font-mono font-extrabold text-[#C5A880] mt-1">
-            1
-          </span>
-        </div>
-
-        <div 
-          className="bg-zinc-950/80 p-4 rounded-xl border-2 shadow-[0_0_15px_rgba(197,168,128,0.15)] flex flex-col justify-between"
-          style={{ borderColor: '#C5A880' }}
-        >
-          <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">
-            Contractors Linked
-          </span>
-          <span className="text-2xl font-mono font-extrabold text-[#C5A880] mt-1">
-            {telemetry?.contractor_count_1099 ?? 0}
-          </span>
-        </div>
-      </div>
+      {/* KPI Header Cards removed to eliminate duplication with parent layout */}
 
       {/* Master Filter Controller with Direct Gold Border (#C5A880) */}
       <div 
@@ -479,16 +455,22 @@ export default function EcosystemEntitiesManager() {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search name, status, ID..."
+                placeholder="Search name, status, ID, EIN..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && filteredNodes.length > 0) {
+                    e.preventDefault()
+                    handleSelectChange(filteredNodes[0].id)
+                  }
+                }}
                 className="bg-black border border-zinc-800 text-[#C5A880] placeholder-zinc-600 font-mono text-xs rounded-lg pl-3 pr-8 py-2 w-full focus:outline-none focus:border-[#C5A880] font-bold transition-colors"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#C5A880] hover:text-white"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#C5A880] hover:text-white cursor-pointer"
                 >
                   ✕
                 </button>
@@ -616,6 +598,7 @@ export default function EcosystemEntitiesManager() {
                         type="text" 
                         disabled={!editingSections.sec01}
                         placeholder="12-3456789 or Startup - Need EIN"
+                        onBlur={handleEinBlur}
                         className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed" 
                         value={telemetry.ein_number || 'Startup - Need EIN'} 
                         onChange={e => setTelemetry({...telemetry, ein_number: e.target.value})} 
