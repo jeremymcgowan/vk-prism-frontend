@@ -27,14 +27,16 @@ interface EntityTelemetry {
   readiness_completion_pct: number
   vk_audit_status: string
 
-  // Governance & HQ Extensions
+  // Governance & HQ Extensions (Standardized Schema)
   has_bylaws?: string | null
   fiscal_year_end_month?: string | null
   has_physical_hq?: boolean | null
   is_virtual_hq_candidate?: boolean | null
+  hq_address_line_1?: string | null
   hq_address_line1?: string | null
   hq_city?: string | null
   hq_state?: string | null
+  hq_postal_code?: string | null
   hq_zip?: string | null
 
   // Security & IT
@@ -124,7 +126,7 @@ const BENEFIT_TOGGLES = [
 ]
 
 export default function EcosystemEntitiesManager() {
-  const [nodes, setNodes] = useState<Pick<EntityTelemetry, 'id' | 'display_name' | 'status' | 'node_id'>[]>([])
+  const [nodes, setNodes] = useState<Pick<EntityTelemetry, 'id' | 'display_name' | 'status'>[]>([])
   const [selectedId, setSelectedId] = useState<string>('')
   
   const [telemetry, setTelemetry] = useState<EntityTelemetry | null>(null)
@@ -165,12 +167,6 @@ export default function EcosystemEntitiesManager() {
     return Math.min(parsed, maxVal)
   }
 
-  const formatEIN = (val: string): string => {
-    const digits = val.replace(/\D/g, '').slice(0, 9)
-    if (digits.length <= 2) return digits
-    return `${digits.slice(0, 2)}-${digits.slice(2)}`
-  }
-
   const isValidEIN = (ein: string): boolean => {
     if (!ein || ein === 'Startup - Need EIN') return true
     const digits = ein.replace(/\D/g, '')
@@ -185,10 +181,17 @@ export default function EcosystemEntitiesManager() {
 
   async function fetchInitialData(preserveId?: string) {
     setLoading(true)
-    const { data: entData } = await supabase
+    
+    // Validated query strictly targeting existing columns on crm_entities
+    const { data: entData, error: entErr } = await supabase
       .from('crm_entities')
-      .select('id, display_name, status, node_id')
+      .select('id, display_name, status')
       .order('display_name', { ascending: true })
+
+    if (entErr) {
+      console.error('Failed to fetch crm_entities:', entErr.message)
+      triggerToast('error', `Failed to load corporate nodes: ${entErr.message}`)
+    }
 
     const { data: banData } = await supabase
       .from('crm_ecosystem_banners')
@@ -275,13 +278,23 @@ export default function EcosystemEntitiesManager() {
 
     setSaving(true)
 
+    // Clean payload and handle address column mappings
     const { 
       id: entityUuid, 
       parent_entity_id, 
       created_at, 
       updated_at, 
-      ...cleanTelemetryPayload 
+      node_id,
+      hq_address_line1,
+      hq_zip,
+      ...rawTelemetryPayload 
     } = telemetry as any
+
+    const cleanTelemetryPayload = {
+      ...rawTelemetryPayload,
+      hq_address_line_1: telemetry.hq_address_line_1 || hq_address_line1 || null,
+      hq_postal_code: telemetry.hq_postal_code || hq_zip || null,
+    }
 
     const { 
       id: assessmentUuid, 
@@ -337,6 +350,8 @@ export default function EcosystemEntitiesManager() {
     return <div className="text-xs font-mono text-zinc-500 animate-pulse uppercase tracking-wider">Synchronizing Node Registry...</div>
   }
 
+  const currentNodeBadge = telemetry ? `VK-${telemetry.id.slice(0, 8).toUpperCase()}` : 'VK-NODE'
+
   return (
     <div className="space-y-6">
       {/* Master Filter Controller */}
@@ -351,7 +366,7 @@ export default function EcosystemEntitiesManager() {
             <option value="">-- SELECT CORPORATE MATRIX NODE --</option>
             {nodes.map((n) => (
               <option key={n.id} value={n.id}>
-                [{n.node_id || 'VK-NODE'}] {n.display_name} ({n.status})
+                [VK-{n.id.slice(0, 6).toUpperCase()}] {n.display_name} ({n.status})
               </option>
             ))}
           </select>
@@ -380,17 +395,15 @@ export default function EcosystemEntitiesManager() {
                   <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
                     <div className="flex items-center gap-3">
                       <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-400 uppercase">
-                        Section 01 // Corporate Baseline & Capital Vetting
+                        Section 01 // Corporate Baseline &amp; Capital Vetting
                       </h3>
-                      {telemetry.node_id && (
-                        <button
-                          type="button"
-                          onClick={() => copyNodeIdToClipboard(telemetry.node_id || '')}
-                          className="font-mono text-[10px] bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2 py-0.5 rounded hover:bg-amber-500/20 transition cursor-pointer"
-                        >
-                          {copiedNodeId ? '✓ COPIED' : `NODE ID: ${telemetry.node_id}`}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => copyNodeIdToClipboard(currentNodeBadge)}
+                        className="font-mono text-[10px] bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2 py-0.5 rounded hover:bg-amber-500/20 transition cursor-pointer"
+                      >
+                        {copiedNodeId ? '✓ COPIED' : `NODE ID: ${currentNodeBadge}`}
+                      </button>
                     </div>
                     <button
                       type="button"
@@ -435,8 +448,9 @@ export default function EcosystemEntitiesManager() {
                         onChange={e => setTelemetry({...telemetry, legal_structure: e.target.value})}
                       >
                         <option value="STARTUP_NOT_FORMED">Startup / Not Yet Formed</option>
+                        <option value="DELAWARE_C_CORP">Delaware C-Corporation</option>
                         <option value="LLC">LLC</option>
-                        <option value="C_CORP">C-Corporation</option>
+                        <option value="C_CORP">C-Corporation (Other State)</option>
                         <option value="S_CORP">S-Corporation</option>
                       </select>
                     </div>
@@ -505,7 +519,7 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  {/* Principal HQ Telemetry & Address */}
+                  {/* Principal HQ Telemetry & Address (Standardized Keys) */}
                   <div className="pt-3 border-t border-zinc-900/60 space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
@@ -538,8 +552,12 @@ export default function EcosystemEntitiesManager() {
                             type="text" 
                             disabled={!editingSections.sec01}
                             className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 disabled:opacity-50" 
-                            value={telemetry.hq_address_line1 || ''} 
-                            onChange={e => setTelemetry({...telemetry, hq_address_line1: e.target.value})} 
+                            value={telemetry.hq_address_line_1 || telemetry.hq_address_line1 || ''} 
+                            onChange={e => setTelemetry({
+                              ...telemetry, 
+                              hq_address_line_1: e.target.value,
+                              hq_address_line1: e.target.value
+                            })} 
                           />
                         </div>
                         <div className="space-y-1">
@@ -570,8 +588,12 @@ export default function EcosystemEntitiesManager() {
                             type="text" 
                             disabled={!editingSections.sec01}
                             className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 disabled:opacity-50" 
-                            value={telemetry.hq_zip || ''} 
-                            onChange={e => setTelemetry({...telemetry, hq_zip: e.target.value})} 
+                            value={telemetry.hq_postal_code || telemetry.hq_zip || ''} 
+                            onChange={e => setTelemetry({
+                              ...telemetry, 
+                              hq_postal_code: e.target.value,
+                              hq_zip: e.target.value
+                            })} 
                           />
                         </div>
                       </div>
