@@ -29,6 +29,7 @@ interface EntityTelemetry {
 
   // Governance & HQ Extensions
   has_bylaws?: string | null
+  bylaws_resolutions_active?: boolean
   fiscal_year_end_month?: string | null
   has_physical_hq?: boolean | null
   is_virtual_hq_candidate?: boolean | null
@@ -39,12 +40,15 @@ interface EntityTelemetry {
   hq_postal_code?: string | null
   hq_zip?: string | null
 
-  // Security & IT
+  // Security & IT Telemetry (Native Columns)
   has_managed_it: string
+  it_groupware_platform?: string | null
   email_workspace_suite?: string | null
   mdm_provider?: string | null
+  it_mdm_vendor?: string | null
   antivirus_status?: string | null
   backup_frequency?: string | null
+  it_backup_strategy?: string | null
   it_antivirus_status: string
   it_antivirus_vendor: string
   it_encryption_enabled: boolean
@@ -52,7 +56,7 @@ interface EntityTelemetry {
   it_sso_status: string
   it_sso_vendor: string
 
-  // Workforce & Benefits
+  // Workforce & Benefits (Native Columns)
   employee_count_w2_ft?: number | null
   employee_count_w2_pt?: number | null
   contractor_count_1099?: number | null
@@ -63,7 +67,7 @@ interface EntityTelemetry {
   hr_benefits_active: boolean
   hr_all_staff_piia_signed: boolean
 
-  // Flow & Systems
+  // Flow & Systems (Native Columns)
   crm_system?: string | null
   collaboration_tool?: string | null
   automation_status?: string | null
@@ -117,7 +121,7 @@ const MONTHS = [
 
 const BENEFIT_TOGGLES = [
   { id: 'MEDICAL', label: '🏥 Medical Insurance' },
-  { id: 'DENTAL', label: '🦷 Dental Coverage' },
+  { id: 'DENTAL', label: 'DENTAL', labelText: '🦷 Dental Coverage' },
   { id: 'VISION', label: '👓 Vision Coverage' },
   { id: 'RETIREMENT_401K', label: '💰 401(k) / Roth' },
   { id: 'SIMPLE_IRA', label: '📈 SIMPLE / SEP IRA' },
@@ -264,7 +268,7 @@ export default function EcosystemEntitiesManager() {
     const updated = currentList.includes(benefitId)
       ? currentList.filter(b => b !== benefitId)
       : [...currentList, benefitId]
-    setTelemetry({ ...telemetry, benefits_offered: updated })
+    setTelemetry({ ...telemetry, benefits_offered: updated, hr_benefits_active: updated.length > 0 })
   }
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -278,6 +282,7 @@ export default function EcosystemEntitiesManager() {
 
     setSaving(true)
 
+    // Strictly separate DB columns from transient UI state variables
     const { 
       id: entityUuid, 
       parent_entity_id, 
@@ -286,13 +291,38 @@ export default function EcosystemEntitiesManager() {
       node_id,
       hq_address_line1,
       hq_zip,
+
+      // UI Transient Keys — Explicitly stripped from crm_entities patch
+      email_workspace_suite,
+      mdm_provider,
+      antivirus_status,
+      backup_frequency,
+      payroll_provider,
+      has_bylaws,
+      employee_count_w2_ft,
+      employee_count_w2_pt,
+      contractor_count_1099,
+      benefits_offered,
+      crm_system,
+      collaboration_tool,
+      automation_status,
+      has_physical_hq,
+      is_virtual_hq_candidate,
+
       ...rawTelemetryPayload 
     } = telemetry as any
 
+    // Map UI selections to valid physical columns in table crm_entities
     const cleanTelemetryPayload = {
       ...rawTelemetryPayload,
       hq_address_line_1: telemetry.hq_address_line_1 || hq_address_line1 || null,
       hq_postal_code: telemetry.hq_postal_code || hq_zip || null,
+      it_groupware_platform: email_workspace_suite || telemetry.it_groupware_platform || null,
+      it_mdm_vendor: mdm_provider || telemetry.it_mdm_vendor || null,
+      it_backup_strategy: backup_frequency || telemetry.it_backup_strategy || null,
+      hr_payroll_platform: payroll_provider || telemetry.hr_payroll_platform || 'GUSTO',
+      bylaws_resolutions_active: has_bylaws === 'YES',
+      hr_benefits_active: Array.isArray(benefits_offered) && benefits_offered.length > 0
     }
 
     const { 
@@ -439,7 +469,7 @@ export default function EcosystemEntitiesManager() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Active Entity Search Box — Formatted Same as Target Dropdown */}
+          {/* Active Entity Search Box */}
           <div className="space-y-1 flex-1 max-w-xs">
             <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Search Matrix Nodes</label>
             <div className="relative">
@@ -605,7 +635,7 @@ export default function EcosystemEntitiesManager() {
                       <select 
                         disabled={!editingSections.sec01}
                         className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
-                        value={telemetry.has_bylaws || 'YES'} 
+                        value={telemetry.has_bylaws || (telemetry.bylaws_resolutions_active ? 'YES' : 'NO')} 
                         onChange={e => setTelemetry({...telemetry, has_bylaws: e.target.value})}
                       >
                         <option value="YES" className="bg-black text-zinc-200">Yes, 100% compliant</option>
@@ -776,8 +806,8 @@ export default function EcosystemEntitiesManager() {
                       <select 
                         disabled={!editingSections.sec02}
                         className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
-                        value={telemetry.email_workspace_suite || 'GOOGLE_WORKSPACE'} 
-                        onChange={e => setTelemetry({...telemetry, email_workspace_suite: e.target.value})}
+                        value={telemetry.email_workspace_suite || telemetry.it_groupware_platform || 'GOOGLE_WORKSPACE'} 
+                        onChange={e => setTelemetry({...telemetry, email_workspace_suite: e.target.value, it_groupware_platform: e.target.value})}
                       >
                         <option value="GOOGLE_WORKSPACE" className="bg-black text-zinc-200">Google Workspace</option>
                         <option value="MICROSOFT_365" className="bg-black text-zinc-200">Microsoft 365</option>
@@ -793,8 +823,8 @@ export default function EcosystemEntitiesManager() {
                       <select 
                         disabled={!editingSections.sec02}
                         className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
-                        value={telemetry.mdm_provider || 'NONE'} 
-                        onChange={e => setTelemetry({...telemetry, mdm_provider: e.target.value})}
+                        value={telemetry.mdm_provider || telemetry.it_mdm_vendor || 'NONE'} 
+                        onChange={e => setTelemetry({...telemetry, mdm_provider: e.target.value, it_mdm_vendor: e.target.value})}
                       >
                         <option value="JAMF" className="bg-black text-zinc-200">Jamf Pro / Jamf Now</option>
                         <option value="KANDJI" className="bg-black text-zinc-200">Kandji</option>
@@ -809,8 +839,8 @@ export default function EcosystemEntitiesManager() {
                       <select 
                         disabled={!editingSections.sec02}
                         className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
-                        value={telemetry.antivirus_status || 'ACTIVE_EDR'} 
-                        onChange={e => setTelemetry({...telemetry, antivirus_status: e.target.value})}
+                        value={telemetry.antivirus_status || telemetry.it_antivirus_status || 'ACTIVE_EDR'} 
+                        onChange={e => setTelemetry({...telemetry, antivirus_status: e.target.value, it_antivirus_status: e.target.value})}
                       >
                         <option value="ACTIVE_EDR" className="bg-black text-zinc-200">Managed EDR (CrowdStrike/Defender)</option>
                         <option value="BASIC_AV" className="bg-black text-zinc-200">Basic Consumer Antivirus</option>
@@ -823,8 +853,8 @@ export default function EcosystemEntitiesManager() {
                       <select 
                         disabled={!editingSections.sec02}
                         className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
-                        value={telemetry.backup_frequency || 'DAILY_AUTOMATED'} 
-                        onChange={e => setTelemetry({...telemetry, backup_frequency: e.target.value})}
+                        value={telemetry.backup_frequency || telemetry.it_backup_strategy || 'DAILY_AUTOMATED'} 
+                        onChange={e => setTelemetry({...telemetry, backup_frequency: e.target.value, it_backup_strategy: e.target.value})}
                       >
                         <option value="DAILY_AUTOMATED" className="bg-black text-zinc-200">Daily Immutable Cloud Backups</option>
                         <option value="WEEKLY" className="bg-black text-zinc-200">Weekly / Manual Backups</option>
@@ -899,7 +929,7 @@ export default function EcosystemEntitiesManager() {
                       <select 
                         disabled={!editingSections.sec03}
                         className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
-                        value={telemetry.payroll_provider || 'GUSTO'} 
+                        value={telemetry.payroll_provider || telemetry.hr_payroll_platform || 'GUSTO'} 
                         onChange={e => setTelemetry({...telemetry, payroll_provider: e.target.value, hr_payroll_platform: e.target.value})} 
                       >
                         <option value="GUSTO" className="bg-black text-zinc-200">Gusto</option>
@@ -925,7 +955,7 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  {/* Unbundled Benefits Badges */}
+                  {/* Group Benefits Infrastructure */}
                   <div className="space-y-2 pt-2 border-t border-zinc-800/80">
                     <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Active Group Benefits Infrastructure</label>
                     <div className="grid grid-cols-2 gap-2">
