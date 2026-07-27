@@ -369,6 +369,25 @@ export default function EcosystemEntitiesManager() {
     triggerToast('success', `Prism Message hook initialized for ${targetName || targetEmail} (${roleTitle}). Messaging overlay loading...`)
   }
 
+  // Smart URL Visit Hook
+  const handleVisitUrl = (url?: string | null) => {
+    if (!url) {
+      triggerToast('error', 'No URL or website registered for this field.')
+      return
+    }
+    const target = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`
+    window.open(target, '_blank', 'noopener,noreferrer')
+  }
+
+  // Smart Phone Calling Hook
+  const handleCallPhone = (phone?: string | null) => {
+    if (!phone) {
+      triggerToast('error', 'No phone number registered.')
+      return
+    }
+    window.location.href = `tel:${phone.replace(/[^\d+]/g, '')}`
+  }
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!telemetry || !assessment) return
@@ -686,6 +705,7 @@ export default function EcosystemEntitiesManager() {
                     </button>
                   </div>
                   
+                  {/* Step 1: Core Company Identity Grid */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">DISPLAY NAME</label>
@@ -707,6 +727,76 @@ export default function EcosystemEntitiesManager() {
                         onChange={e => setTelemetry({...telemetry, legal_name: e.target.value})} 
                       />
                     </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-mono text-zinc-300 font-semibold block">COMPANY WEBSITE URL</label>
+                        <button type="button" onClick={() => handleVisitUrl(telemetry.website_url)} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Open Website in New Tab">🌐 VISIT</button>
+                      </div>
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec01}
+                        placeholder="https://acme.io"
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-semibold disabled:opacity-70 disabled:cursor-not-allowed" 
+                        value={telemetry.website_url || ''} 
+                        onChange={e => setTelemetry({...telemetry, website_url: e.target.value})} 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">NODE STATUS</label>
+                      <select 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
+                        value={telemetry.status || 'ACTIVE'} 
+                        onChange={e => setTelemetry({...telemetry, status: e.target.value})}
+                      >
+                        <option value="ACTIVE" className="bg-black text-zinc-200">ACTIVE</option>
+                        <option value="PENDING" className="bg-black text-zinc-200">PENDING</option>
+                        <option value="INACTIVE" className="bg-black text-zinc-200">INACTIVE</option>
+                        <option value="SUSPENDED" className="bg-black text-zinc-200">SUSPENDED</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Step 2: Principal Owner Contact & Partner Flag (MOVED TO TOP FOR HIGH VISIBILITY) */}
+                  <div className="pt-3 border-t border-zinc-800/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Principal Owner Contact Telemetry</span>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.is_partner ?? false} onChange={e => setTelemetry({...telemetry, is_partner: e.target.checked})} />
+                        <span className="font-bold text-[#C5A880]">⚡ Strategic Ecosystem Partner</span>
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/40 p-3 rounded-lg border border-zinc-800/80">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER NAME</label>
+                        <input type="text" disabled={!editingSections.sec01} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_name || ''} onChange={e => setTelemetry({...telemetry, owner_name: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER EMAIL</label>
+                          <button type="button" onClick={() => handleOpenSecureMessage(telemetry.owner_email, telemetry.owner_name, 'Principal Owner')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
+                        </div>
+                        <input type="email" disabled={!editingSections.sec01} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_email || ''} onChange={e => setTelemetry({...telemetry, owner_email: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER PHONE</label>
+                          <button type="button" onClick={() => handleCallPhone(telemetry.owner_phone)} className="text-[10px] text-[#00FF66] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Call Phone Number">📞 CALL</button>
+                        </div>
+                        <input type="text" disabled={!editingSections.sec01} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_phone || ''} onChange={e => setTelemetry({...telemetry, owner_phone: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER PROFILE URL (LINKEDIN / SITE)</label>
+                          <button type="button" onClick={() => handleVisitUrl(telemetry.owner_url)} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Open Profile in New Tab">🌐 VISIT</button>
+                        </div>
+                        <input type="text" disabled={!editingSections.sec01} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_url || ''} onChange={e => setTelemetry({...telemetry, owner_url: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 3: Legal Structure & Corporate Formation Grid */}
+                  <div className="grid grid-cols-2 gap-4 pt-3 border-t border-zinc-800/80">
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">LEGAL STRUCTURE</label>
                       <select 
@@ -762,17 +852,6 @@ export default function EcosystemEntitiesManager() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">COMPANY WEBSITE URL</label>
-                      <input 
-                        type="text" 
-                        disabled={!editingSections.sec01}
-                        placeholder="https://acme.io"
-                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-semibold disabled:opacity-70 disabled:cursor-not-allowed" 
-                        value={telemetry.website_url || ''} 
-                        onChange={e => setTelemetry({...telemetry, website_url: e.target.value})} 
-                      />
-                    </div>
-                    <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">INDUSTRY SECTOR</label>
                       <input 
                         type="text" 
@@ -781,20 +860,6 @@ export default function EcosystemEntitiesManager() {
                         value={telemetry.industry || ''} 
                         onChange={e => setTelemetry({...telemetry, industry: e.target.value})} 
                       />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">NODE STATUS</label>
-                      <select 
-                        disabled={!editingSections.sec01}
-                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
-                        value={telemetry.status || 'ACTIVE'} 
-                        onChange={e => setTelemetry({...telemetry, status: e.target.value})}
-                      >
-                        <option value="ACTIVE" className="bg-black text-zinc-200">ACTIVE</option>
-                        <option value="PENDING" className="bg-black text-zinc-200">PENDING</option>
-                        <option value="INACTIVE" className="bg-black text-zinc-200">INACTIVE</option>
-                        <option value="SUSPENDED" className="bg-black text-zinc-200">SUSPENDED</option>
-                      </select>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">FISCAL YEAR-END MONTH</label>
@@ -821,38 +886,6 @@ export default function EcosystemEntitiesManager() {
                         <option value="NO" className="bg-black text-zinc-200">No, we need to draft them</option>
                         <option value="IN_PROGRESS" className="bg-black text-zinc-200">Currently working on it</option>
                       </select>
-                    </div>
-                  </div>
-
-                  {/* Principal Owner Contact & Partner Flag */}
-                  <div className="pt-3 border-t border-zinc-800/80 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Principal Owner Contact Telemetry</span>
-                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
-                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.is_partner ?? false} onChange={e => setTelemetry({...telemetry, is_partner: e.target.checked})} />
-                        <span className="font-bold text-[#C5A880]">⚡ Strategic Ecosystem Partner</span>
-                      </label>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/40 p-3 rounded-lg border border-zinc-800/80">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER NAME</label>
-                        <input type="text" disabled={!editingSections.sec01} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_name || ''} onChange={e => setTelemetry({...telemetry, owner_name: e.target.value})} />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER EMAIL</label>
-                          <button type="button" onClick={() => handleOpenSecureMessage(telemetry.owner_email, telemetry.owner_name, 'Principal Owner')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
-                        </div>
-                        <input type="email" disabled={!editingSections.sec01} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_email || ''} onChange={e => setTelemetry({...telemetry, owner_email: e.target.value})} />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER PHONE</label>
-                        <input type="text" disabled={!editingSections.sec01} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_phone || ''} onChange={e => setTelemetry({...telemetry, owner_phone: e.target.value})} />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER PROFILE URL (LINKEDIN / SITE)</label>
-                        <input type="text" disabled={!editingSections.sec01} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_url || ''} onChange={e => setTelemetry({...telemetry, owner_url: e.target.value})} />
-                      </div>
                     </div>
                   </div>
 
@@ -1089,11 +1122,17 @@ export default function EcosystemEntitiesManager() {
                           <input type="email" disabled={!editingSections.sec02} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_lead_email || ''} onChange={e => setTelemetry({...telemetry, it_lead_email: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">IT LEAD PHONE</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">IT LEAD PHONE</label>
+                            <button type="button" onClick={() => handleCallPhone(telemetry.it_lead_phone)} className="text-[10px] text-[#00FF66] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Call Phone Number">📞 CALL</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec02} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_lead_phone || ''} onChange={e => setTelemetry({...telemetry, it_lead_phone: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">IT LEAD PROFILE URL (LINKEDIN / SITE)</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">IT LEAD PROFILE URL (LINKEDIN / SITE)</label>
+                            <button type="button" onClick={() => handleVisitUrl(telemetry.it_lead_url)} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Open Profile in New Tab">🌐 VISIT</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec02} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_lead_url || ''} onChange={e => setTelemetry({...telemetry, it_lead_url: e.target.value})} />
                         </div>
                       </div>
@@ -1115,11 +1154,17 @@ export default function EcosystemEntitiesManager() {
                           <input type="email" disabled={!editingSections.sec02} placeholder="support@acmemsp.io" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_outsourced_email || ''} onChange={e => setTelemetry({...telemetry, it_outsourced_email: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                            <button type="button" onClick={() => handleCallPhone(telemetry.it_outsourced_phone)} className="text-[10px] text-[#00FF66] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Call Phone Number">📞 CALL</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec02} placeholder="800-555-0199" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_outsourced_phone || ''} onChange={e => setTelemetry({...telemetry, it_outsourced_phone: e.target.value})} />
                         </div>
                         <div className="sm:col-span-2 space-y-1">
-                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                            <button type="button" onClick={() => handleVisitUrl(telemetry.it_outsourced_website)} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Open Website in New Tab">🌐 VISIT</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec02} placeholder="https://acmemsp.io" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_outsourced_website || ''} onChange={e => setTelemetry({...telemetry, it_outsourced_website: e.target.value})} />
                         </div>
                       </div>
@@ -1307,11 +1352,17 @@ export default function EcosystemEntitiesManager() {
                           <input type="email" disabled={!editingSections.sec03} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.benefits_admin_email || ''} onChange={e => setTelemetry({...telemetry, benefits_admin_email: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">ADMIN PHONE</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">ADMIN PHONE</label>
+                            <button type="button" onClick={() => handleCallPhone(telemetry.benefits_admin_phone)} className="text-[10px] text-[#00FF66] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Call Phone Number">📞 CALL</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec03} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.benefits_admin_phone || ''} onChange={e => setTelemetry({...telemetry, benefits_admin_phone: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">ADMIN PROFILE URL (LINKEDIN / SITE)</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">ADMIN PROFILE URL (LINKEDIN / SITE)</label>
+                            <button type="button" onClick={() => handleVisitUrl(telemetry.benefits_admin_url)} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Open Profile in New Tab">🌐 VISIT</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec03} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.benefits_admin_url || ''} onChange={e => setTelemetry({...telemetry, benefits_admin_url: e.target.value})} />
                         </div>
                       </div>
@@ -1333,11 +1384,17 @@ export default function EcosystemEntitiesManager() {
                           <input type="email" disabled={!editingSections.sec03} placeholder="support@gusto.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.hr_outsourced_email || ''} onChange={e => setTelemetry({...telemetry, hr_outsourced_email: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                            <button type="button" onClick={() => handleCallPhone(telemetry.hr_outsourced_phone)} className="text-[10px] text-[#00FF66] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Call Phone Number">📞 CALL</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec03} placeholder="800-555-0199" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.hr_outsourced_phone || ''} onChange={e => setTelemetry({...telemetry, hr_outsourced_phone: e.target.value})} />
                         </div>
                         <div className="sm:col-span-2 space-y-1">
-                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                            <button type="button" onClick={() => handleVisitUrl(telemetry.hr_outsourced_website)} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Open Website in New Tab">🌐 VISIT</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec03} placeholder="https://gusto.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.hr_outsourced_website || ''} onChange={e => setTelemetry({...telemetry, hr_outsourced_website: e.target.value})} />
                         </div>
                       </div>
@@ -1505,11 +1562,17 @@ export default function EcosystemEntitiesManager() {
                           <input type="email" disabled={!editingSections.sec04} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_lead_email || ''} onChange={e => setTelemetry({...telemetry, sales_lead_email: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">SALES LEAD PHONE</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">SALES LEAD PHONE</label>
+                            <button type="button" onClick={() => handleCallPhone(telemetry.sales_lead_phone)} className="text-[10px] text-[#00FF66] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Call Phone Number">📞 CALL</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec04} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_lead_phone || ''} onChange={e => setTelemetry({...telemetry, sales_lead_phone: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">SALES LEAD PROFILE URL (LINKEDIN / SITE)</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">SALES LEAD PROFILE URL (LINKEDIN / SITE)</label>
+                            <button type="button" onClick={() => handleVisitUrl(telemetry.sales_lead_url)} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Open Profile in New Tab">🌐 VISIT</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec04} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_lead_url || ''} onChange={e => setTelemetry({...telemetry, sales_lead_url: e.target.value})} />
                         </div>
                       </div>
@@ -1531,11 +1594,17 @@ export default function EcosystemEntitiesManager() {
                           <input type="email" disabled={!editingSections.sec04} placeholder="support@growthagency.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_outsourced_email || ''} onChange={e => setTelemetry({...telemetry, sales_outsourced_email: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                            <button type="button" onClick={() => handleCallPhone(telemetry.sales_outsourced_phone)} className="text-[10px] text-[#00FF66] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Call Phone Number">📞 CALL</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec04} placeholder="800-555-0199" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_outsourced_phone || ''} onChange={e => setTelemetry({...telemetry, sales_outsourced_phone: e.target.value})} />
                         </div>
                         <div className="sm:col-span-2 space-y-1">
-                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                            <button type="button" onClick={() => handleVisitUrl(telemetry.sales_outsourced_website)} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Open Website in New Tab">🌐 VISIT</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec04} placeholder="https://growthagency.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_outsourced_website || ''} onChange={e => setTelemetry({...telemetry, sales_outsourced_website: e.target.value})} />
                         </div>
                       </div>
@@ -1682,11 +1751,17 @@ export default function EcosystemEntitiesManager() {
                           <input type="email" disabled={!editingSections.sec05} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_officer_email || ''} onChange={e => setTelemetry({...telemetry, compliance_officer_email: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OFFICER PHONE</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OFFICER PHONE</label>
+                            <button type="button" onClick={() => handleCallPhone(telemetry.compliance_officer_phone)} className="text-[10px] text-[#00FF66] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Call Phone Number">📞 CALL</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec05} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_officer_phone || ''} onChange={e => setTelemetry({...telemetry, compliance_officer_phone: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OFFICER PROFILE URL (LINKEDIN / SITE)</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OFFICER PROFILE URL (LINKEDIN / SITE)</label>
+                            <button type="button" onClick={() => handleVisitUrl(telemetry.compliance_officer_url)} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Open Profile in New Tab">🌐 VISIT</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec05} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_officer_url || ''} onChange={e => setTelemetry({...telemetry, compliance_officer_url: e.target.value})} />
                         </div>
                       </div>
@@ -1708,11 +1783,17 @@ export default function EcosystemEntitiesManager() {
                           <input type="email" disabled={!editingSections.sec05} placeholder="rgreen@counselsite.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_outsourced_email || ''} onChange={e => setTelemetry({...telemetry, compliance_outsourced_email: e.target.value})} />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                            <button type="button" onClick={() => handleCallPhone(telemetry.compliance_outsourced_phone)} className="text-[10px] text-[#00FF66] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Call Phone Number">📞 CALL</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec05} placeholder="800-555-0199" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_outsourced_phone || ''} onChange={e => setTelemetry({...telemetry, compliance_outsourced_phone: e.target.value})} />
                         </div>
                         <div className="sm:col-span-2 space-y-1">
-                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                            <button type="button" onClick={() => handleVisitUrl(telemetry.compliance_outsourced_website)} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Open Website in New Tab">🌐 VISIT</button>
+                          </div>
                           <input type="text" disabled={!editingSections.sec05} placeholder="https://counselsite.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_outsourced_website || ''} onChange={e => setTelemetry({...telemetry, compliance_outsourced_website: e.target.value})} />
                         </div>
                       </div>
