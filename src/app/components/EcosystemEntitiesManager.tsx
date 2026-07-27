@@ -15,6 +15,7 @@ interface EntityTelemetry {
   ein_number: string
   industry: string
   status: string
+  website_url?: string | null
   sells_tangible_goods: boolean
   has_duns_number: boolean
   duns_number: string
@@ -77,6 +78,59 @@ interface EntityTelemetry {
   web_yields_leads: boolean
   web_analytics_active: boolean
   ins_commercial_policy_active: boolean
+
+  // Contact, Partner & Outsourced Vendor Extensions
+  is_partner?: boolean
+  owner_name?: string | null
+  owner_email?: string | null
+  owner_phone?: string | null
+  owner_url?: string | null
+
+  it_lead_name?: string | null
+  it_lead_email?: string | null
+  it_lead_phone?: string | null
+  it_lead_url?: string | null
+  it_is_outsourced?: boolean
+  it_outsourced_company?: string | null
+  it_outsourced_contact?: string | null
+  it_outsourced_email?: string | null
+  it_outsourced_phone?: string | null
+  it_outsourced_website?: string | null
+
+  benefits_admin_name?: string | null
+  benefits_admin_email?: string | null
+  benefits_admin_phone?: string | null
+  benefits_admin_url?: string | null
+  hr_is_outsourced?: boolean
+  hr_outsourced_company?: string | null
+  hr_outsourced_contact?: string | null
+  hr_outsourced_email?: string | null
+  hr_outsourced_phone?: string | null
+  hr_outsourced_website?: string | null
+
+  sales_lead_name?: string | null
+  sales_lead_email?: string | null
+  sales_lead_phone?: string | null
+  sales_lead_url?: string | null
+  sales_is_outsourced?: boolean
+  sales_outsourced_company?: string | null
+  sales_outsourced_contact?: string | null
+  sales_outsourced_email?: string | null
+  sales_outsourced_phone?: string | null
+  sales_outsourced_website?: string | null
+
+  compliance_officer_name?: string | null
+  compliance_officer_email?: string | null
+  compliance_officer_phone?: string | null
+  compliance_officer_url?: string | null
+  compliance_is_outsourced?: boolean
+  compliance_outsourced_company?: string | null
+  compliance_outsourced_contact?: string | null
+  compliance_outsourced_email?: string | null
+  compliance_outsourced_phone?: string | null
+  compliance_outsourced_website?: string | null
+
+  assigned_vk_account_manager?: string | null
 }
 
 interface ITAssessment {
@@ -131,6 +185,7 @@ const BENEFIT_TOGGLES = [
 
 export default function EcosystemEntitiesManager() {
   const [nodes, setNodes] = useState<any[]>([])
+  const [staffList, setStaffList] = useState<{ id: string; full_name: string; email: string }[]>([])
   const [selectedId, setSelectedId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState<string>('')
   
@@ -194,7 +249,6 @@ export default function EcosystemEntitiesManager() {
   async function fetchInitialData(preserveId?: string) {
     setLoading(true)
     
-    // Expanded select fields to make matrix search robust
     const { data: entData, error: entErr } = await supabase
       .from('crm_entities')
       .select('id, display_name, legal_name, ein_number, status')
@@ -204,6 +258,15 @@ export default function EcosystemEntitiesManager() {
       console.error('Failed to fetch crm_entities:', entErr.message)
       triggerToast('error', `Failed to load corporate nodes: ${entErr.message}`)
     }
+
+    // Fetch internal V&K Staff for Section 06 Account Manager dropdown
+    const { data: staffData } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .eq('organization_scope', 'VK_INTERNAL_STAFF')
+      .order('full_name', { ascending: true })
+
+    if (staffData) setStaffList(staffData)
 
     const { data: banData } = await supabase
       .from('crm_ecosystem_banners')
@@ -296,6 +359,16 @@ export default function EcosystemEntitiesManager() {
     }
   }
 
+  // Prism Secure Messaging Hook
+  const handleOpenSecureMessage = (targetEmail?: string | null, targetName?: string | null, roleTitle?: string) => {
+    if (!targetEmail) {
+      triggerToast('error', `No email address registered for ${roleTitle || 'this contact'}.`)
+      return
+    }
+    console.log(`[PRISM MESSAGING HOOK] Triggered for Role: ${roleTitle} | Target: ${targetName} <${targetEmail}>`)
+    triggerToast('success', `Prism Message hook initialized for ${targetName || targetEmail} (${roleTitle}). Messaging overlay loading...`)
+  }
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!telemetry || !assessment) return
@@ -360,6 +433,7 @@ export default function EcosystemEntitiesManager() {
       hr_benefits_active: (Array.isArray(telemetry.benefits_offered) && telemetry.benefits_offered.length > 0) || (telemetry.hr_benefits_active ?? false),
       
       // Explicitly preserve all restored native DB columns
+      website_url: telemetry.website_url || null,
       is_seeking_funding: telemetry.is_seeking_funding ?? false,
       crunchbase_active: telemetry.crunchbase_active ?? false,
       sells_tangible_goods: telemetry.sells_tangible_goods ?? false,
@@ -379,6 +453,59 @@ export default function EcosystemEntitiesManager() {
       flow_unstructured_pdf_parsing_manual: telemetry.flow_unstructured_pdf_parsing_manual ?? false,
       web_yields_leads: telemetry.web_yields_leads ?? false,
       web_analytics_active: telemetry.web_analytics_active ?? false,
+
+      // Contact, Partner & Outsourced Vendor Extensions
+      is_partner: telemetry.is_partner ?? false,
+      owner_name: telemetry.owner_name || null,
+      owner_email: telemetry.owner_email || null,
+      owner_phone: telemetry.owner_phone || null,
+      owner_url: telemetry.owner_url || null,
+
+      it_lead_name: telemetry.it_lead_name || null,
+      it_lead_email: telemetry.it_lead_email || null,
+      it_lead_phone: telemetry.it_lead_phone || null,
+      it_lead_url: telemetry.it_lead_url || null,
+      it_is_outsourced: telemetry.it_is_outsourced ?? false,
+      it_outsourced_company: telemetry.it_outsourced_company || null,
+      it_outsourced_contact: telemetry.it_outsourced_contact || null,
+      it_outsourced_email: telemetry.it_outsourced_email || null,
+      it_outsourced_phone: telemetry.it_outsourced_phone || null,
+      it_outsourced_website: telemetry.it_outsourced_website || null,
+
+      benefits_admin_name: telemetry.benefits_admin_name || null,
+      benefits_admin_email: telemetry.benefits_admin_email || null,
+      benefits_admin_phone: telemetry.benefits_admin_phone || null,
+      benefits_admin_url: telemetry.benefits_admin_url || null,
+      hr_is_outsourced: telemetry.hr_is_outsourced ?? false,
+      hr_outsourced_company: telemetry.hr_outsourced_company || null,
+      hr_outsourced_contact: telemetry.hr_outsourced_contact || null,
+      hr_outsourced_email: telemetry.hr_outsourced_email || null,
+      hr_outsourced_phone: telemetry.hr_outsourced_phone || null,
+      hr_outsourced_website: telemetry.hr_outsourced_website || null,
+
+      sales_lead_name: telemetry.sales_lead_name || null,
+      sales_lead_email: telemetry.sales_lead_email || null,
+      sales_lead_phone: telemetry.sales_lead_phone || null,
+      sales_lead_url: telemetry.sales_lead_url || null,
+      sales_is_outsourced: telemetry.sales_is_outsourced ?? false,
+      sales_outsourced_company: telemetry.sales_outsourced_company || null,
+      sales_outsourced_contact: telemetry.sales_outsourced_contact || null,
+      sales_outsourced_email: telemetry.sales_outsourced_email || null,
+      sales_outsourced_phone: telemetry.sales_outsourced_phone || null,
+      sales_outsourced_website: telemetry.sales_outsourced_website || null,
+
+      compliance_officer_name: telemetry.compliance_officer_name || null,
+      compliance_officer_email: telemetry.compliance_officer_email || null,
+      compliance_officer_phone: telemetry.compliance_officer_phone || null,
+      compliance_officer_url: telemetry.compliance_officer_url || null,
+      compliance_is_outsourced: telemetry.compliance_is_outsourced ?? false,
+      compliance_outsourced_company: telemetry.compliance_outsourced_company || null,
+      compliance_outsourced_contact: telemetry.compliance_outsourced_contact || null,
+      compliance_outsourced_email: telemetry.compliance_outsourced_email || null,
+      compliance_outsourced_phone: telemetry.compliance_outsourced_phone || null,
+      compliance_outsourced_website: telemetry.compliance_outsourced_website || null,
+
+      assigned_vk_account_manager: telemetry.assigned_vk_account_manager || null,
     }
 
     const { 
@@ -432,7 +559,6 @@ export default function EcosystemEntitiesManager() {
     setTimeout(() => setStatusMessage(null), 5000)
   }
 
-  // Filter entities list across name, legal name, status, EIN, ID, and VK badge prefix
   const filteredNodes = nodes.filter((n) => {
     const q = searchQuery.toLowerCase().trim()
     if (!q) return true
@@ -458,8 +584,6 @@ export default function EcosystemEntitiesManager() {
   return (
     <div className="space-y-6">
       
-      {/* KPI Header Cards removed to eliminate duplication with parent layout */}
-
       {/* Master Filter Controller with Direct Gold Border (#C5A880) */}
       <div 
         className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border-2 bg-zinc-950/80 rounded-xl shadow-[0_0_20px_rgba(197,168,128,0.15)]"
@@ -482,7 +606,6 @@ export default function EcosystemEntitiesManager() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Active Entity Search Box */}
           <div className="space-y-1 flex-1 max-w-xs">
             <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Search Matrix Nodes</label>
             <div className="relative">
@@ -639,6 +762,17 @@ export default function EcosystemEntitiesManager() {
                       />
                     </div>
                     <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">COMPANY WEBSITE URL</label>
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec01}
+                        placeholder="https://acme.io"
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-semibold disabled:opacity-70 disabled:cursor-not-allowed" 
+                        value={telemetry.website_url || ''} 
+                        onChange={e => setTelemetry({...telemetry, website_url: e.target.value})} 
+                      />
+                    </div>
+                    <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">INDUSTRY SECTOR</label>
                       <input 
                         type="text" 
@@ -675,7 +809,7 @@ export default function EcosystemEntitiesManager() {
                         ))}
                       </select>
                     </div>
-                    <div className="space-y-1">
+                    <div className="col-span-2 space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">BYLAWS &amp; GOVERNANCE STATUS</label>
                       <select 
                         disabled={!editingSections.sec01}
@@ -687,6 +821,38 @@ export default function EcosystemEntitiesManager() {
                         <option value="NO" className="bg-black text-zinc-200">No, we need to draft them</option>
                         <option value="IN_PROGRESS" className="bg-black text-zinc-200">Currently working on it</option>
                       </select>
+                    </div>
+                  </div>
+
+                  {/* Principal Owner Contact & Partner Flag */}
+                  <div className="pt-3 border-t border-zinc-800/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Principal Owner Contact Telemetry</span>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.is_partner ?? false} onChange={e => setTelemetry({...telemetry, is_partner: e.target.checked})} />
+                        <span className="font-bold text-[#C5A880]">⚡ Strategic Ecosystem Partner</span>
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/40 p-3 rounded-lg border border-zinc-800/80">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER NAME</label>
+                        <input type="text" disabled={!editingSections.sec01} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_name || ''} onChange={e => setTelemetry({...telemetry, owner_name: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER EMAIL</label>
+                          <button type="button" onClick={() => handleOpenSecureMessage(telemetry.owner_email, telemetry.owner_name, 'Principal Owner')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
+                        </div>
+                        <input type="email" disabled={!editingSections.sec01} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_email || ''} onChange={e => setTelemetry({...telemetry, owner_email: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER PHONE</label>
+                        <input type="text" disabled={!editingSections.sec01} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_phone || ''} onChange={e => setTelemetry({...telemetry, owner_phone: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OWNER PROFILE URL (LINKEDIN / SITE)</label>
+                        <input type="text" disabled={!editingSections.sec01} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.owner_url || ''} onChange={e => setTelemetry({...telemetry, owner_url: e.target.value})} />
+                      </div>
                     </div>
                   </div>
 
@@ -822,7 +988,6 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  {/* Restored Native Checkboxes Grid */}
                   <div className="grid grid-cols-2 gap-3 pt-3 border-t border-zinc-800/80">
                     <div className="space-y-2">
                       <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
@@ -850,7 +1015,6 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  {/* Restored DUNS & BBB Grid */}
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-800/80">
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">DUNS NUMBER ID</label>
@@ -899,6 +1063,67 @@ export default function EcosystemEntitiesManager() {
                     >
                       {editingSections.sec02 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
                     </button>
+                  </div>
+
+                  {/* IT & Security Lead & Outsourced Vendor Telemetry */}
+                  <div className="pt-2 pb-3 border-b border-zinc-800/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">IT &amp; Security Lead Telemetry</span>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec02} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.it_is_outsourced ?? false} onChange={e => setTelemetry({...telemetry, it_is_outsourced: e.target.checked})} />
+                        <span className="font-bold text-[#C5A880]">⚡ IT is Outsourced to External Vendor (MSP / Agency)</span>
+                      </label>
+                    </div>
+
+                    {!telemetry.it_is_outsourced ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/40 p-3 rounded-lg border border-zinc-800/80">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">IT LEAD NAME</label>
+                          <input type="text" disabled={!editingSections.sec02} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_lead_name || ''} onChange={e => setTelemetry({...telemetry, it_lead_name: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">IT LEAD EMAIL</label>
+                            <button type="button" onClick={() => handleOpenSecureMessage(telemetry.it_lead_email, telemetry.it_lead_name, 'IT & Security Lead')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
+                          </div>
+                          <input type="email" disabled={!editingSections.sec02} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_lead_email || ''} onChange={e => setTelemetry({...telemetry, it_lead_email: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">IT LEAD PHONE</label>
+                          <input type="text" disabled={!editingSections.sec02} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_lead_phone || ''} onChange={e => setTelemetry({...telemetry, it_lead_phone: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">IT LEAD PROFILE URL (LINKEDIN / SITE)</label>
+                          <input type="text" disabled={!editingSections.sec02} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_lead_url || ''} onChange={e => setTelemetry({...telemetry, it_lead_url: e.target.value})} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-[#C5A880]/10 p-3 rounded-lg border border-[#C5A880]/40">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">OUTSOURCED COMPANY NAME</label>
+                          <input type="text" disabled={!editingSections.sec02} placeholder="Acme MSP Solutions" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_outsourced_company || ''} onChange={e => setTelemetry({...telemetry, it_outsourced_company: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR CONTACT PERSON</label>
+                          <input type="text" disabled={!editingSections.sec02} placeholder="John Doe" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_outsourced_contact || ''} onChange={e => setTelemetry({...telemetry, it_outsourced_contact: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR EMAIL ADDRESS</label>
+                            <button type="button" onClick={() => handleOpenSecureMessage(telemetry.it_outsourced_email, telemetry.it_outsourced_contact, 'Outsourced IT Vendor')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
+                          </div>
+                          <input type="email" disabled={!editingSections.sec02} placeholder="support@acmemsp.io" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_outsourced_email || ''} onChange={e => setTelemetry({...telemetry, it_outsourced_email: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                          <input type="text" disabled={!editingSections.sec02} placeholder="800-555-0199" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_outsourced_phone || ''} onChange={e => setTelemetry({...telemetry, it_outsourced_phone: e.target.value})} />
+                        </div>
+                        <div className="sm:col-span-2 space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                          <input type="text" disabled={!editingSections.sec02} placeholder="https://acmemsp.io" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.it_outsourced_website || ''} onChange={e => setTelemetry({...telemetry, it_outsourced_website: e.target.value})} />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -1058,6 +1283,67 @@ export default function EcosystemEntitiesManager() {
                     </button>
                   </div>
 
+                  {/* Benefits Administration Lead & Outsourced Vendor Telemetry */}
+                  <div className="pt-2 pb-3 border-b border-zinc-800/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Benefits Administration Lead Telemetry</span>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec03} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.hr_is_outsourced ?? false} onChange={e => setTelemetry({...telemetry, hr_is_outsourced: e.target.checked})} />
+                        <span className="font-bold text-[#C5A880]">⚡ HR / Benefits is Outsourced (PEO / EOR / Gusto / Rippling)</span>
+                      </label>
+                    </div>
+
+                    {!telemetry.hr_is_outsourced ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/40 p-3 rounded-lg border border-zinc-800/80">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">ADMIN NAME</label>
+                          <input type="text" disabled={!editingSections.sec03} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.benefits_admin_name || ''} onChange={e => setTelemetry({...telemetry, benefits_admin_name: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">ADMIN EMAIL</label>
+                            <button type="button" onClick={() => handleOpenSecureMessage(telemetry.benefits_admin_email, telemetry.benefits_admin_name, 'Benefits Administration Lead')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
+                          </div>
+                          <input type="email" disabled={!editingSections.sec03} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.benefits_admin_email || ''} onChange={e => setTelemetry({...telemetry, benefits_admin_email: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">ADMIN PHONE</label>
+                          <input type="text" disabled={!editingSections.sec03} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.benefits_admin_phone || ''} onChange={e => setTelemetry({...telemetry, benefits_admin_phone: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">ADMIN PROFILE URL (LINKEDIN / SITE)</label>
+                          <input type="text" disabled={!editingSections.sec03} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.benefits_admin_url || ''} onChange={e => setTelemetry({...telemetry, benefits_admin_url: e.target.value})} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-[#C5A880]/10 p-3 rounded-lg border border-[#C5A880]/40">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">OUTSOURCED HR / PEO COMPANY</label>
+                          <input type="text" disabled={!editingSections.sec03} placeholder="Gusto / Rippling EOR" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.hr_outsourced_company || ''} onChange={e => setTelemetry({...telemetry, hr_outsourced_company: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR CONTACT PERSON</label>
+                          <input type="text" disabled={!editingSections.sec03} placeholder="Jane Smith" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.hr_outsourced_contact || ''} onChange={e => setTelemetry({...telemetry, hr_outsourced_contact: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR EMAIL ADDRESS</label>
+                            <button type="button" onClick={() => handleOpenSecureMessage(telemetry.hr_outsourced_email, telemetry.hr_outsourced_contact, 'Outsourced HR Vendor')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
+                          </div>
+                          <input type="email" disabled={!editingSections.sec03} placeholder="support@gusto.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.hr_outsourced_email || ''} onChange={e => setTelemetry({...telemetry, hr_outsourced_email: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                          <input type="text" disabled={!editingSections.sec03} placeholder="800-555-0199" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.hr_outsourced_phone || ''} onChange={e => setTelemetry({...telemetry, hr_outsourced_phone: e.target.value})} />
+                        </div>
+                        <div className="sm:col-span-2 space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                          <input type="text" disabled={!editingSections.sec03} placeholder="https://gusto.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.hr_outsourced_website || ''} onChange={e => setTelemetry({...telemetry, hr_outsourced_website: e.target.value})} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Unbundled Workforce Breakdown */}
                   <div className="grid grid-cols-3 gap-3 bg-black/40 p-3 rounded-lg border border-zinc-800/80">
                     <div className="space-y-1">
@@ -1154,7 +1440,6 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  {/* Restored Workforce & Liability Checkboxes */}
                   <div className="space-y-2 pt-3 border-t border-zinc-800/80">
                     <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Workforce &amp; Liability Compliance Checkpoints</label>
                     <div className="space-y-2">
@@ -1194,6 +1479,67 @@ export default function EcosystemEntitiesManager() {
                     >
                       {editingSections.sec04 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
                     </button>
+                  </div>
+
+                  {/* Sales & Flow Lead & Outsourced Vendor Telemetry */}
+                  <div className="pt-2 pb-3 border-b border-zinc-800/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Sales &amp; Flow Lead Telemetry</span>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec04} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.sales_is_outsourced ?? false} onChange={e => setTelemetry({...telemetry, sales_is_outsourced: e.target.checked})} />
+                        <span className="font-bold text-[#C5A880]">⚡ Sales / Flow is Outsourced (Agency / External Partner)</span>
+                      </label>
+                    </div>
+
+                    {!telemetry.sales_is_outsourced ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/40 p-3 rounded-lg border border-zinc-800/80">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">SALES LEAD NAME</label>
+                          <input type="text" disabled={!editingSections.sec04} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_lead_name || ''} onChange={e => setTelemetry({...telemetry, sales_lead_name: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">SALES LEAD EMAIL</label>
+                            <button type="button" onClick={() => handleOpenSecureMessage(telemetry.sales_lead_email, telemetry.sales_lead_name, 'Sales & Flow Lead')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
+                          </div>
+                          <input type="email" disabled={!editingSections.sec04} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_lead_email || ''} onChange={e => setTelemetry({...telemetry, sales_lead_email: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">SALES LEAD PHONE</label>
+                          <input type="text" disabled={!editingSections.sec04} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_lead_phone || ''} onChange={e => setTelemetry({...telemetry, sales_lead_phone: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">SALES LEAD PROFILE URL (LINKEDIN / SITE)</label>
+                          <input type="text" disabled={!editingSections.sec04} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_lead_url || ''} onChange={e => setTelemetry({...telemetry, sales_lead_url: e.target.value})} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-[#C5A880]/10 p-3 rounded-lg border border-[#C5A880]/40">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">OUTSOURCED AGENCY NAME</label>
+                          <input type="text" disabled={!editingSections.sec04} placeholder="Growth Agency LLC" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_outsourced_company || ''} onChange={e => setTelemetry({...telemetry, sales_outsourced_company: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR CONTACT PERSON</label>
+                          <input type="text" disabled={!editingSections.sec04} placeholder="Michael Scott" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_outsourced_contact || ''} onChange={e => setTelemetry({...telemetry, sales_outsourced_contact: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR EMAIL ADDRESS</label>
+                            <button type="button" onClick={() => handleOpenSecureMessage(telemetry.sales_outsourced_email, telemetry.sales_outsourced_contact, 'Outsourced Sales Agency')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
+                          </div>
+                          <input type="email" disabled={!editingSections.sec04} placeholder="support@growthagency.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_outsourced_email || ''} onChange={e => setTelemetry({...telemetry, sales_outsourced_email: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                          <input type="text" disabled={!editingSections.sec04} placeholder="800-555-0199" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_outsourced_phone || ''} onChange={e => setTelemetry({...telemetry, sales_outsourced_phone: e.target.value})} />
+                        </div>
+                        <div className="sm:col-span-2 space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                          <input type="text" disabled={!editingSections.sec04} placeholder="https://growthagency.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.sales_outsourced_website || ''} onChange={e => setTelemetry({...telemetry, sales_outsourced_website: e.target.value})} />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
@@ -1243,7 +1589,6 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  {/* Restored Utility Counter & Layout Satisfaction */}
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-800/80">
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">DISCONNECTED UTILITY COUNTER</label>
@@ -1270,7 +1615,6 @@ export default function EcosystemEntitiesManager() {
                     </div>
                   </div>
 
-                  {/* Restored Automation & Analytics Checkboxes */}
                   <div className="space-y-2 pt-3 border-t border-zinc-800/80">
                     <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Flow &amp; Web Funnel Checkpoints</label>
                     <div className="space-y-2">
@@ -1290,185 +1634,263 @@ export default function EcosystemEntitiesManager() {
                   </div>
                 </div>
 
-              </div>
-
-              {/* 📈 SECTION 05 */}
-              <div 
-                className="border-2 bg-zinc-950/40 rounded-xl p-5 space-y-4 block w-full shadow-[0_0_15px_rgba(197,168,128,0.1)]"
-                style={{ borderColor: '#C5A880' }}
-              >
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                  <div>
-                    <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-200 uppercase">
-                      Section 05 // Regulatory Compliance Matrix &amp; Framework Safeguards
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleSectionEdit('sec05')}
-                    className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors border ${
-                      editingSections.sec05
-                        ? 'bg-[#C5A880]/20 border-[#C5A880] text-[#C5A880] hover:bg-[#C5A880]/30'
-                        : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-zinc-100'
-                    }`}
-                  >
-                    {editingSections.sec05 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-zinc-800/80 pb-4">
-                  {[
-                    { label: 'HIPAA Regulatory Protocol', key: 'is_hipaa_compliant' },
-                    { label: 'PCI Transaction Safeguard', key: 'is_pci_compliant' },
-                    { label: 'FINRA Brokerage Retention', key: 'is_finra_compliant' },
-                    { label: 'SOC2 Trust Framework', key: 'is_soc2_compliant' },
-                    { label: 'NIST Military Standard', key: 'is_nist_compliant' },
-                    { label: 'GDPR Privacy Protection', key: 'is_gdpr_compliant' },
-                  ].map((f) => {
-                    const currentValue = (assessment as any)[f.key]
-
-                    return (
-                      <div key={f.key} className="flex items-center justify-between p-3 bg-black rounded-xl border border-zinc-800/80 hover:border-zinc-700 transition-colors">
-                        <span className="text-[11px] font-mono font-bold tracking-wide text-zinc-200 uppercase">
-                          {f.label}
-                        </span>
-                        <select
-                          disabled={!editingSections.sec05}
-                          className={`bg-zinc-950 border-2 px-3 py-1.5 rounded-lg text-xs font-mono font-black tracking-wider text-center focus:outline-none min-w-[125px] transition-all disabled:opacity-90 disabled:cursor-not-allowed cursor-pointer ${
-                            currentValue === 'yes'
-                              ? 'border-[#00FF66] text-[#00FF66] bg-[#00FF66]/15 shadow-[0_0_12px_rgba(0,255,102,0.3)]' 
-                              : currentValue === 'no'
-                              ? 'border-yellow-400 text-yellow-400 bg-yellow-950/30 font-bold'
-                              : 'border-pink-500 text-pink-400 bg-pink-950/30 font-bold'
-                          }`}
-                          value={currentValue || 'exempt'}
-                          onChange={(e) => setAssessment({ ...assessment, [f.key]: e.target.value })}
-                        >
-                          <option value="yes" className="bg-black text-[#00FF66] font-black">PASS</option>
-                          <option value="no" className="bg-black text-yellow-400 font-extrabold">FAIL</option>
-                          <option value="exempt" className="bg-black text-pink-400 font-extrabold">EXEMPT</option>
-                        </select>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider block font-semibold">Accounting Ledger Platform</label>
-                    <input 
-                      type="text" 
-                      disabled={!editingSections.sec05}
-                      className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono font-semibold focus:outline-none focus:border-[#C5A880] disabled:opacity-70 disabled:cursor-not-allowed" 
-                      value={assessment.accounting_software_platform || ''} 
-                      onChange={e => setAssessment({...assessment, accounting_software_platform: e.target.value})} 
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider block font-semibold">Weekly Manual Friction (Hours)</label>
-                    <input 
-                      type="number" 
-                      max={2147483647}
-                      disabled={!editingSections.sec05}
-                      className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono font-bold focus:outline-none focus:border-[#C5A880] disabled:opacity-70 disabled:cursor-not-allowed" 
-                      value={assessment.manual_data_hours_weekly || 0} 
-                      onChange={e => setAssessment({...assessment, manual_data_hours_weekly: safeParseInt(e.target.value)})} 
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider block font-semibold">VK Shield Security Sensitivity</label>
-                    <select 
-                      disabled={!editingSections.sec05}
-                      className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 font-bold focus:outline-none focus:border-[#C5A880] disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
-                      value={assessment.infrastructure_security_concerned ? 'true' : 'false'}
-                      onChange={e => setAssessment({...assessment, infrastructure_security_concerned: e.target.value === 'true'})}
+                {/* 📈 SECTION 05 */}
+                <div 
+                  className="border-2 bg-zinc-950/40 rounded-xl p-5 space-y-4 block w-full shadow-[0_0_15px_rgba(197,168,128,0.1)]"
+                  style={{ borderColor: '#C5A880' }}
+                >
+                  <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                    <div>
+                      <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-200 uppercase">
+                        Section 05 // Regulatory Compliance Matrix &amp; Framework Safeguards
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionEdit('sec05')}
+                      className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors border ${
+                        editingSections.sec05
+                          ? 'bg-[#C5A880]/20 border-[#C5A880] text-[#C5A880] hover:bg-[#C5A880]/30'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-zinc-100'
+                      }`}
                     >
-                      <option value="false" className="bg-black text-zinc-200">STABLE // STANDARD PROTOCOL</option>
-                      <option value="true" className="bg-black text-yellow-400 font-bold">EXPOSED // HIGH CRITICAL AUDIT</option>
+                      {editingSections.sec05 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
+                    </button>
+                  </div>
+
+                  {/* Regulatory Compliance Officer & Outsourced Legal/Audit Telemetry */}
+                  <div className="pt-2 pb-3 border-b border-zinc-800/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Regulatory Compliance Officer Telemetry</span>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec05} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.compliance_is_outsourced ?? false} onChange={e => setTelemetry({...telemetry, compliance_is_outsourced: e.target.checked})} />
+                        <span className="font-bold text-[#C5A880]">⚡ Compliance is Outsourced (External Counsel / Audit Firm)</span>
+                      </label>
+                    </div>
+
+                    {!telemetry.compliance_is_outsourced ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/40 p-3 rounded-lg border border-zinc-800/80">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OFFICER NAME</label>
+                          <input type="text" disabled={!editingSections.sec05} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_officer_name || ''} onChange={e => setTelemetry({...telemetry, compliance_officer_name: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OFFICER EMAIL</label>
+                            <button type="button" onClick={() => handleOpenSecureMessage(telemetry.compliance_officer_email, telemetry.compliance_officer_name, 'Regulatory Compliance Officer')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
+                          </div>
+                          <input type="email" disabled={!editingSections.sec05} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_officer_email || ''} onChange={e => setTelemetry({...telemetry, compliance_officer_email: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OFFICER PHONE</label>
+                          <input type="text" disabled={!editingSections.sec05} className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_officer_phone || ''} onChange={e => setTelemetry({...telemetry, compliance_officer_phone: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-zinc-300 font-semibold block">OFFICER PROFILE URL (LINKEDIN / SITE)</label>
+                          <input type="text" disabled={!editingSections.sec05} placeholder="https://linkedin.com/in/..." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_officer_url || ''} onChange={e => setTelemetry({...telemetry, compliance_officer_url: e.target.value})} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-[#C5A880]/10 p-3 rounded-lg border border-[#C5A880]/40">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">OUTSOURCED COUNSEL / AUDIT FIRM</label>
+                          <input type="text" disabled={!editingSections.sec05} placeholder="Legal Counsel LLP" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_outsourced_company || ''} onChange={e => setTelemetry({...telemetry, compliance_outsourced_company: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR CONTACT PERSON</label>
+                          <input type="text" disabled={!editingSections.sec05} placeholder="Rachel Green, Esq." className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_outsourced_contact || ''} onChange={e => setTelemetry({...telemetry, compliance_outsourced_contact: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR EMAIL ADDRESS</label>
+                            <button type="button" onClick={() => handleOpenSecureMessage(telemetry.compliance_outsourced_email, telemetry.compliance_outsourced_contact, 'Outsourced Compliance Counsel')} className="text-[10px] text-[#C5A880] hover:text-white font-mono flex items-center gap-1 cursor-pointer font-bold" title="Send Secure Prism Message">✉️ MSG</button>
+                          </div>
+                          <input type="email" disabled={!editingSections.sec05} placeholder="rgreen@counselsite.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_outsourced_email || ''} onChange={e => setTelemetry({...telemetry, compliance_outsourced_email: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR PHONE NUMBER</label>
+                          <input type="text" disabled={!editingSections.sec05} placeholder="800-555-0199" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_outsourced_phone || ''} onChange={e => setTelemetry({...telemetry, compliance_outsourced_phone: e.target.value})} />
+                        </div>
+                        <div className="sm:col-span-2 space-y-1">
+                          <label className="text-[9px] font-mono text-[#C5A880] font-bold block">VENDOR WEBSITE URL</label>
+                          <input type="text" disabled={!editingSections.sec05} placeholder="https://counselsite.com" className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-200 font-semibold disabled:opacity-70" value={telemetry.compliance_outsourced_website || ''} onChange={e => setTelemetry({...telemetry, compliance_outsourced_website: e.target.value})} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-zinc-800/80 pb-4">
+                    {[
+                      { label: 'HIPAA Regulatory Protocol', key: 'is_hipaa_compliant' },
+                      { label: 'PCI Transaction Safeguard', key: 'is_pci_compliant' },
+                      { label: 'FINRA Brokerage Retention', key: 'is_finra_compliant' },
+                      { label: 'SOC2 Trust Framework', key: 'is_soc2_compliant' },
+                      { label: 'NIST Military Standard', key: 'is_nist_compliant' },
+                      { label: 'GDPR Privacy Protection', key: 'is_gdpr_compliant' },
+                    ].map((f) => {
+                      const currentValue = (assessment as any)[f.key]
+
+                      return (
+                        <div key={f.key} className="flex items-center justify-between p-3 bg-black rounded-xl border border-zinc-800/80 hover:border-zinc-700 transition-colors">
+                          <span className="text-[11px] font-mono font-bold tracking-wide text-zinc-200 uppercase">
+                            {f.label}
+                          </span>
+                          <select
+                            disabled={!editingSections.sec05}
+                            className={`bg-zinc-950 border-2 px-3 py-1.5 rounded-lg text-xs font-mono font-black tracking-wider text-center focus:outline-none min-w-[125px] transition-all disabled:opacity-90 disabled:cursor-not-allowed cursor-pointer ${
+                              currentValue === 'yes'
+                                ? 'border-[#00FF66] text-[#00FF66] bg-[#00FF66]/15 shadow-[0_0_12px_rgba(0,255,102,0.3)]' 
+                                : currentValue === 'no'
+                                ? 'border-yellow-400 text-yellow-400 bg-yellow-950/30 font-bold'
+                                : 'border-pink-500 text-pink-400 bg-pink-950/30 font-bold'
+                            }`}
+                            value={currentValue || 'exempt'}
+                            onChange={(e) => setAssessment({ ...assessment, [f.key]: e.target.value })}
+                          >
+                            <option value="yes" className="bg-black text-[#00FF66] font-black">PASS</option>
+                            <option value="no" className="bg-black text-yellow-400 font-extrabold">FAIL</option>
+                            <option value="exempt" className="bg-black text-pink-400 font-extrabold">EXEMPT</option>
+                          </select>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider block font-semibold">Accounting Ledger Platform</label>
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec05}
+                        className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono font-semibold focus:outline-none focus:border-[#C5A880] disabled:opacity-70 disabled:cursor-not-allowed" 
+                        value={assessment.accounting_software_platform || ''} 
+                        onChange={e => setAssessment({...assessment, accounting_software_platform: e.target.value})} 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider block font-semibold">Weekly Manual Friction (Hours)</label>
+                      <input 
+                        type="number" 
+                        max={2147483647}
+                        disabled={!editingSections.sec05}
+                        className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono font-bold focus:outline-none focus:border-[#C5A880] disabled:opacity-70 disabled:cursor-not-allowed" 
+                        value={assessment.manual_data_hours_weekly || 0} 
+                        onChange={e => setAssessment({...assessment, manual_data_hours_weekly: safeParseInt(e.target.value)})} 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider block font-semibold">VK Shield Security Sensitivity</label>
+                      <select 
+                        disabled={!editingSections.sec05}
+                        className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 font-bold focus:outline-none focus:border-[#C5A880] disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                        value={assessment.infrastructure_security_concerned ? 'true' : 'false'}
+                        onChange={e => setAssessment({...assessment, infrastructure_security_concerned: e.target.value === 'true'})}
+                      >
+                        <option value="false" className="bg-black text-zinc-200">STABLE // STANDARD PROTOCOL</option>
+                        <option value="true" className="bg-black text-yellow-400 font-bold">EXPOSED // HIGH CRITICAL AUDIT</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 🔄 SECTION 06 */}
+                <div 
+                  className="border-2 bg-zinc-950/40 rounded-xl p-5 space-y-4 shadow-[0_0_15px_rgba(197,168,128,0.1)]"
+                  style={{ borderColor: '#C5A880' }}
+                >
+                  <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                    <div>
+                      <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-200 uppercase">
+                        Section 06 // Dynamic Platform Banner &amp; Ad Routing Registry
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionEdit('sec06')}
+                      className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors border ${
+                        editingSections.sec06
+                          ? 'bg-[#C5A880]/20 border-[#C5A880] text-[#C5A880] hover:bg-[#C5A880]/30'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-zinc-100'
+                      }`}
+                    >
+                      {editingSections.sec06 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
+                    </button>
+                  </div>
+
+                  {/* Assigned V&K Staff Account Owner */}
+                  <div className="p-4 border border-zinc-800 bg-black/60 rounded-xl space-y-2">
+                    <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Assigned V&amp;K Staff Account Owner</label>
+                    <select
+                      disabled={!editingSections.sec06}
+                      className="w-full bg-black border border-zinc-800 rounded px-3 py-2 text-xs text-[#C5A880] font-mono font-bold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:border-[#C5A880]"
+                      value={telemetry.assigned_vk_account_manager || ''}
+                      onChange={e => setTelemetry({...telemetry, assigned_vk_account_manager: e.target.value})}
+                    >
+                      <option value="" className="bg-black text-zinc-400">-- UNASSIGNED ACCOUNT MANAGER --</option>
+                      {staffList.map(s => (
+                        <option key={s.id} value={s.id} className="bg-black text-zinc-200">
+                          {s.full_name} ({s.email})
+                        </option>
+                      ))}
                     </select>
                   </div>
-                </div>
-              </div>
 
-              {/* 🔄 SECTION 06 */}
-              <div 
-                className="border-2 bg-zinc-950/40 rounded-xl p-5 space-y-4 shadow-[0_0_15px_rgba(197,168,128,0.1)]"
-                style={{ borderColor: '#C5A880' }}
-              >
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                  <div>
-                    <h3 className="text-xs font-bold font-mono tracking-wider text-zinc-200 uppercase">
-                      Section 06 // Dynamic Platform Banner &amp; Ad Routing Registry
-                    </h3>
+                  <div className="space-y-3 pt-2">
+                    {banners.length === 0 ? (
+                      <div className="text-center py-6 text-xs font-mono text-zinc-400 uppercase border border-dashed border-zinc-800 rounded-xl bg-black/40 font-bold">
+                        Zero promotion tracks initialized in crm_ecosystem_banners registry ledger.
+                      </div>
+                    ) : (
+                      banners.map((b) => (
+                        <div key={b.id} className="p-4 border border-zinc-800 bg-black rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono text-[10px] text-purple-400 font-bold bg-purple-950/10 border border-purple-900/20 px-2 py-0.5 rounded">
+                                {b.banner_key}
+                              </span>
+                              <h4 className="text-xs font-bold text-zinc-200">{b.display_title}</h4>
+                            </div>
+                            <p className="text-[11px] text-zinc-400 italic truncate select-all">{b.promo_text}</p>
+                            <div className="text-[10px] font-mono text-zinc-400 truncate">
+                              ROUTE: <span className="text-zinc-200 font-semibold">{b.action_url}</span> | TRIGGER: <span className="text-zinc-200 font-bold">[{b.button_label}]</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center shrink-0">
+                            <button
+                              type="button"
+                              disabled={!editingSections.sec06}
+                              onClick={() => handleBannerToggle(b.id, !b.is_active)}
+                              className={`font-mono text-[10px] font-black px-3 py-1.5 rounded-lg transition-all border disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer ${
+                                b.is_active 
+                                  ? 'bg-[#00FF66]/15 border-[#00FF66] text-[#00FF66] shadow-[0_0_12px_rgba(0,255,102,0.3)]' 
+                                  : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                              }`}
+                            >
+                              {b.is_active ? '● PROPAGATING // LIVE' : '○ DEACTIVATED // SLEEP'}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
+                </div>
+
+                {/* Commit Button Box */}
+                <div 
+                  className="flex justify-end p-4 border-2 bg-zinc-950/60 rounded-xl pt-4 shadow-[0_0_20px_rgba(197,168,128,0.15)]"
+                  style={{ borderColor: '#C5A880' }}
+                >
                   <button
-                    type="button"
-                    onClick={() => toggleSectionEdit('sec06')}
-                    className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors border ${
-                      editingSections.sec06
-                        ? 'bg-[#C5A880]/20 border-[#C5A880] text-[#C5A880] hover:bg-[#C5A880]/30'
-                        : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-zinc-100'
-                    }`}
+                    type="submit"
+                    disabled={saving}
+                    className="bg-[#C5A880] hover:bg-[#D4B990] font-extrabold font-mono text-[#050507] text-xs px-8 py-3 rounded-lg transition-all disabled:opacity-40 w-full sm:w-auto cursor-pointer shadow-[0_0_20px_rgba(197,168,128,0.3)] hover:shadow-[0_0_30px_rgba(197,168,128,0.5)] active:scale-[0.99]"
                   >
-                    {editingSections.sec06 ? '🔓 UNLOCKED' : '🔒 EDIT SECTION'}
+                    {saving ? 'COMMITTING PARAMS TO MASTER DATABASE...' : 'COMMIT FULL CONFIGURATION LAYOUT'}
                   </button>
                 </div>
 
-                <div className="space-y-3">
-                  {banners.length === 0 ? (
-                    <div className="text-center py-6 text-xs font-mono text-zinc-400 uppercase border border-dashed border-zinc-800 rounded-xl bg-black/40 font-bold">
-                      Zero promotion tracks initialized in crm_ecosystem_banners registry ledger.
-                    </div>
-                  ) : (
-                    banners.map((b) => (
-                      <div key={b.id} className="p-4 border border-zinc-800 bg-black rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-1 min-w-0 flex-1">
-                          <div className="flex items-center gap-3">
-                            <span className="font-mono text-[10px] text-purple-400 font-bold bg-purple-950/10 border border-purple-900/20 px-2 py-0.5 rounded">
-                              {b.banner_key}
-                            </span>
-                            <h4 className="text-xs font-bold text-zinc-200">{b.display_title}</h4>
-                          </div>
-                          <p className="text-[11px] text-zinc-400 italic truncate select-all">{b.promo_text}</p>
-                          <div className="text-[10px] font-mono text-zinc-400 truncate">
-                            ROUTE: <span className="text-zinc-200 font-semibold">{b.action_url}</span> | TRIGGER: <span className="text-zinc-200 font-bold">[{b.button_label}]</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center shrink-0">
-                          <button
-                            type="button"
-                            disabled={!editingSections.sec06}
-                            onClick={() => handleBannerToggle(b.id, !b.is_active)}
-                            className={`font-mono text-[10px] font-black px-3 py-1.5 rounded-lg transition-all border disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer ${
-                              b.is_active 
-                                ? 'bg-[#00FF66]/15 border-[#00FF66] text-[#00FF66] shadow-[0_0_12px_rgba(0,255,102,0.3)]' 
-                                : 'bg-zinc-900 border-zinc-800 text-zinc-400'
-                            }`}
-                          >
-                            {b.is_active ? '● PROPAGATING // LIVE' : '○ DEACTIVATED // SLEEP'}
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
               </div>
-
-              {/* Commit Button Box */}
-              <div 
-                className="flex justify-end p-4 border-2 bg-zinc-950/60 rounded-xl pt-4 shadow-[0_0_20px_rgba(197,168,128,0.15)]"
-                style={{ borderColor: '#C5A880' }}
-              >
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="bg-[#C5A880] hover:bg-[#D4B990] font-extrabold font-mono text-[#050507] text-xs px-8 py-3 rounded-lg transition-all disabled:opacity-40 w-full sm:w-auto cursor-pointer shadow-[0_0_20px_rgba(197,168,128,0.3)] hover:shadow-[0_0_30px_rgba(197,168,128,0.5)] active:scale-[0.99]"
-                >
-                  {saving ? 'COMMITTING PARAMS TO MASTER DATABASE...' : 'COMMIT FULL CONFIGURATION LAYOUT'}
-                </button>
-              </div>
-
             </div>
           )}
         </form>
