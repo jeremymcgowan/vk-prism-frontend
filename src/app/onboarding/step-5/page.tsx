@@ -25,6 +25,7 @@ export default function StepFivePeople() {
   const router = useRouter();
   const { formData, updateFormData, isHydrated } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userOverrodeHeadcount, setUserOverrodeHeadcount] = useState(false);
 
   const [payrollAudit, setPayrollAudit] = useState({
     satisfaction: formData.payroll_vendor_audit?.satisfaction || 'GREAT',
@@ -49,24 +50,31 @@ export default function StepFivePeople() {
     { id: 'STIPEND_PERKS', label: '🌴 Remote Work / Health Stipends' },
   ];
 
-  // Auto-align headcount range from Step 2 workforce numbers if not explicitly set
+  // Calculate total workforce sum from Step 2 inputs
+  const ft = formData.employee_count_w2_ft ?? 1;
+  const pt = formData.employee_count_w2_pt ?? 0;
+  const contractors = formData.contractor_count_1099 ?? 0;
+  const totalWorkforce = ft + pt + contractors;
+
+  // Helper to derive range key from total workforce sum
+  const deriveHeadcountRange = (total: number): string => {
+    if (total <= 1) return 'SOLO';
+    if (total <= 5) return '1_TO_5';
+    if (total <= 20) return '6_TO_20';
+    if (total <= 50) return '21_TO_50';
+    return '50_PLUS';
+  };
+
+  // Auto-recalculate & sync headcount range whenever Step 2 numbers change or Step 5 hydrates
   useEffect(() => {
-    if (isHydrated && !formData.headcount_range) {
-      const ft = formData.employee_count_w2_ft ?? 1;
-      const pt = formData.employee_count_w2_pt ?? 0;
-      const contractors = formData.contractor_count_1099 ?? 0;
-      const total = ft + pt + contractors;
+    if (!isHydrated) return;
 
-      let calculatedRange = '1_TO_5';
-      if (total <= 1) calculatedRange = 'SOLO';
-      else if (total <= 5) calculatedRange = '1_TO_5';
-      else if (total <= 20) calculatedRange = '6_TO_20';
-      else if (total <= 50) calculatedRange = '21_TO_50';
-      else calculatedRange = '50_PLUS';
+    const calculatedRange = deriveHeadcountRange(totalWorkforce);
 
+    if (!userOverrodeHeadcount) {
       updateFormData({ headcount_range: calculatedRange });
     }
-  }, [isHydrated]);
+  }, [isHydrated, totalWorkforce, userOverrodeHeadcount]);
 
   if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
 
@@ -80,6 +88,9 @@ export default function StepFivePeople() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (e.target.name === 'headcount_range') {
+      setUserOverrodeHeadcount(true);
+    }
     updateFormData({ [e.target.name]: e.target.value });
   };
 
@@ -96,7 +107,7 @@ export default function StepFivePeople() {
       payroll_vendor_audit: formData.payroll_provider && formData.payroll_provider !== 'NONE' ? payrollAudit : null,
       benefits_offered: selectedBenefits,
       people_managed_service_opt_in: true,
-      headcount_range: formData.headcount_range || '1_TO_5',
+      headcount_range: formData.headcount_range || deriveHeadcountRange(totalWorkforce),
       payroll_provider: formData.payroll_provider || 'NONE'
     });
 
@@ -153,7 +164,7 @@ export default function StepFivePeople() {
                   <select 
                     name="headcount_range"
                     required
-                    value={formData.headcount_range || ''}
+                    value={formData.headcount_range || deriveHeadcountRange(totalWorkforce)}
                     onChange={handleChange}
                     className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                   >
@@ -164,6 +175,11 @@ export default function StepFivePeople() {
                     <option value="21_TO_50" className="bg-[#0A0A0C] text-white">21 – 50 Employees</option>
                     <option value="50_PLUS" className="bg-[#0A0A0C] text-white">50+ Employees</option>
                   </select>
+
+                  <p className="text-[10px] text-neutral-400 mt-1.5 font-mono flex items-center gap-1.5">
+                    <span className="text-[#C5A880]">⚡</span>
+                    <span>Step 2 Workforce telemetry: <strong>{totalWorkforce}</strong> active (FT: {ft}, PT: {pt}, 1099: {contractors})</span>
+                  </p>
                 </div>
 
                 <div>
