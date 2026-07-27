@@ -175,7 +175,7 @@ export default function StepOneGateway() {
 
             <form onSubmit={handleStandardNext} className="space-y-6">
               
-              {/* Row 1 */}
+              {/* Row 1: Company Identity */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
@@ -194,6 +194,23 @@ export default function StepOneGateway() {
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                    Company Website URL <span className="text-neutral-500 font-normal">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="company_url"
+                    value={formData.company_url || ''}
+                    onChange={handleChange}
+                    placeholder="e.g. https://acme.io or acme.com"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Primary Contact & Email */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
                     Primary Contact Name <span className="text-[#C5A880]">*</span>
                   </label>
                   <input
@@ -207,9 +224,24 @@ export default function StepOneGateway() {
                     className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                    Corporate Email <span className="text-[#C5A880]">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="contact_email"
+                    required
+                    value={formData.contact_email || ''}
+                    onChange={handleChange}
+                    placeholder="jane@company.com"
+                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
+                  />
+                </div>
               </div>
 
-              {/* Row 2 */}
+              {/* Row 3: Industry & Phone */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
@@ -235,34 +267,18 @@ export default function StepOneGateway() {
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                    Corporate Email <span className="text-[#C5A880]">*</span>
+                    Phone Number <span className="text-[#C5A880]">*</span>
                   </label>
                   <input
-                    type="email"
-                    name="contact_email"
+                    type="tel"
+                    name="contact_phone"
                     required
-                    value={formData.contact_email || ''}
-                    onChange={handleChange}
-                    placeholder="jane@company.com"
+                    value={formData.contact_phone || ''}
+                    onChange={handlePhoneChange}
+                    placeholder="(555) 000-0000"
                     className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                   />
                 </div>
-              </div>
-
-              {/* Row 3 */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                  Phone Number <span className="text-[#C5A880]">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="contact_phone"
-                  required
-                  value={formData.contact_phone || ''}
-                  onChange={handlePhoneChange}
-                  placeholder="(555) 000-0000"
-                  className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
-                />
               </div>
 
               {/* Divider */}
