@@ -173,6 +173,18 @@ export default function EcosystemEntitiesManager() {
     return Math.min(parsed, maxVal)
   }
 
+  const formatEIN = (val: string): string => {
+    const digits = val.replace(/\D/g, '').slice(0, 9)
+    if (digits.length <= 2) return digits
+    return `${digits.slice(0, 2)}-${digits.slice(2)}`
+  }
+
+  const isValidEIN = (ein: string): boolean => {
+    if (!ein || ein === 'Startup - Need EIN') return true
+    const digits = ein.replace(/\D/g, '')
+    return digits.length === 9
+  }
+
   const copyNodeIdToClipboard = (nodeIdText: string) => {
     navigator.clipboard.writeText(nodeIdText)
     setCopiedNodeId(true)
@@ -345,7 +357,28 @@ export default function EcosystemEntitiesManager() {
       it_backup_strategy: backup_frequency || telemetry.it_backup_strategy || null,
       hr_payroll_platform: payroll_provider || telemetry.hr_payroll_platform || 'GUSTO',
       bylaws_resolutions_active: has_bylaws === 'YES',
-      hr_benefits_active: Array.isArray(telemetry.benefits_offered) && telemetry.benefits_offered.length > 0
+      hr_benefits_active: (Array.isArray(telemetry.benefits_offered) && telemetry.benefits_offered.length > 0) || (telemetry.hr_benefits_active ?? false),
+      
+      // Explicitly preserve all restored native DB columns
+      is_seeking_funding: telemetry.is_seeking_funding ?? false,
+      crunchbase_active: telemetry.crunchbase_active ?? false,
+      sells_tangible_goods: telemetry.sells_tangible_goods ?? false,
+      has_duns_number: telemetry.has_duns_number ?? false,
+      duns_number: telemetry.duns_number || null,
+      bbb_wedge_sentiment: telemetry.bbb_wedge_sentiment || 'SATISFIED',
+      bbb_registered: telemetry.bbb_registered ?? false,
+      has_managed_it: telemetry.has_managed_it || 'FALSE',
+      it_antivirus_vendor: telemetry.it_antivirus_vendor || null,
+      it_sso_vendor: telemetry.it_sso_vendor || null,
+      it_sso_status: telemetry.it_sso_status || 'ACTIVE',
+      it_encryption_enabled: telemetry.it_encryption_enabled ?? false,
+      hr_all_staff_piia_signed: telemetry.hr_all_staff_piia_signed ?? false,
+      ins_commercial_policy_active: telemetry.ins_commercial_policy_active ?? false,
+      flow_disconnected_tool_count: telemetry.flow_disconnected_tool_count ?? 0,
+      web_design_satisfaction: telemetry.web_design_satisfaction || 'SATISFIED',
+      flow_unstructured_pdf_parsing_manual: telemetry.flow_unstructured_pdf_parsing_manual ?? false,
+      web_yields_leads: telemetry.web_yields_leads ?? false,
+      web_analytics_active: telemetry.web_analytics_active ?? false,
     }
 
     const { 
@@ -592,17 +625,42 @@ export default function EcosystemEntitiesManager() {
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">
-                        EIN TAX ID
+                        EIN TAX ID <span className="text-zinc-500">(XX-XXXXXXX)</span>
                       </label>
                       <input 
                         type="text" 
+                        maxLength={10}
                         disabled={!editingSections.sec01}
                         placeholder="12-3456789 or Startup - Need EIN"
                         onBlur={handleEinBlur}
                         className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed" 
                         value={telemetry.ein_number || 'Startup - Need EIN'} 
-                        onChange={e => setTelemetry({...telemetry, ein_number: e.target.value})} 
+                        onChange={e => setTelemetry({...telemetry, ein_number: formatEIN(e.target.value)})} 
                       />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">INDUSTRY SECTOR</label>
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-semibold disabled:opacity-70 disabled:cursor-not-allowed" 
+                        value={telemetry.industry || ''} 
+                        onChange={e => setTelemetry({...telemetry, industry: e.target.value})} 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">NODE STATUS</label>
+                      <select 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
+                        value={telemetry.status || 'ACTIVE'} 
+                        onChange={e => setTelemetry({...telemetry, status: e.target.value})}
+                      >
+                        <option value="ACTIVE" className="bg-black text-zinc-200">ACTIVE</option>
+                        <option value="PENDING" className="bg-black text-zinc-200">PENDING</option>
+                        <option value="INACTIVE" className="bg-black text-zinc-200">INACTIVE</option>
+                        <option value="SUSPENDED" className="bg-black text-zinc-200">SUSPENDED</option>
+                      </select>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">FISCAL YEAR-END MONTH</label>
@@ -763,6 +821,62 @@ export default function EcosystemEntitiesManager() {
                       </select>
                     </div>
                   </div>
+
+                  {/* Restored Native Checkboxes Grid */}
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-zinc-800/80">
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.is_seeking_funding ?? false} onChange={e => setTelemetry({...telemetry, is_seeking_funding: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">Seeking Funding</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.crunchbase_active ?? false} onChange={e => setTelemetry({...telemetry, crunchbase_active: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">Crunchbase Profile Verified</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.bbb_registered ?? false} onChange={e => setTelemetry({...telemetry, bbb_registered: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">BBB Registered Entity</span>
+                      </label>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.sells_tangible_goods ?? false} onChange={e => setTelemetry({...telemetry, sells_tangible_goods: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">Sells Tangible Goods</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec01} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.has_duns_number ?? false} onChange={e => setTelemetry({...telemetry, has_duns_number: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">Has DUNS Tracker</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Restored DUNS & BBB Grid */}
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-800/80">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">DUNS NUMBER ID</label>
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-70 disabled:cursor-not-allowed" 
+                        value={telemetry.duns_number || ''} 
+                        onChange={e => setTelemetry({...telemetry, duns_number: e.target.value})} 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">BBB WEDGE SENTIMENT</label>
+                      <select 
+                        disabled={!editingSections.sec01}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
+                        value={telemetry.bbb_wedge_sentiment || 'SATISFIED'} 
+                        onChange={e => setTelemetry({...telemetry, bbb_wedge_sentiment: e.target.value})}
+                      >
+                        <option value="SATISFIED" className="bg-black text-zinc-200">SATISFIED</option>
+                        <option value="UNSATISFIED" className="bg-black text-zinc-200">UNSATISFIED</option>
+                        <option value="NEUTRAL" className="bg-black text-zinc-200">NEUTRAL</option>
+                        <option value="UNRATED" className="bg-black text-zinc-200">UNRATED</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
                 {/* 🛡️ SECTION 02 */}
@@ -806,6 +920,20 @@ export default function EcosystemEntitiesManager() {
                     </div>
 
                     <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">MANAGED IT VECTOR (MSP)</label>
+                      <select 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
+                        value={telemetry.has_managed_it || 'FALSE'} 
+                        onChange={e => setTelemetry({...telemetry, has_managed_it: e.target.value})}
+                      >
+                        <option value="TRUE" className="bg-black text-zinc-200">TRUE (MANAGED MSP)</option>
+                        <option value="FALSE" className="bg-black text-zinc-200">FALSE (INTERNAL / NONE)</option>
+                        <option value="HYBRID" className="bg-black text-zinc-200">HYBRID</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
                       <label className="text-[10px] font-mono text-zinc-300 font-semibold block">MOBILE DEVICE MANAGEMENT (MDM)</label>
                       <select 
                         disabled={!editingSections.sec02}
@@ -822,17 +950,42 @@ export default function EcosystemEntitiesManager() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">ENDPOINT PROTECTION (AV/EDR)</label>
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">MDM ENFORCEMENT LOG</label>
+                      <select 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
+                        value={telemetry.it_mdm_status || 'DEPLOYED'} 
+                        onChange={e => setTelemetry({...telemetry, it_mdm_status: e.target.value})}
+                      >
+                        <option value="DEPLOYED" className="bg-black text-zinc-200">DEPLOYED</option>
+                        <option value="PARTIAL" className="bg-black text-zinc-200">PARTIAL</option>
+                        <option value="NOT_ENFORCED" className="bg-black text-zinc-200">NOT_ENFORCED</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">ENDPOINT PROTECTION (AV/EDR STATUS)</label>
                       <select 
                         disabled={!editingSections.sec02}
                         className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
-                        value={telemetry.antivirus_status || telemetry.it_antivirus_status || 'ACTIVE_EDR'} 
+                        value={telemetry.antivirus_status || telemetry.it_antivirus_status || 'ACTIVE'} 
                         onChange={e => setTelemetry({...telemetry, antivirus_status: e.target.value, it_antivirus_status: e.target.value})}
                       >
-                        <option value="ACTIVE_EDR" className="bg-black text-zinc-200">Managed EDR (CrowdStrike/Defender)</option>
-                        <option value="BASIC_AV" className="bg-black text-zinc-200">Basic Consumer Antivirus</option>
-                        <option value="NONE" className="bg-black text-zinc-200">Default OS Defense Only</option>
+                        <option value="ACTIVE" className="bg-black text-zinc-200">ACTIVE // MANAGED EDR</option>
+                        <option value="DEGRADED" className="bg-black text-zinc-200">DEGRADED // BASIC AV</option>
+                        <option value="INACTIVE" className="bg-black text-zinc-200">INACTIVE // OS DEFENSE ONLY</option>
                       </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">ANTIVIRUS AGENT VENDOR</label>
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 disabled:opacity-70 disabled:cursor-not-allowed" 
+                        value={telemetry.it_antivirus_vendor || ''} 
+                        onChange={e => setTelemetry({...telemetry, it_antivirus_vendor: e.target.value})} 
+                      />
                     </div>
 
                     <div className="space-y-1">
@@ -848,6 +1001,38 @@ export default function EcosystemEntitiesManager() {
                         <option value="NONE" className="bg-black text-zinc-200">No Formal Backup System</option>
                       </select>
                     </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">SSO GATEWAY VENDOR</label>
+                      <input 
+                        type="text" 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 disabled:opacity-70 disabled:cursor-not-allowed" 
+                        value={telemetry.it_sso_vendor || ''} 
+                        onChange={e => setTelemetry({...telemetry, it_sso_vendor: e.target.value})} 
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">SSO GATEWAY STATUS</label>
+                      <select 
+                        disabled={!editingSections.sec02}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
+                        value={telemetry.it_sso_status || 'ACTIVE'} 
+                        onChange={e => setTelemetry({...telemetry, it_sso_status: e.target.value})}
+                      >
+                        <option value="ACTIVE" className="bg-black text-zinc-200">ACTIVE</option>
+                        <option value="PARTIAL" className="bg-black text-zinc-200">PARTIAL</option>
+                        <option value="INACTIVE" className="bg-black text-zinc-200">INACTIVE</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-zinc-800/80">
+                    <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                      <input type="checkbox" disabled={!editingSections.sec02} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.it_encryption_enabled ?? false} onChange={e => setTelemetry({...telemetry, it_encryption_enabled: e.target.checked})} />
+                      <span className="font-bold text-zinc-200">Local Device Storage Encryption Enforced</span>
+                    </label>
                   </div>
                 </div>
 
@@ -968,6 +1153,25 @@ export default function EcosystemEntitiesManager() {
                       })}
                     </div>
                   </div>
+
+                  {/* Restored Workforce & Liability Checkboxes */}
+                  <div className="space-y-2 pt-3 border-t border-zinc-800/80">
+                    <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Workforce &amp; Liability Compliance Checkpoints</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec03} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={(Array.isArray(telemetry.benefits_offered) && telemetry.benefits_offered.length > 0) || (telemetry.hr_benefits_active ?? false)} onChange={e => setTelemetry({...telemetry, hr_benefits_active: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">Active Group Benefits Network Infrastructure</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec03} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.hr_all_staff_piia_signed ?? false} onChange={e => setTelemetry({...telemetry, hr_all_staff_piia_signed: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">Proprietary Information &amp; Inventions Agreements Signed (PIIA)</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec03} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.ins_commercial_policy_active ?? false} onChange={e => setTelemetry({...telemetry, ins_commercial_policy_active: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">Active General Commercial Liability Protection Policy</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 {/* 📊 SECTION 04 */}
@@ -1036,6 +1240,52 @@ export default function EcosystemEntitiesManager() {
                         <option value="ZAPIER" className="bg-black text-zinc-200">Basic Zapier / Make Zaps</option>
                         <option value="CUSTOM_AI" className="bg-black text-zinc-200">Custom AI &amp; API Workflows</option>
                       </select>
+                    </div>
+                  </div>
+
+                  {/* Restored Utility Counter & Layout Satisfaction */}
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-800/80">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">DISCONNECTED UTILITY COUNTER</label>
+                      <input 
+                        type="number" 
+                        max={2147483647}
+                        disabled={!editingSections.sec04}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-bold disabled:opacity-70 disabled:cursor-not-allowed" 
+                        value={telemetry.flow_disconnected_tool_count || 0} 
+                        onChange={e => setTelemetry({...telemetry, flow_disconnected_tool_count: safeParseInt(e.target.value)})} 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-300 font-semibold block">WEB LAYOUT SATISFACTION</label>
+                      <select 
+                        disabled={!editingSections.sec04}
+                        className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-200 font-mono font-semibold disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer" 
+                        value={telemetry.web_design_satisfaction || 'SATISFIED'} 
+                        onChange={e => setTelemetry({...telemetry, web_design_satisfaction: e.target.value})}
+                      >
+                        <option value="SATISFIED" className="bg-black text-zinc-200">OPTIMIZED_CONVERSION</option>
+                        <option value="UNSATISFIED" className="bg-black text-zinc-200">CONVERSION_FRICTION</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Restored Automation & Analytics Checkboxes */}
+                  <div className="space-y-2 pt-3 border-t border-zinc-800/80">
+                    <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Flow &amp; Web Funnel Checkpoints</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec04} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.flow_unstructured_pdf_parsing_manual ?? false} onChange={e => setTelemetry({...telemetry, flow_unstructured_pdf_parsing_manual: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">Manual Processing of Unstructured Document Formats Active</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec04} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.web_yields_leads ?? false} onChange={e => setTelemetry({...telemetry, web_yields_leads: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">Inbound Capture Funnels Harvest Leads Effectively</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-xs text-zinc-200 cursor-pointer">
+                        <input type="checkbox" disabled={!editingSections.sec04} className="accent-[#C5A880] h-3.5 w-3.5 rounded bg-black border-zinc-800 disabled:opacity-70" checked={telemetry.web_analytics_active ?? false} onChange={e => setTelemetry({...telemetry, web_analytics_active: e.target.checked})} />
+                        <span className="font-bold text-zinc-200">Traffic Performance Analytics Trackers Active</span>
+                      </label>
                     </div>
                   </div>
                 </div>
