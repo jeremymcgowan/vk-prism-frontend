@@ -157,45 +157,51 @@ export default function QuestionnaireSubmissionsManager() {
     setEditForm({ ...editForm, [field]: value })
   }
 
-  // Regular Save (Updates fields in crm_questionnaire_submissions)
-  const handleSaveChanges = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Regular Save (Updates fields directly in crm_questionnaire_submissions)
+  const handleSaveChanges = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     if (!editForm || !selectedLead) return
 
     setSaving(true)
     setErrorMsg(null)
     setSaveSuccess(null)
 
-    const { error } = await supabase
-      .from('crm_questionnaire_submissions')
-      .update({
-        company_name: editForm.company_name,
-        company_url: editForm.company_url || null,
-        contact_name: editForm.contact_name,
-        contact_email: editForm.contact_email,
-        contact_phone: editForm.contact_phone || null,
-        industry: editForm.industry || null,
-        legal_structure: editForm.legal_structure || null,
-        ein_number: editForm.ein_number || null,
-        funding_stage: editForm.funding_stage || null,
-        target_raise: editForm.target_raise || null,
-        crm_system: editForm.crm_system || null,
-        collaboration_tool: editForm.collaboration_tool || null,
-        automation_status: editForm.automation_status || null,
-        status: editForm.status || 'PENDING',
-      })
-      .eq('id', selectedLead.id)
+    try {
+      const { error } = await supabase
+        .from('crm_questionnaire_submissions')
+        .update({
+          company_name: editForm.company_name,
+          company_url: editForm.company_url || null,
+          contact_name: editForm.contact_name,
+          contact_email: editForm.contact_email,
+          contact_phone: editForm.contact_phone || null,
+          industry: editForm.industry || null,
+          legal_structure: editForm.legal_structure || null,
+          registration_state: editForm.registration_state || null,
+          ein_number: editForm.ein_number || null,
+          funding_stage: editForm.funding_stage || null,
+          target_raise: editForm.target_raise || null,
+          accounting_software: editForm.accounting_software || null,
+          crm_system: editForm.crm_system || null,
+          collaboration_tool: editForm.collaboration_tool || null,
+          automation_status: editForm.automation_status || null,
+          status: editForm.status || 'PENDING',
+        })
+        .eq('id', selectedLead.id)
 
-    if (error) {
-      setErrorMsg(`Failed to update lead: ${error.message}`)
-    } else {
+      if (error) throw new Error(error.message)
+
       setSaveSuccess('✓ TELEMETRY RECORD UPDATED IN SUPABASE')
       setSubmissions((prev) =>
         prev.map((item) => (item.id === selectedLead.id ? { ...editForm } : item))
       )
       setSelectedLead({ ...editForm })
+    } catch (err: any) {
+      console.error('SAVE_ERROR:', err)
+      setErrorMsg(`Save failed: ${err.message || 'Database rejection'}`)
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   // Atomic Promotion Trigger (Calls stored procedure: promote_onboarding_submission)
@@ -211,13 +217,19 @@ export default function QuestionnaireSubmissionsManager() {
         'promote_onboarding_submission',
         {
           target_submission_id: selectedLead.id,
-          assigned_account_manager_id: assignedManagerId || null,
+          assigned_account_manager_id: assignedManagerId && assignedManagerId.trim() !== '' ? assignedManagerId : null,
         }
       )
 
       if (rpcError) throw new Error(rpcError.message)
 
-      setSaveSuccess(`⚡ PROMOTED! ENTITY GENERATED (${newEntityId ? newEntityId.slice(0, 8) : 'ACTIVE'}). REFRESHING MATRIX...`)
+      const entityDisplay = typeof newEntityId === 'string' 
+        ? newEntityId.slice(0, 8) 
+        : typeof newEntityId === 'object' && newEntityId?.id 
+        ? String(newEntityId.id).slice(0, 8)
+        : 'ACTIVE'
+
+      setSaveSuccess(`⚡ PROMOTED! ENTITY GENERATED (${entityDisplay}). REFRESHING MATRIX...`)
       
       const updatedSubmission = { ...selectedLead, status: 'PROMOTED' }
       setSubmissions((prev) =>
@@ -230,6 +242,7 @@ export default function QuestionnaireSubmissionsManager() {
       }, 1800)
 
     } catch (err: any) {
+      console.error('PROMOTION_ERROR:', err)
       setErrorMsg(err.message || 'Promotion transaction failed.')
     } finally {
       setPromoting(false)
@@ -806,8 +819,8 @@ export default function QuestionnaireSubmissionsManager() {
                   CANCEL
                 </button>
                 <button 
-                  type="submit" 
-                  form="lead-edit-form"
+                  type="button" 
+                  onClick={() => handleSaveChanges()}
                   disabled={saving}
                   className="px-5 py-2 rounded-lg bg-zinc-800 text-zinc-200 font-bold hover:bg-zinc-700 transition disabled:opacity-50 cursor-pointer"
                 >
