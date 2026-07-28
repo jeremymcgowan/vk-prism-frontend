@@ -24,6 +24,8 @@ export default function StepOneGateway() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  const isSeekingIncentive = formData.is_seeking_incentive !== false; // Default opt-in to rewards!
+
   if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -71,6 +73,14 @@ export default function StepOneGateway() {
     }
 
     updateFormData({ contact_phone: formatted });
+  };
+
+  // --- Incentive Toggle Handler ---
+  const handleIncentiveToggle = (optIn: boolean) => {
+    updateFormData({
+      is_seeking_incentive: optIn,
+      readiness_completion_pct: optIn ? 25 : 15
+    });
   };
 
   // --- Strict Email, Phone & Name Validation Check ---
@@ -121,11 +131,29 @@ export default function StepOneGateway() {
     const formattedName = formatContactName(formData.contact_name || '');
 
     updateFormData({
+      // --- Standardized crm_entities 1:1 Schema Mapping ---
+      display_name: formData.company_name || '',
+      legal_name: formData.company_name || '',
+      website_url: formData.company_url || null,
+      owner_name: formattedName,
+      owner_email: formData.contact_email || '',
+      owner_phone: formData.contact_phone || '',
+      industry: formData.industry || '',
+
+      // --- Legacy UI Compatibility Keys ---
+      company_name: formData.company_name || '',
+      company_url: formData.company_url || null,
       contact_name: formattedName,
+      contact_email: formData.contact_email || '',
+      contact_phone: formData.contact_phone || '',
+      
+      // --- Flow Routing & Status Flags ---
       is_fast_track: isFastTrack,
       onboarding_mode: mode,
       step_completed: 1,
-      industry: formData.industry || ''
+      status: 'ONBOARDING',
+      is_seeking_incentive: isSeekingIncentive,
+      readiness_completion_pct: isSeekingIncentive ? 25 : 15
     });
 
     router.push('/onboarding/step-2');
@@ -278,6 +306,58 @@ export default function StepOneGateway() {
                     placeholder="(555) 000-0000"
                     className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                   />
+                </div>
+              </div>
+
+              {/* 💎 THE GAMIFIED B2B FINTECH INCENTIVE BANNER */}
+              <div className="relative p-6 md:p-8 rounded-2xl bg-gradient-to-br from-[#121215] via-[#18181B] to-[#0A0A0C] border-2 border-[#C5A880]/60 shadow-[0_0_30px_rgba(197,168,128,0.15)] overflow-hidden transition-all duration-300 my-8">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-[#C5A880]/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                  <div className="space-y-2 max-w-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-[#C5A880] text-black font-extrabold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-widest">
+                        Exclusive Reward
+                      </span>
+                      <span className="text-xs font-mono font-bold text-[#C5A880] uppercase tracking-wider">
+                        V&amp;K Ecosystem Acceleration
+                      </span>
+                    </div>
+
+                    <h4 className="text-lg md:text-xl font-bold text-white tracking-tight">
+                      Unlock a $500 Ledger Credit &amp; 1-Hour Executive Architecture Roadmap Review
+                    </h4>
+                    <p className="text-xs text-neutral-300 leading-relaxed">
+                      Complete your full deep-dive corporate telemetry across Steps 02 to 06. We apply a <strong>$500 credit</strong> instantly toward your first V&amp;K operational sprint and schedule your complimentary compliance architecture session ($750 retail value).
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleIncentiveToggle(true)}
+                      className={`w-full py-3 px-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                        isSeekingIncentive
+                          ? 'bg-[#C5A880] text-black shadow-[0_0_20px_rgba(197,168,128,0.4)] ring-2 ring-white/50 scale-[1.02]'
+                          : 'bg-[#18181B] text-neutral-400 border border-neutral-700 hover:text-white'
+                      }`}
+                    >
+                      <span>💎 Opt-In to Full Telemetry</span>
+                      {isSeekingIncentive && <span className="text-black font-black">✓</span>}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleIncentiveToggle(false)}
+                      className={`w-full py-2 px-4 rounded-lg font-semibold text-[10px] uppercase tracking-wider transition-all cursor-pointer text-center ${
+                        !isSeekingIncentive
+                          ? 'text-[#C5A880] underline font-bold'
+                          : 'text-neutral-500 hover:text-neutral-300'
+                      }`}
+                    >
+                      ⚡ Skip Rewards // Brief Baseline Only
+                    </button>
+                  </div>
                 </div>
               </div>
 
