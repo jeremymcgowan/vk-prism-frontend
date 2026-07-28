@@ -159,9 +159,9 @@ export default function StepOneGateway() {
   return (
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
       
-      {/* 🌟 CUSTOM KEYFRAME FOR SLOW BLACK-TO-GOLD REPEATING TRANSITION */}
+      {/* 👑 CUSTOM KEYFRAME FOR SLOW BLACK-TO-KINGLY-PURPLE REPEATING TRANSITION */}
       <style jsx global>{`
-        @keyframes slowGoldPulse {
+        @keyframes slowPurplePulse {
           0%, 100% {
             background-color: #121215;
             border-color: rgba(197, 168, 128, 0.4);
@@ -169,14 +169,14 @@ export default function StepOneGateway() {
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
           }
           50% {
-            background-color: #8B7325;
-            border-color: rgba(197, 168, 128, 0.9);
-            color: #000000;
-            box-shadow: 0 0 25px rgba(197, 168, 128, 0.4);
+            background-color: #3B0764; /* Deep Kingly Obsidian Purple */
+            border-color: rgba(168, 85, 247, 0.9); /* Vivid Royal Violet Border */
+            color: #FFFFFF;
+            box-shadow: 0 0 25px rgba(147, 51, 234, 0.5); /* Regal Purple Halo */
           }
         }
-        .animate-gold-pulse {
-          animation: slowGoldPulse 4s infinite ease-in-out;
+        .animate-purple-pulse {
+          animation: slowPurplePulse 4s infinite ease-in-out;
         }
       `}</style>
 
@@ -337,21 +337,23 @@ export default function StepOneGateway() {
                     <h4 className="text-lg md:text-xl font-bold text-white tracking-tight">
                       Unlock a $500 Ledger Credit &amp; 1-Hour Executive Architecture Roadmap Review
                     </h4>
+                    
+                    {/* EXPLICIT NON-BREAKING SPACE TO PREVENT JSX MINIFIER WORD-FUSING */}
                     <p className="text-xs text-neutral-300 leading-relaxed">
-                      Complete your full deep-dive corporate telemetry across Steps 02 to 06. We apply a <strong>$500 credit</strong> instantly toward your first V&amp;K operational sprint and schedule your complimentary compliance architecture session ($750 retail value).
+                      Complete your full deep-dive corporate telemetry across Steps 02 to 06. We apply a <strong>$500 credit</strong>&nbsp;instantly toward your first V&amp;K operational sprint and schedule your complimentary compliance architecture session ($750 retail value).
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-3 shrink-0 sm:min-w-[260px]">
                     
-                    {/* OPT-IN BUTTON WITH SLOW HYPNOTIC LOOP WHEN OFF, RADIANT GOLD WHEN ON */}
+                    {/* OPT-IN BUTTON WITH SLOW KINGLY PURPLE LOOP WHEN OFF, RADIANT GOLD WHEN ON */}
                     <button
                       type="button"
                       onClick={() => handleIncentiveToggle(true)}
                       className={`w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
                         isSeekingIncentive
                           ? 'bg-[#C5A880] text-[#050507] border-[#C5A880] shadow-[0_0_30px_rgba(197,168,128,0.6)] ring-2 ring-white/60 scale-[1.02]'
-                          : 'animate-gold-pulse font-bold'
+                          : 'animate-purple-pulse font-bold'
                       }`}
                     >
                       <span>💎 Opt-In to Full Telemetry</span>
