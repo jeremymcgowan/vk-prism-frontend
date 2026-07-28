@@ -122,7 +122,8 @@ export default function StepOneGateway() {
     return true;
   };
 
-  const saveDraftAndNavigate = (mode: 'EXPRESS_CONCIERGE' | 'STANDARD_AUDIT', isFastTrack: boolean) => {
+  const handleNext = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!validateStepOne()) return;
 
     setIsSubmitting(true);
@@ -148,8 +149,8 @@ export default function StepOneGateway() {
       contact_phone: formData.contact_phone || '',
       
       // --- Flow Routing & Status Flags ---
-      is_fast_track: isFastTrack,
-      onboarding_mode: mode,
+      is_fast_track: !isSeekingIncentive, // Automatically flags brief submissions as fast-track
+      onboarding_mode: isSeekingIncentive ? 'STANDARD_AUDIT' : 'EXPRESS_CONCIERGE',
       step_completed: 1,
       status: 'ONBOARDING',
       is_seeking_incentive: isSeekingIncentive,
@@ -157,15 +158,6 @@ export default function StepOneGateway() {
     });
 
     router.push('/onboarding/step-2');
-  };
-
-  const handleFastTrack = () => {
-    saveDraftAndNavigate('EXPRESS_CONCIERGE', true);
-  };
-
-  const handleStandardNext = (e: React.FormEvent) => {
-    e.preventDefault();
-    saveDraftAndNavigate('STANDARD_AUDIT', false);
   };
 
   return (
@@ -201,7 +193,7 @@ export default function StepOneGateway() {
               </div>
             )}
 
-            <form onSubmit={handleStandardNext} className="space-y-6">
+            <form onSubmit={handleNext} className="space-y-6">
               
               {/* Row 1: Company Identity */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -361,37 +353,8 @@ export default function StepOneGateway() {
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#27272A]/80"></div>
-                </div>
-                <div className="relative flex justify-center text-[10px] font-bold">
-                  <span className="px-4 bg-[#0A0A0C] text-neutral-500 uppercase tracking-[0.2em]">OR</span>
-                </div>
-              </div>
-
-              {/* Express Card */}
-              <button
-                type="button"
-                onClick={handleFastTrack}
-                disabled={isSubmitting}
-                className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/40 p-[1px] rounded-xl hover:border-[#C5A880] hover:shadow-[0_0_30px_rgba(197,168,128,0.25)] transition-all duration-300 cursor-pointer"
-              >
-                <div className="relative w-full bg-[#121215]/95 backdrop-blur-md px-6 py-5 rounded-xl flex items-center justify-between group-hover:bg-[#161619] transition-colors">
-                  <div className="flex items-center gap-4">
-                    <span className="text-2xl filter drop-shadow-[0_0_8px_rgba(197,168,128,0.4)] group-hover:scale-110 transition-transform">🚀</span>
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-white tracking-wide">Express Fast-Track Onboarding</p>
-                      <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">Skip standard intake and request priority concierge onboarding with a V&amp;K partner.</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#C5A880] group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Fast Track →</span>
-                </div>
-              </button>
-
               {/* Submit */}
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end pt-4 border-t border-[#27272A]/80">
                 <button
                   type="submit"
                   disabled={isSubmitting}
