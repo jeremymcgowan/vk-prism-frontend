@@ -24,7 +24,8 @@ export default function StepOneGateway() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const isSeekingIncentive = formData.is_seeking_incentive !== false; // Default opt-in to rewards!
+  // --- DEFAULT SELECTION OFF: Requires explicit true check to be opted in ---
+  const isSeekingIncentive = formData.is_seeking_incentive === true;
 
   if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
 
@@ -41,7 +42,6 @@ export default function StepOneGateway() {
     return trimmed
       .split(/\s+/)
       .map((part) => {
-        // Handle initials e.g. "jp" -> "JP"
         if (/^[a-zA-Z\.]{2,4}$/.test(part) && !part.includes('.')) {
           if (part.length <= 3) return part.toUpperCase();
         }
@@ -90,7 +90,6 @@ export default function StepOneGateway() {
       return false;
     }
 
-    // Strict Contact Name Check: Alpha, spaces, hyphens, dots, apostrophes only; min 2 alpha chars
     const rawName = (formData.contact_name || '').trim();
     const nameRegex = /^[a-zA-Z\s\-\'\.]+$/;
     const alphaCount = rawName.replace(/[^a-zA-Z]/g, '').length;
@@ -105,14 +104,12 @@ export default function StepOneGateway() {
       return false;
     }
 
-    // Strict Email Validation (Requires valid domain TLD like .com, .co, .io)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
     if (!formData.contact_email || !emailRegex.test(formData.contact_email)) {
       setValidationError('Please enter a valid email address with domain extension (e.g., name@company.com).');
       return false;
     }
 
-    // Full 10-Digit Phone Check
     const rawPhoneDigits = (formData.contact_phone || '').replace(/\D/g, '');
     if (rawPhoneDigits.length < 10) {
       setValidationError('Please enter a complete 10-digit phone number.');
@@ -128,7 +125,6 @@ export default function StepOneGateway() {
 
     setIsSubmitting(true);
     
-    // Auto-format name before proceeding
     const formattedName = formatContactName(formData.contact_name || '');
 
     updateFormData({
@@ -149,7 +145,7 @@ export default function StepOneGateway() {
       contact_phone: formData.contact_phone || '',
       
       // --- Flow Routing & Status Flags ---
-      is_fast_track: !isSeekingIncentive, // Automatically flags brief submissions as fast-track
+      is_fast_track: !isSeekingIncentive,
       onboarding_mode: isSeekingIncentive ? 'STANDARD_AUDIT' : 'EXPRESS_CONCIERGE',
       step_completed: 1,
       status: 'ONBOARDING',
@@ -162,6 +158,28 @@ export default function StepOneGateway() {
 
   return (
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
+      
+      {/* 🌟 CUSTOM KEYFRAME FOR SLOW BLACK-TO-GOLD REPEATING TRANSITION */}
+      <style jsx global>{`
+        @keyframes slowGoldPulse {
+          0%, 100% {
+            background-color: #121215;
+            border-color: rgba(197, 168, 128, 0.4);
+            color: #C5A880;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+          }
+          50% {
+            background-color: #8B7325;
+            border-color: rgba(197, 168, 128, 0.9);
+            color: #000000;
+            box-shadow: 0 0 25px rgba(197, 168, 128, 0.4);
+          }
+        }
+        .animate-gold-pulse {
+          animation: slowGoldPulse 4s infinite ease-in-out;
+        }
+      `}</style>
+
       <OnboardingHeader currentStep={1} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
@@ -324,31 +342,35 @@ export default function StepOneGateway() {
                     </p>
                   </div>
 
-                  <div className="flex flex-col gap-2 shrink-0">
+                  <div className="flex flex-col gap-3 shrink-0 sm:min-w-[260px]">
+                    
+                    {/* OPT-IN BUTTON WITH SLOW HYPNOTIC LOOP WHEN OFF, RADIANT GOLD WHEN ON */}
                     <button
                       type="button"
                       onClick={() => handleIncentiveToggle(true)}
-                      className={`w-full py-3 px-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      className={`w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
                         isSeekingIncentive
-                          ? 'bg-[#C5A880] text-black shadow-[0_0_20px_rgba(197,168,128,0.4)] ring-2 ring-white/50 scale-[1.02]'
-                          : 'bg-[#18181B] text-neutral-400 border border-neutral-700 hover:text-white'
+                          ? 'bg-[#C5A880] text-[#050507] border-[#C5A880] shadow-[0_0_30px_rgba(197,168,128,0.6)] ring-2 ring-white/60 scale-[1.02]'
+                          : 'animate-gold-pulse font-bold'
                       }`}
                     >
                       <span>💎 Opt-In to Full Telemetry</span>
-                      {isSeekingIncentive && <span className="text-black font-black">✓</span>}
+                      {isSeekingIncentive && <span className="text-[#050507] text-sm font-black animate-bounce">✓</span>}
                     </button>
 
+                    {/* BRIEF BASELINE WITH UPGRADED FONT SIZE */}
                     <button
                       type="button"
                       onClick={() => handleIncentiveToggle(false)}
-                      className={`w-full py-2 px-4 rounded-lg font-semibold text-[10px] uppercase tracking-wider transition-all cursor-pointer text-center ${
+                      className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider transition-all cursor-pointer text-center border ${
                         !isSeekingIncentive
-                          ? 'text-[#C5A880] underline font-bold'
-                          : 'text-neutral-500 hover:text-neutral-300'
+                          ? 'bg-[#18181B] text-[#C5A880] border-[#C5A880]/80 shadow-[0_0_15px_rgba(197,168,128,0.2)] underline decoration-2 decoration-[#C5A880]'
+                          : 'bg-transparent text-neutral-500 border-transparent hover:text-neutral-300'
                       }`}
                     >
                       ⚡ Skip Rewards // Brief Baseline Only
                     </button>
+
                   </div>
                 </div>
               </div>
