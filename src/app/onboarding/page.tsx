@@ -24,38 +24,48 @@ export default function StepOneGateway() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // --- DEFAULT SELECTION OFF: Requires explicit true check to be opted in ---
   const isSeekingIncentive = formData.is_seeking_incentive === true;
 
-  if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
+  if (!isHydrated) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setValidationError(null);
     updateFormData({ [e.target.name]: e.target.value });
   };
 
-  // --- Clean Domain Sanitizer (Strips http://, https://, whitespace, and trailing slashes) ---
-  const handleUrlBlur = () => {
-    const raw = (formData.company_url || '').trim().toLowerCase();
+  // --- Robust Domain Sanitizer on Blur ---
+  const handleUrlBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    let raw = e.target.value.trim().toLowerCase();
     if (!raw || raw === 'i need a website!') return;
 
-    // Clean protocol prefix, trailing slashes, and spaces
-    const cleanDomain = raw
+    // Remove http://, https://, www., spaces, and trailing slashes
+    raw = raw
       .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
       .replace(/\/+$/, '')
       .replace(/\s+/g, '');
 
-    updateFormData({ company_url: cleanDomain });
+    // Check if what remains is a domain format (e.g., domain.com, sub.domain.co)
+    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*\.[a-zA-Z]{2,11}$/;
+
+    if (domainRegex.test(raw)) {
+      updateFormData({ company_url: raw });
+    } else {
+      // If user typed string without a valid extension (e.g. "av202" or "comsdfskjlsf"), append .com or preserve if empty
+      if (raw.length > 2 && !raw.includes('.')) {
+        updateFormData({ company_url: `${raw}.com` });
+      } else {
+        updateFormData({ company_url: raw });
+      }
+    }
   };
 
-  // --- Auto-Fill "I need a website!" when focusing Primary Contact Name if URL is blank ---
   const handleContactNameFocus = () => {
     if (!formData.company_url || formData.company_url.trim() === '') {
       updateFormData({ company_url: 'I need a website!' });
     }
   };
 
-  // --- Auto-Format Contact Name (Initials -> UPPERCASE, Words -> Title Case) ---
   const formatContactName = (rawName: string): string => {
     const trimmed = rawName.trim();
     if (!trimmed) return '';
@@ -79,7 +89,6 @@ export default function StepOneGateway() {
     }
   };
 
-  // --- Auto-Formatting US Phone Number: (XXX) XXX-XXXX ---
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValidationError(null);
     const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -96,7 +105,6 @@ export default function StepOneGateway() {
     updateFormData({ contact_phone: formatted });
   };
 
-  // --- Incentive Toggle Handler ---
   const handleIncentiveToggle = (optIn: boolean) => {
     updateFormData({
       is_seeking_incentive: optIn,
@@ -104,14 +112,12 @@ export default function StepOneGateway() {
     });
   };
 
-  // --- Strict Email, Phone & Name Validation Check ---
   const validateStepOne = (): boolean => {
     if (!formData.company_name?.trim()) {
       setValidationError('Please enter your Company Name.');
       return false;
     }
 
-    // --- Strict Domain Format Validation (Without http/https OR 'I need a website!') ---
     const urlValue = (formData.company_url || '').trim().toLowerCase();
     const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*\.[a-zA-Z]{2,11}$/;
 
@@ -158,7 +164,6 @@ export default function StepOneGateway() {
     const formattedName = formatContactName(formData.contact_name || '');
 
     updateFormData({
-      // --- Standardized crm_entities 1:1 Schema Mapping ---
       display_name: formData.company_name || '',
       legal_name: formData.company_name || '',
       website_url: formData.company_url || null,
@@ -167,14 +172,12 @@ export default function StepOneGateway() {
       owner_phone: formData.contact_phone || '',
       industry: formData.industry || '',
 
-      // --- Legacy UI Compatibility Keys ---
       company_name: formData.company_name || '',
       company_url: formData.company_url || null,
       contact_name: formattedName,
       contact_email: formData.contact_email || '',
       contact_phone: formData.contact_phone || '',
       
-      // --- Flow Routing & Status Flags ---
       is_fast_track: !isSeekingIncentive,
       onboarding_mode: isSeekingIncentive ? 'STANDARD_AUDIT' : 'EXPRESS_CONCIERGE',
       step_completed: 1,
@@ -189,7 +192,6 @@ export default function StepOneGateway() {
   return (
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
       
-      {/* 👑 CUSTOM KEYFRAME FOR SLOW BLACK-TO-KINGLY-PURPLE REPEATING TRANSITION */}
       <style jsx global>{`
         @keyframes slowPurplePulse {
           0%, 100% {
@@ -199,10 +201,10 @@ export default function StepOneGateway() {
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
           }
           50% {
-            background-color: #3B0764; /* Deep Kingly Obsidian Purple */
-            border-color: rgba(168, 85, 247, 0.9); /* Vivid Royal Violet Border */
+            background-color: #3B0764;
+            border-color: rgba(168, 85, 247, 0.9);
             color: #FFFFFF;
-            box-shadow: 0 0 25px rgba(147, 51, 234, 0.5); /* Regal Purple Halo */
+            box-shadow: 0 0 25px rgba(147, 51, 234, 0.5);
           }
         }
         .animate-purple-pulse {
@@ -216,10 +218,8 @@ export default function StepOneGateway() {
         
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* EXPANSIVE GOLD HALO */}
           <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
-          {/* MAIN CARD */}
           <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
             <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#C5A880]/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -233,7 +233,6 @@ export default function StepOneGateway() {
               </h1>
             </div>
 
-            {/* Validation Banner */}
             {validationError && (
               <div className="mb-6 p-4 bg-red-950/50 border border-red-500/50 rounded-xl text-red-200 text-xs font-semibold flex items-center gap-3 animate-fadeIn">
                 <span>⚠️</span>
@@ -243,7 +242,6 @@ export default function StepOneGateway() {
 
             <form onSubmit={handleNext} className="space-y-6">
               
-              {/* Row 1: Company Identity */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
@@ -276,7 +274,6 @@ export default function StepOneGateway() {
                 </div>
               </div>
 
-              {/* Row 2: Primary Contact & Email */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
@@ -311,7 +308,6 @@ export default function StepOneGateway() {
                 </div>
               </div>
 
-              {/* Row 3: Industry & Phone */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
@@ -351,7 +347,6 @@ export default function StepOneGateway() {
                 </div>
               </div>
 
-              {/* 💎 THE GAMIFIED B2B FINTECH INCENTIVE BANNER */}
               <div className="relative p-6 md:p-8 rounded-2xl bg-gradient-to-br from-[#121215] via-[#18181B] to-[#0A0A0C] border-2 border-[#6B21A8]/70 shadow-[0_0_30px_rgba(107,33,168,0.25)] overflow-hidden transition-all duration-300 my-8">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-[#6B21A8]/15 rounded-full blur-2xl pointer-events-none"></div>
 
@@ -405,7 +400,6 @@ export default function StepOneGateway() {
                 </div>
               </div>
 
-              {/* Submit */}
               <div className="flex justify-end pt-4 border-t border-[#27272A]/80">
                 <button
                   type="submit"
