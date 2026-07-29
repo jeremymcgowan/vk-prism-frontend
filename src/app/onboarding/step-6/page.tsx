@@ -33,7 +33,7 @@ export default function StepSixFlow() {
     costPerception: formData.crm_vendor_audit?.costPerception || 'FAIR',
   });
 
-  if (!isHydrated) return null; // Prevents UI flicker while loading sessionStorage
+  if (!isHydrated) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     updateFormData({ [e.target.name]: e.target.value });
@@ -51,7 +51,6 @@ export default function StepSixFlow() {
     setError(null);
 
     try {
-      // 1. Initialize Standard Supabase Client
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -64,11 +63,11 @@ export default function StepSixFlow() {
         // Fallback for anonymous or unauthenticated sessions
       }
 
-      // 2. Map strictly matching DB table columns for crm_questionnaire_staging
+      // Map strictly matching DB table columns for crm_questionnaire_staging
       const dbPayload: Record<string, any> = {
         user_id: userId,
-        status: 'PENDING_REVIEW', // Flags for Admin Console approval queue
-        readiness_completion_pct: 100, // 100% completion unlocks $500 Ledger Credit
+        status: 'PENDING_REVIEW',
+        readiness_completion_pct: 100,
         
         // --- Step 1: Corporate Profile ---
         display_name: formData.company_name || 'Unspecified Entity',
@@ -106,7 +105,7 @@ export default function StepSixFlow() {
         funding_stage: formData.funding_stage || null,
         target_raise: formData.target_raise ? String(formData.target_raise) : null,
         has_bylaws: formData.has_bylaws ? String(formData.has_bylaws) : null,
-        accounting_software: formData.accounting_software || null,
+        accounting_system: formData.accounting_software || null, // FIXED: Matches Supabase column name
         accounting_vendor_audit: formData.accounting_vendor_audit || null,
 
         // --- Step 4: Shield Security ---
@@ -149,7 +148,6 @@ export default function StepSixFlow() {
       };
 
       if (supabaseUrl && supabaseAnonKey) {
-        // TARGET UPGRADED TABLE: crm_questionnaire_staging
         const { error: insertError } = await supabase
           .from('crm_questionnaire_staging')
           .insert([dbPayload]);
@@ -162,11 +160,9 @@ export default function StepSixFlow() {
         throw new Error('Supabase client credentials missing.');
       }
 
-      // 3. Clear session context and local storage draft
       clearFormData();
       localStorage.removeItem('prism_onboarding_draft');
 
-      // 4. Route to Onboarding Success Screen
       router.push('/onboarding/success');
 
     } catch (err: unknown) {
@@ -193,10 +189,8 @@ export default function StepSixFlow() {
         
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* EXPANSIVE GOLD HALO */}
           <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
-          {/* MAIN CARD */}
           <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
             <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#C5A880]/20 rounded-full blur-3xl pointer-events-none"></div>
