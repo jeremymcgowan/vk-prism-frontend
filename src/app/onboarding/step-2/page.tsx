@@ -76,7 +76,6 @@ export default function StepTwoStructure() {
 
         const line1 = `${streetNumber} ${route}`.trim() || place.formatted_address || '';
 
-        // Standardized on hq_address_line_1 and hq_postal_code
         updateFormData({
           hq_address_line_1: line1,
           hq_city: city,
@@ -101,7 +100,6 @@ export default function StepTwoStructure() {
     setValidationError(null);
     const { name, value } = e.target;
 
-    // Auto-select DE state if user picks Delaware C-Corp
     if (name === 'legal_structure' && value === 'DELAWARE_C_CORP') {
       updateFormData({ legal_structure: value, registration_state: 'DE' });
     } else {
@@ -119,6 +117,11 @@ export default function StepTwoStructure() {
     }
     const cleanNum = Math.min(99999, Math.max(0, parseInt(cleanDigits, 10) || 0));
     updateFormData({ [name]: cleanNum });
+  };
+
+  // Auto-Select Text on Mouse Focus
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.select();
   };
 
   // Auto-Formatting EIN Tax ID: XX-XXXXXXX
@@ -159,7 +162,6 @@ export default function StepTwoStructure() {
     e.preventDefault();
     setValidationError(null);
 
-    // Validate Partial EIN Entry
     const rawEinDigits = (formData.ein_number || '').replace(/\D/g, '');
     if (rawEinDigits.length > 0 && rawEinDigits.length < 9) {
       setValidationError('EIN Tax ID must be exactly 9 digits (XX-XXXXXXX) or left blank for pending startups.');
@@ -171,7 +173,6 @@ export default function StepTwoStructure() {
     const currentLine1 = (formData.hq_address_line_1 || formData.hq_address_line1 || '').trim();
     const currentPostalCode = (formData.hq_postal_code || formData.hq_zip || '').trim();
 
-    // Physical Address Blank Fallback Check
     const isAddressBlank =
       !currentLine1 &&
       !formData.hq_city?.trim() &&
@@ -206,7 +207,6 @@ export default function StepTwoStructure() {
 
   return (
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
-      {/* Load Google Maps Places Library Script */}
       {apiKey && (
         <Script
           src={`https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`}
@@ -224,10 +224,8 @@ export default function StepTwoStructure() {
         
         <div className="w-full max-w-3xl lg:max-w-4xl relative my-8">
           
-          {/* EXPANSIVE GOLD HALO */}
           <div className="absolute -inset-2 md:-inset-3 bg-gradient-to-r from-[#C5A880]/30 via-[#8B7325]/15 to-[#C5A880]/30 rounded-[2rem] blur-3xl opacity-80 pointer-events-none transition-all duration-700"></div>
 
-          {/* MAIN CARD */}
           <div className="relative w-full bg-[#0A0A0C]/95 glass-panel border border-[#C5A880]/40 hover:border-[#C5A880]/60 shadow-[0_10px_50px_rgba(0,0,0,0.9),0_0_40px_-5px_rgba(197,168,128,0.25)] p-8 md:p-12 lg:p-14 rounded-2xl transition-all duration-500 overflow-hidden">
             
             <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#C5A880]/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -241,7 +239,6 @@ export default function StepTwoStructure() {
               </h1>
             </div>
 
-            {/* Validation Banner */}
             {validationError && (
               <div className="mb-6 p-4 bg-red-950/50 border border-red-500/50 rounded-xl text-red-200 text-xs font-semibold flex items-center gap-3 animate-fadeIn">
                 <span>⚠️</span>
@@ -365,7 +362,8 @@ export default function StepTwoStructure() {
                       type="number"
                       min={0}
                       max={99999}
-                      value={formData.employee_count_w2_ft ?? ''}
+                      value={formData.employee_count_w2_ft ?? 1}
+                      onFocus={handleFocus}
                       onChange={(e) => handleNumberChange('employee_count_w2_ft', e.target.value)}
                       className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
                     />
@@ -379,7 +377,8 @@ export default function StepTwoStructure() {
                       type="number"
                       min={0}
                       max={99999}
-                      value={formData.employee_count_w2_pt ?? ''}
+                      value={formData.employee_count_w2_pt ?? 0}
+                      onFocus={handleFocus}
                       onChange={(e) => handleNumberChange('employee_count_w2_pt', e.target.value)}
                       className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
                     />
@@ -393,7 +392,8 @@ export default function StepTwoStructure() {
                       type="number"
                       min={0}
                       max={99999}
-                      value={formData.contractor_count_1099 ?? ''}
+                      value={formData.contractor_count_1099 ?? 0}
+                      onFocus={handleFocus}
                       onChange={(e) => handleNumberChange('contractor_count_1099', e.target.value)}
                       className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
                     />
