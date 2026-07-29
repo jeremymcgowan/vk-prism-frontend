@@ -72,7 +72,10 @@ export default function StepFivePeople() {
     const calculatedRange = deriveHeadcountRange(totalWorkforce);
 
     if (!userOverrodeHeadcount) {
-      updateFormData({ headcount_range: calculatedRange });
+      updateFormData({ 
+        headcount_range: calculatedRange,
+        team_headcount: calculatedRange // Standardized staging DB key
+      });
     }
   }, [isHydrated, totalWorkforce, userOverrodeHeadcount]);
 
@@ -84,14 +87,22 @@ export default function StepFivePeople() {
       : [...selectedBenefits, id];
     
     setSelectedBenefits(updated);
-    updateFormData({ benefits_offered: updated });
+    updateFormData({ 
+      benefits_offered: updated,
+      corporate_benefits: updated // Standardized staging DB key
+    });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (e.target.name === 'headcount_range') {
       setUserOverrodeHeadcount(true);
+      updateFormData({ 
+        headcount_range: e.target.value,
+        team_headcount: e.target.value // Standardized staging DB key
+      });
+    } else {
+      updateFormData({ [e.target.name]: e.target.value });
     }
-    updateFormData({ [e.target.name]: e.target.value });
   };
 
   const handlePayrollAuditChange = (field: 'satisfaction' | 'costPerception', value: string) => {
@@ -103,12 +114,24 @@ export default function StepFivePeople() {
   const handlePeopleBypass = async () => {
     setIsSubmitting(true);
     
+    const currentRange = formData.headcount_range || deriveHeadcountRange(totalWorkforce);
+
     updateFormData({
+      step_completed: 5,
       payroll_vendor_audit: formData.payroll_provider && formData.payroll_provider !== 'NONE' ? payrollAudit : null,
       benefits_offered: selectedBenefits,
       people_managed_service_opt_in: true,
-      headcount_range: formData.headcount_range || deriveHeadcountRange(totalWorkforce),
-      payroll_provider: formData.payroll_provider || 'NONE'
+      
+      // --- Standardized 1:1 Schema Mapping for Staging DB ---
+      team_headcount: currentRange,
+      payroll_system: formData.payroll_provider || 'NONE',
+      corporate_benefits: selectedBenefits,
+      audit_flag: 'NEEDS_TURNKEY_PEOPLE_SETUP',
+      
+      // --- Legacy UI Keys for Backwards Compatibility ---
+      headcount_range: currentRange,
+      payroll_provider: formData.payroll_provider || 'NONE',
+      readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 85)
     });
 
     router.push('/onboarding/step-6');
@@ -118,10 +141,22 @@ export default function StepFivePeople() {
     e.preventDefault();
     setIsSubmitting(true);
     
+    const currentRange = formData.headcount_range || deriveHeadcountRange(totalWorkforce);
+
     updateFormData({
+      step_completed: 5,
       payroll_vendor_audit: formData.payroll_provider !== 'NONE' ? payrollAudit : null,
       benefits_offered: selectedBenefits,
-      people_managed_service_opt_in: false
+      people_managed_service_opt_in: false,
+      
+      // --- Standardized 1:1 Schema Mapping for Staging DB ---
+      team_headcount: currentRange,
+      payroll_system: formData.payroll_provider || '',
+      corporate_benefits: selectedBenefits,
+      
+      // --- Legacy UI Keys for Backwards Compatibility ---
+      headcount_range: currentRange,
+      readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 85)
     });
 
     router.push('/onboarding/step-6');
