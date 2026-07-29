@@ -34,6 +34,26 @@ export default function StepOneGateway() {
     updateFormData({ [e.target.name]: e.target.value });
   };
 
+  // --- Clean Domain Sanitizer (Strips http://, https://, and trailing slashes) ---
+  const handleUrlBlur = () => {
+    const raw = (formData.company_url || '').trim();
+    if (!raw || raw === 'I need a website!') return;
+
+    // Remove http:// or https:// and strip any trailing slash
+    const cleanDomain = raw
+      .replace(/^https?:\/\//i, '')
+      .replace(/\/+$/, '');
+
+    updateFormData({ company_url: cleanDomain });
+  };
+
+  // --- Auto-Fill "I need a website!" when focusing Primary Contact Name if URL is blank ---
+  const handleContactNameFocus = () => {
+    if (!formData.company_url || formData.company_url.trim() === '') {
+      updateFormData({ company_url: 'I need a website!' });
+    }
+  };
+
   // --- Auto-Format Contact Name (Initials -> UPPERCASE, Words -> Title Case) ---
   const formatContactName = (rawName: string): string => {
     const trimmed = rawName.trim();
@@ -87,6 +107,15 @@ export default function StepOneGateway() {
   const validateStepOne = (): boolean => {
     if (!formData.company_name?.trim()) {
       setValidationError('Please enter your Company Name.');
+      return false;
+    }
+
+    // --- Strict Domain Format Validation (Without http/https OR 'I need a website!') ---
+    const urlValue = (formData.company_url || '').trim();
+    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*\.[a-zA-Z]{2,11}$/;
+
+    if (urlValue !== '' && urlValue !== 'I need a website!' && !domainRegex.test(urlValue)) {
+      setValidationError('Please enter a valid domain without http/https (e.g., abc.com, acme.tech) or leave blank.');
       return false;
     }
 
@@ -239,7 +268,8 @@ export default function StepOneGateway() {
                     name="company_url"
                     value={formData.company_url || ''}
                     onChange={handleChange}
-                    placeholder="e.g. https://acme.io or acme.com"
+                    onBlur={handleUrlBlur}
+                    placeholder="e.g. acme.com or acme.io (no http/https)"
                     className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                   />
                 </div>
@@ -258,6 +288,7 @@ export default function StepOneGateway() {
                     value={formData.contact_name || ''}
                     onChange={handleChange}
                     onBlur={handleNameBlur}
+                    onFocus={handleContactNameFocus}
                     placeholder="e.g. Jane Doe or J.P."
                     className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                   />
@@ -319,21 +350,21 @@ export default function StepOneGateway() {
                 </div>
               </div>
 
-             {/* 💎 THE GAMIFIED B2B FINTECH INCENTIVE BANNER */}
-<div className="relative p-6 md:p-8 rounded-2xl bg-gradient-to-br from-[#121215] via-[#18181B] to-[#0A0A0C] border-2 border-[#6B21A8]/70 shadow-[0_0_30px_rgba(107,33,168,0.25)] overflow-hidden transition-all duration-300 my-8">
-  <div className="absolute top-0 right-0 w-40 h-40 bg-[#6B21A8]/15 rounded-full blur-2xl pointer-events-none"></div>
+              {/* 💎 THE GAMIFIED B2B FINTECH INCENTIVE BANNER */}
+              <div className="relative p-6 md:p-8 rounded-2xl bg-gradient-to-br from-[#121215] via-[#18181B] to-[#0A0A0C] border-2 border-[#6B21A8]/70 shadow-[0_0_30px_rgba(107,33,168,0.25)] overflow-hidden transition-all duration-300 my-8">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-[#6B21A8]/15 rounded-full blur-2xl pointer-events-none"></div>
 
-  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-    <div className="space-y-2 max-w-xl">
-      <div className="flex items-center gap-2">
-        {/* CHANGED FROM GOLD TO KINGLY PURPLE BADGE */}
-        <span className="bg-[#6B21A8] text-white border border-[#A855F7]/50 font-extrabold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-widest shadow-[0_0_12px_rgba(168,85,247,0.4)]">
-          Exclusive Reward
-        </span>
-        <span className="text-xs font-mono font-bold text-[#C5A880] uppercase tracking-wider">
-          V&amp;K Ecosystem Acceleration
-        </span>
-      </div>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                  <div className="space-y-2 max-w-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-[#6B21A8] text-white border border-[#A855F7]/50 font-extrabold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-widest shadow-[0_0_12px_rgba(168,85,247,0.4)]">
+                        Exclusive Reward
+                      </span>
+                      <span className="text-xs font-mono font-bold text-[#C5A880] uppercase tracking-wider">
+                        V&amp;K Ecosystem Acceleration
+                      </span>
+                    </div>
+
                     <h4 className="text-lg md:text-xl font-bold text-white tracking-tight">
                       Unlock a $500 Ledger Credit &amp; 1-Hour Executive Architecture Roadmap Review
                     </h4>
@@ -346,23 +377,23 @@ export default function StepOneGateway() {
 
                   <div className="flex flex-col gap-3 shrink-0 sm:min-w-[260px]">
                     
-                  {/* OPT-IN BUTTON WITH SLOW KINGLY PURPLE LOOP WHEN OFF, RADIANT PURPLE WHEN ON */}
-                      <button
-                        type="button"
-                        onClick={() => handleIncentiveToggle(true)}
-                        className={`w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
-                          isSeekingIncentive
-                            ? 'bg-[#6B21A8] text-white border-[#A855F7] shadow-[0_0_30px_rgba(168,85,247,0.6)] ring-2 ring-white/60 scale-[1.02]'
-                            : 'animate-purple-pulse font-bold'
-                        }`}
-                      >
-                        <span>💎 Opt-In to Full Telemetry</span>
-                        {isSeekingIncentive && <span className="text-white text-sm font-black animate-bounce">✓</span>}
-                      </button>
+                    {/* OPT-IN BUTTON WITH SLOW KINGLY PURPLE LOOP WHEN OFF, RADIANT PURPLE WHEN ON */}
+                    <button
+                      type="button"
+                      onClick={() => handleIncentiveToggle(true)}
+                      className={`w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
+                        isSeekingIncentive
+                          ? 'bg-[#6B21A8] text-white border-[#A855F7] shadow-[0_0_30px_rgba(168,85,247,0.6)] ring-2 ring-white/60 scale-[1.02]'
+                          : 'animate-purple-pulse font-bold'
+                      }`}
+                    >
+                      <span>💎 Opt-In to Full Telemetry</span>
+                      {isSeekingIncentive && <span className="text-white text-sm font-black animate-bounce">✓</span>}
+                    </button>
 
                     {/* BRIEF BASELINE: NON-BOLD, NORMAL CASE, SMALLER FONT */}
-                <button
-                  type="button"
+                    <button
+                      type="button"
                       onClick={() => handleIncentiveToggle(false)}
                       className={`w-full py-2.5 px-4 rounded-xl font-normal text-[11px] md:text-xs tracking-wide transition-all cursor-pointer text-center border ${
                         !isSeekingIncentive
