@@ -45,7 +45,7 @@ export default function StepSixFlow() {
     updateFormData({ crm_vendor_audit: updated });
   };
 
-  // --- Master Submission Handler: Maps context state directly to crm_questionnaire_staging ---
+  // --- Master Submission Handler: Standardized 1:1 against crm_questionnaire_staging schema ---
   const executeFinalSubmission = async (flowOptIn: boolean) => {
     setIsSubmitting(true);
     setError(null);
@@ -55,96 +55,66 @@ export default function StepSixFlow() {
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-      let userId = null;
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        userId = user?.id || null;
-      } catch {
-        // Fallback for anonymous or unauthenticated sessions
-      }
-
-      // Map strictly matching DB table columns for crm_questionnaire_staging
+      // Strict Payload: EVERY KEY BELOW EXACTLY MATCHES A COLUMN IN YOUR DATABASE SCHEMA
       const dbPayload: Record<string, any> = {
-        user_id: userId,
+        // --- Status & Meta ---
         status: 'PENDING_REVIEW',
         readiness_completion_pct: 100,
+        node_status: 'PENDING',
         
-        // --- Step 1: Corporate Profile ---
+        // --- Step 1: Identity & Primary Contact ---
         display_name: formData.company_name || 'Unspecified Entity',
         legal_name: formData.company_name || 'Unspecified Entity LLC',
-        company_name: formData.company_name || 'Unspecified Entity',
-        company_url: formData.company_url || null,
+        legal_corporate_name: formData.company_name || 'Unspecified Entity LLC',
+        website_url: formData.company_url || null,
         owner_name: formData.contact_name || null,
         owner_email: formData.contact_email || null,
         owner_phone: formData.contact_phone || null,
-        contact_name: formData.contact_name || null,
-        contact_email: formData.contact_email || null,
-        contact_phone: formData.contact_phone || null,
         industry: formData.industry || null,
+        industry_sector: formData.industry || null,
 
         // --- Step 2: Governance & Operations ---
         legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
         registration_state: formData.registration_state || 'UNDECIDED',
-        formation_year: formData.formation_year ? String(formData.formation_year) : null,
+        formation_year: formData.formation_year && !isNaN(parseInt(formData.formation_year, 10)) 
+          ? parseInt(formData.formation_year, 10) 
+          : null,
         ein_number: formData.ein_number || 'Startup - Need EIN',
         fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
-        bylaws_governance_status: formData.bylaws_governance_status || 'Currently working on it',
 
-        // --- Step 2: Workforce Breakdown ---
+        // --- Step 2: Workforce Counts ---
         employee_count_w2_ft: formData.employee_count_w2_ft ?? 1,
         employee_count_w2_pt: formData.employee_count_w2_pt ?? 0,
         contractor_count_1099: formData.contractor_count_1099 ?? 0,
-        has_physical_hq: formData.has_physical_hq !== false,
-        is_virtual_hq_candidate: formData.is_virtual_hq_candidate || false,
+
+        // --- Step 2: HQ Address Telemetry ---
         hq_address_line_1: formData.hq_address_line_1 || formData.hq_address_line1 || null,
         hq_city: formData.hq_city || null,
         hq_state: formData.hq_state || formData.registration_state || null,
         hq_postal_code: formData.hq_postal_code || formData.hq_zip || null,
 
-        // --- Step 3: Capital & Governance ---
+        // --- Step 3: Capital & Funding ---
         funding_stage: formData.funding_stage || null,
-        target_raise: formData.target_raise ? String(formData.target_raise) : null,
-        has_bylaws: formData.has_bylaws ? String(formData.has_bylaws) : null,
-        accounting_system: formData.accounting_software || null, // FIXED: Matches Supabase column name
-        accounting_vendor_audit: formData.accounting_vendor_audit || null,
+        funding_target_amount: formData.target_raise && !isNaN(parseFloat(formData.target_raise)) 
+          ? parseFloat(formData.target_raise) 
+          : null,
+        bylaws_resolutions_active: formData.has_bylaws === 'YES' || formData.has_bylaws === 'true',
 
-        // --- Step 4: Shield Security ---
-        workspace_suite: formData.email_workspace_suite || null,
-        email_workspace_suite: formData.email_workspace_suite || null,
-        workspace_vendor_audit: formData.workspace_vendor_audit || null,
-        mdm_provider: formData.mdm_provider || null,
-        mdm_vendor_audit: formData.mdm_vendor_audit || null,
-        endpoint_protection: formData.antivirus_status || null,
-        antivirus_status: formData.antivirus_status || null,
-        backup_system: formData.backup_frequency || null,
-        backup_frequency: formData.backup_frequency || null,
-        remote_workforce: formData.has_remote_workers || 'NO',
-        has_remote_workers: formData.has_remote_workers || 'NO',
-        corporate_vpn: formData.has_vpn || 'NO',
-        has_vpn: formData.has_vpn || 'NO',
+        // --- Step 4: Shield Security & IT Telemetry ---
+        it_groupware_platform: formData.email_workspace_suite || formData.accounting_software || null,
+        it_mdm_status: formData.mdm_provider ? 'DEPLOYED' : 'NOT_ENFORCED',
+        it_mdm_vendor: formData.mdm_provider || null,
+        it_antivirus_status: formData.antivirus_status ? 'ACTIVE' : 'INACTIVE',
+        it_backup_strategy: formData.backup_frequency || null,
 
-        // --- Step 5: People & Workforce ---
-        team_headcount: formData.headcount_range || null,
-        headcount_range: formData.headcount_range || null,
-        payroll_system: formData.payroll_provider || null,
-        payroll_provider: formData.payroll_provider || null,
-        payroll_vendor_audit: formData.payroll_vendor_audit || null,
-        corporate_benefits: formData.benefits_offered || [],
-        benefits_offered: formData.benefits_offered || [],
+        // --- Step 5: People & Payroll ---
+        hr_payroll_platform: formData.payroll_provider || null,
+        benefits_offered: Array.isArray(formData.benefits_offered) ? formData.benefits_offered : [],
 
-        // --- Step 6: Flow & Automation ---
+        // --- Step 6: Flow & Operations Automation ---
         crm_system: formData.crm_system || (flowOptIn ? 'NONE' : null),
-        crm_vendor_audit: formData.crm_system && formData.crm_system !== 'NONE' ? crmAudit : null,
         collaboration_tool: formData.collaboration_tool || (flowOptIn ? 'SLACK' : null),
-        automation_status: formData.automation_status || (flowOptIn ? 'MANUAL' : null),
-        audit_flag: flowOptIn ? 'NEEDS_TURNKEY_FLOW_SETUP' : (formData.audit_flag || null),
-
-        // --- Full Raw JSON Snapshot ---
-        raw_step_payloads: {
-          ...formData,
-          flow_managed_service_opt_in: flowOptIn,
-          completed_at: new Date().toISOString()
-        }
+        automation_status: formData.automation_status || (flowOptIn ? 'MANUAL' : null)
       };
 
       if (supabaseUrl && supabaseAnonKey) {
