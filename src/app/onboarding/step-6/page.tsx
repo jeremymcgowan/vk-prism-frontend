@@ -45,7 +45,7 @@ export default function StepSixFlow() {
     updateFormData({ crm_vendor_audit: updated });
   };
 
-  // Master Submission Handler: Maps context state directly to Supabase table columns
+  // --- Master Submission Handler: Maps context state directly to crm_questionnaire_staging ---
   const executeFinalSubmission = async (flowOptIn: boolean) => {
     setIsSubmitting(true);
     setError(null);
@@ -64,29 +64,37 @@ export default function StepSixFlow() {
         // Fallback for anonymous or unauthenticated sessions
       }
 
-      // 2. Map strictly matching DB table columns
+      // 2. Map strictly matching DB table columns for crm_questionnaire_staging
       const dbPayload: Record<string, any> = {
         user_id: userId,
+        status: 'PENDING_REVIEW', // Flags for Admin Console approval queue
+        readiness_completion_pct: 100, // 100% completion unlocks $500 Ledger Credit
+        
+        // --- Step 1: Corporate Profile ---
+        display_name: formData.company_name || 'Unspecified Entity',
+        legal_name: formData.company_name || 'Unspecified Entity LLC',
         company_name: formData.company_name || 'Unspecified Entity',
-        company_url: formData.company_url || null, // Handled in Step 1
+        company_url: formData.company_url || null,
+        owner_name: formData.contact_name || null,
+        owner_email: formData.contact_email || null,
+        owner_phone: formData.contact_phone || null,
         contact_name: formData.contact_name || null,
         contact_email: formData.contact_email || null,
         contact_phone: formData.contact_phone || null,
         industry: formData.industry || null,
 
-        // Step 2: Governance & Operations
+        // --- Step 2: Governance & Operations ---
         legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
         registration_state: formData.registration_state || 'UNDECIDED',
         formation_year: formData.formation_year ? String(formData.formation_year) : null,
         ein_number: formData.ein_number || 'Startup - Need EIN',
         fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
+        bylaws_governance_status: formData.bylaws_governance_status || 'Currently working on it',
 
-        // Step 2: Workforce Breakdown
+        // --- Step 2: Workforce Breakdown ---
         employee_count_w2_ft: formData.employee_count_w2_ft ?? 1,
         employee_count_w2_pt: formData.employee_count_w2_pt ?? 0,
         contractor_count_1099: formData.contractor_count_1099 ?? 0,
-
-        // Step 2: Headquarters & Virtual HQ Flags (Standardized column names)
         has_physical_hq: formData.has_physical_hq !== false,
         is_virtual_hq_candidate: formData.is_virtual_hq_candidate || false,
         hq_address_line_1: formData.hq_address_line_1 || formData.hq_address_line1 || null,
@@ -94,34 +102,45 @@ export default function StepSixFlow() {
         hq_state: formData.hq_state || formData.registration_state || null,
         hq_postal_code: formData.hq_postal_code || formData.hq_zip || null,
 
-        // Step 3: Capital & Governance
+        // --- Step 3: Capital & Governance ---
         funding_stage: formData.funding_stage || null,
         target_raise: formData.target_raise ? String(formData.target_raise) : null,
         has_bylaws: formData.has_bylaws ? String(formData.has_bylaws) : null,
         accounting_software: formData.accounting_software || null,
         accounting_vendor_audit: formData.accounting_vendor_audit || null,
 
-        // Step 4: Shield Security
+        // --- Step 4: Shield Security ---
+        workspace_suite: formData.email_workspace_suite || null,
         email_workspace_suite: formData.email_workspace_suite || null,
         workspace_vendor_audit: formData.workspace_vendor_audit || null,
         mdm_provider: formData.mdm_provider || null,
         mdm_vendor_audit: formData.mdm_vendor_audit || null,
+        endpoint_protection: formData.antivirus_status || null,
         antivirus_status: formData.antivirus_status || null,
+        backup_system: formData.backup_frequency || null,
         backup_frequency: formData.backup_frequency || null,
+        remote_workforce: formData.has_remote_workers || 'NO',
+        has_remote_workers: formData.has_remote_workers || 'NO',
+        corporate_vpn: formData.has_vpn || 'NO',
+        has_vpn: formData.has_vpn || 'NO',
 
-        // Step 5: People & Workforce
+        // --- Step 5: People & Workforce ---
+        team_headcount: formData.headcount_range || null,
         headcount_range: formData.headcount_range || null,
+        payroll_system: formData.payroll_provider || null,
         payroll_provider: formData.payroll_provider || null,
         payroll_vendor_audit: formData.payroll_vendor_audit || null,
+        corporate_benefits: formData.benefits_offered || [],
         benefits_offered: formData.benefits_offered || [],
 
-        // Step 6: Flow & Automation
+        // --- Step 6: Flow & Automation ---
         crm_system: formData.crm_system || (flowOptIn ? 'NONE' : null),
         crm_vendor_audit: formData.crm_system && formData.crm_system !== 'NONE' ? crmAudit : null,
         collaboration_tool: formData.collaboration_tool || (flowOptIn ? 'SLACK' : null),
         automation_status: formData.automation_status || (flowOptIn ? 'MANUAL' : null),
+        audit_flag: flowOptIn ? 'NEEDS_TURNKEY_FLOW_SETUP' : (formData.audit_flag || null),
 
-        // Full Raw JSON Audit Snapshot (stores remote workers, VPN status, lead flags, etc.)
+        // --- Full Raw JSON Snapshot ---
         raw_step_payloads: {
           ...formData,
           flow_managed_service_opt_in: flowOptIn,
@@ -130,8 +149,9 @@ export default function StepSixFlow() {
       };
 
       if (supabaseUrl && supabaseAnonKey) {
+        // TARGET UPGRADED TABLE: crm_questionnaire_staging
         const { error: insertError } = await supabase
-          .from('crm_questionnaire_submissions')
+          .from('crm_questionnaire_staging')
           .insert([dbPayload]);
 
         if (insertError) {
