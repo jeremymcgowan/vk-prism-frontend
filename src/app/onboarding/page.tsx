@@ -347,30 +347,30 @@ export default function StepOneGateway() {
                   <div className="flex flex-col gap-3 shrink-0 sm:min-w-[260px]">
                     
                   {/* OPT-IN BUTTON WITH SLOW KINGLY PURPLE LOOP WHEN OFF, RADIANT PURPLE WHEN ON */}
-<button
-  type="button"
-  onClick={() => handleIncentiveToggle(true)}
-  className={`w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
-    isSeekingIncentive
-      ? 'bg-[#6B21A8] text-white border-[#A855F7] shadow-[0_0_30px_rgba(168,85,247,0.6)] ring-2 ring-white/60 scale-[1.02]'
-      : 'animate-purple-pulse font-bold'
-  }`}
->
-  <span>💎 Opt-In to Full Telemetry</span>
-  {isSeekingIncentive && <span className="text-white text-sm font-black animate-bounce">✓</span>}
-</button>
+                      <button
+                        type="button"
+                        onClick={() => handleIncentiveToggle(true)}
+                        className={`w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
+                          isSeekingIncentive
+                            ? 'bg-[#6B21A8] text-white border-[#A855F7] shadow-[0_0_30px_rgba(168,85,247,0.6)] ring-2 ring-white/60 scale-[1.02]'
+                            : 'animate-purple-pulse font-bold'
+                        }`}
+                      >
+                        <span>💎 Opt-In to Full Telemetry</span>
+                        {isSeekingIncentive && <span className="text-white text-sm font-black animate-bounce">✓</span>}
+                      </button>
 
-                    {/* BRIEF BASELINE WITH UPGRADED FONT SIZE */}
-                    <button
-                      type="button"
+                    {/* BRIEF BASELINE: NON-BOLD, NORMAL CASE, SMALLER FONT */}
+                <button
+                  type="button"
                       onClick={() => handleIncentiveToggle(false)}
-                      className={`w-full py-2.5 px-4 rounded-xl font-bold text-[11px] md:text-xs uppercase tracking-wider transition-all cursor-pointer text-center border ${
+                      className={`w-full py-2.5 px-4 rounded-xl font-normal text-[11px] md:text-xs tracking-wide transition-all cursor-pointer text-center border ${
                         !isSeekingIncentive
-                          ? 'bg-[#18181B] text-[#C5A880] border-[#C5A880]/80 shadow-[0_0_15px_rgba(197,168,128,0.2)] underline decoration-2 decoration-[#C5A880]'
+                          ? 'bg-[#18181B] text-[#C5A880] border-[#C5A880]/80 shadow-[0_0_15px_rgba(197,168,128,0.2)] underline decoration-1 decoration-[#C5A880]'
                           : 'bg-transparent text-neutral-500 border-transparent hover:text-neutral-300'
                       }`}
                     >
-                      ⚡ Skip Rewards // Brief Baseline Only
+                      ⚡ Skip rewards // Brief baseline only
                     </button>
 
                   </div>
