@@ -46,7 +46,8 @@ export default function StepThreeCapital() {
     if (val === 'SELF_FUNDED') {
       setFormattedRaise('');
       setRaiseError('');
-      updateFormData({ funding_stage: val, target_raise: null });
+      // FIXED: Use empty string instead of null to satisfy TypeScript strict types
+      updateFormData({ funding_stage: val, target_raise: '' });
     } else {
       updateFormData({ funding_stage: val });
     }
@@ -57,14 +58,16 @@ export default function StepThreeCapital() {
     const digits = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
     if (!digits) {
       setFormattedRaise('');
-      updateFormData({ target_raise: null });
+      // FIXED: Use empty string instead of null
+      updateFormData({ target_raise: '' });
       setRaiseError('');
       return;
     }
 
     const numVal = Math.min(999999999, parseInt(digits, 10));
     setFormattedRaise(numVal.toString());
-    updateFormData({ target_raise: numVal });
+    // FIXED: Convert number to string for state context
+    updateFormData({ target_raise: numVal.toString() });
     setRaiseError('');
   };
 
@@ -82,7 +85,8 @@ export default function StepThreeCapital() {
       const roundedVal = Math.ceil(clampedVal / 10) * 10;
       
       setFormattedRaise(`$${roundedVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-      updateFormData({ target_raise: roundedVal });
+      // FIXED: Convert rounded value to string for state context
+      updateFormData({ target_raise: roundedVal.toString() });
       
       if (roundedVal < 5000) {
         setRaiseError('Target raise is below the $5,000.00 threshold typically evaluated for VC/Angel structures.');
