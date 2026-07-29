@@ -313,7 +313,7 @@ export default function StepTwoStructure() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      EIN Tax ID (XX-XXXXXXX) <Tooltip text="9-digit IRS Federal Tax ID. Blank if N/A or Pending." />
+                      EIN Tax ID (XX-XXXXXXX) <Tooltip text="9-digit IRS Federal Tax ID. Leave blank if pending." />
                     </label>
                     <input
                       type="text"
@@ -359,7 +359,7 @@ export default function StepTwoStructure() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-[#121215] border border-[#27272A] p-4 rounded-xl space-y-2">
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200">
-                      W2 Full-Time (Default: 1)
+                      W2 Full-Time (Default: 1 Founder)
                     </label>
                     <input
                       type="number"
