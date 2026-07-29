@@ -303,7 +303,7 @@ export default function StepFourShield() {
                 <div className="p-4 bg-[#C5A880]/10 border border-[#C5A880]/40 rounded-xl text-xs text-[#C5A880] flex items-center gap-3 animate-fadeIn">
                   <span className="text-lg">🛡️</span>
                   <div>
-                    <p className="font-bold uppercase tracking-wider">V&amp;K Shield Corporate VPN Provisioning Lead Flagged</p>
+                    <p className="font-bold uppercase tracking-wider">V&amp;K Shield Corporate VPN Provisioning Flagged</p>
                     <p className="text-neutral-300 mt-0.5">Operating remote teams without a VPN leaves corporate traffic unencrypted. V&amp;K Shield will automatically evaluate a zero-trust VPN solution for your team.</p>
                   </div>
                 </div>
