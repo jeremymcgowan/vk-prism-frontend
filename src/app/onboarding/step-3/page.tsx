@@ -46,7 +46,7 @@ export default function StepThreeCapital() {
     if (val === 'SELF_FUNDED') {
       setFormattedRaise('');
       setRaiseError('');
-      updateFormData({ funding_stage: val, target_raise: '' });
+      updateFormData({ funding_stage: val, target_raise: null });
     } else {
       updateFormData({ funding_stage: val });
     }
@@ -54,19 +54,17 @@ export default function StepThreeCapital() {
 
   // --- Auto-Currency Formatting, Leading Zero Stripping & Max Bounds ($999M) ---
   const handleRaiseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Strip everything except numbers and remove leading zeros
     const digits = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
     if (!digits) {
       setFormattedRaise('');
-      updateFormData({ target_raise: '' });
+      updateFormData({ target_raise: null });
       setRaiseError('');
       return;
     }
 
-    // Clamp input to max $999,999,999
     const numVal = Math.min(999999999, parseInt(digits, 10));
     setFormattedRaise(numVal.toString());
-    updateFormData({ target_raise: numVal.toString() });
+    updateFormData({ target_raise: numVal });
     setRaiseError('');
   };
 
@@ -78,15 +76,13 @@ export default function StepThreeCapital() {
       return;
     }
 
-    const numVal = parseFloat(rawVal);
+    const numVal = typeof rawVal === 'string' ? parseFloat(rawVal) : Number(rawVal);
     if (!isNaN(numVal) && numVal > 0) {
-      // Clamp to max $999,999,999
       const clampedVal = Math.min(999999999, numVal);
-      // Round UP to nearest $10 USD
       const roundedVal = Math.ceil(clampedVal / 10) * 10;
       
       setFormattedRaise(`$${roundedVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-      updateFormData({ target_raise: roundedVal.toString() });
+      updateFormData({ target_raise: roundedVal });
       
       if (roundedVal < 5000) {
         setRaiseError('Target raise is below the $5,000.00 threshold typically evaluated for VC/Angel structures.');
@@ -105,14 +101,28 @@ export default function StepThreeCapital() {
     updateFormData({ accounting_vendor_audit: updated });
   };
 
+  // --- Map Bylaws Token to Readable Status for Admin Console Compatibility ---
+  const handleBylawsChange = (val: string) => {
+    let readableStatus = 'Currently working on it';
+    if (val === 'YES') readableStatus = 'Yes, 100% compliant';
+    if (val === 'NO') readableStatus = 'No, we need to draft them';
+
+    updateFormData({
+      has_bylaws: val,
+      bylaws_governance_status: readableStatus
+    });
+  };
+
   const handleIgnoranceBypass = async () => {
     setIsSubmitting(true);
     
     updateFormData({
+      step_completed: 3,
       accounting_vendor_audit: formData.accounting_software && formData.accounting_software !== 'NONE' ? accountingAudit : null,
       funding_stage: formData.funding_stage || 'UNKNOWN',
       has_bylaws: formData.has_bylaws || null,
-      audit_flag: 'NEEDS_GOVERNANCE_FINANCIAL_REVIEW'
+      audit_flag: 'NEEDS_GOVERNANCE_FINANCIAL_REVIEW',
+      readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 50)
     });
 
     router.push('/onboarding/step-4');
@@ -123,7 +133,7 @@ export default function StepThreeCapital() {
 
     // Enforce Minimum Raise Check on Submission
     if (!isSelfFunded && formData.target_raise) {
-      const numVal = parseFloat(formData.target_raise);
+      const numVal = typeof formData.target_raise === 'string' ? parseFloat(formData.target_raise) : Number(formData.target_raise);
       if (numVal < 5000) {
         setRaiseError('Please specify a target raise of at least $5,000.00 USD, or select Self-Funded.');
         return;
@@ -133,7 +143,9 @@ export default function StepThreeCapital() {
     setIsSubmitting(true);
     
     updateFormData({
+      step_completed: 3,
       accounting_vendor_audit: formData.accounting_software !== 'NONE' ? accountingAudit : null,
+      readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 50)
     });
 
     router.push('/onboarding/step-4');
@@ -231,7 +243,7 @@ export default function StepThreeCapital() {
                   name="has_bylaws"
                   required
                   value={String(formData.has_bylaws || '')}
-                  onChange={(e) => updateFormData({ has_bylaws: e.target.value })}
+                  onChange={(e) => handleBylawsChange(e.target.value)}
                   className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                 >
                   <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select Bylaws Status...</option>
