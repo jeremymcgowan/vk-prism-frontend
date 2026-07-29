@@ -34,15 +34,16 @@ export default function StepOneGateway() {
     updateFormData({ [e.target.name]: e.target.value });
   };
 
-  // --- Clean Domain Sanitizer (Strips http://, https://, and trailing slashes) ---
+  // --- Clean Domain Sanitizer (Strips http://, https://, whitespace, and trailing slashes) ---
   const handleUrlBlur = () => {
-    const raw = (formData.company_url || '').trim();
-    if (!raw || raw === 'I need a website!') return;
+    const raw = (formData.company_url || '').trim().toLowerCase();
+    if (!raw || raw === 'i need a website!') return;
 
-    // Remove http:// or https:// and strip any trailing slash
+    // Clean protocol prefix, trailing slashes, and spaces
     const cleanDomain = raw
       .replace(/^https?:\/\//i, '')
-      .replace(/\/+$/, '');
+      .replace(/\/+$/, '')
+      .replace(/\s+/g, '');
 
     updateFormData({ company_url: cleanDomain });
   };
@@ -111,10 +112,10 @@ export default function StepOneGateway() {
     }
 
     // --- Strict Domain Format Validation (Without http/https OR 'I need a website!') ---
-    const urlValue = (formData.company_url || '').trim();
+    const urlValue = (formData.company_url || '').trim().toLowerCase();
     const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*\.[a-zA-Z]{2,11}$/;
 
-    if (urlValue !== '' && urlValue !== 'I need a website!' && !domainRegex.test(urlValue)) {
+    if (urlValue !== '' && urlValue !== 'i need a website!' && !domainRegex.test(urlValue)) {
       setValidationError('Please enter a valid domain without http/https (e.g., abc.com, acme.tech) or leave blank.');
       return false;
     }
@@ -369,15 +370,12 @@ export default function StepOneGateway() {
                       Unlock a $500 Ledger Credit &amp; 1-Hour Executive Architecture Roadmap Review
                     </h4>
                     
-                    {/* EXPLICIT NON-BREAKING SPACE TO PREVENT JSX MINIFIER WORD-FUSING */}
                     <p className="text-xs text-neutral-300 leading-relaxed">
                       Complete your full deep-dive corporate telemetry across Steps 02 to 06. We apply a <strong>$500 credit</strong>&nbsp;instantly toward your first V&amp;K operational sprint and schedule your complimentary compliance architecture session ($750 retail value).
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-3 shrink-0 sm:min-w-[260px]">
-                    
-                    {/* OPT-IN BUTTON WITH SLOW KINGLY PURPLE LOOP WHEN OFF, RADIANT PURPLE WHEN ON */}
                     <button
                       type="button"
                       onClick={() => handleIncentiveToggle(true)}
@@ -391,7 +389,6 @@ export default function StepOneGateway() {
                       {isSeekingIncentive && <span className="text-white text-sm font-black animate-bounce">✓</span>}
                     </button>
 
-                    {/* BRIEF BASELINE: NON-BOLD, NORMAL CASE, SMALLER FONT */}
                     <button
                       type="button"
                       onClick={() => handleIncentiveToggle(false)}
