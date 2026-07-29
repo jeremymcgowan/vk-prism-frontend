@@ -22,6 +22,13 @@ function Tooltip({ text }: { text: string }) {
   );
 }
 
+// 2-Character Safe Formatter (prevents VARCHAR(2) overflow in Postgres)
+const cleanTwoChar = (val: any): string | null => {
+  if (!val || val === 'UNDECIDED' || val === 'Please Select') return null;
+  const str = String(val).trim();
+  return str.length >= 2 ? str.slice(0, 2).toUpperCase() : str.toUpperCase();
+};
+
 export default function StepSixFlow() {
   const router = useRouter();
   const { formData, updateFormData, clearFormData, isHydrated } = useOnboarding();
@@ -55,7 +62,7 @@ export default function StepSixFlow() {
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-      // Strict Payload: EVERY KEY BELOW EXACTLY MATCHES A COLUMN IN YOUR DATABASE SCHEMA
+      // Strict Payload: EVERY 2-CHAR COLUMN IS SAFELY TRUNCATED
       const dbPayload: Record<string, any> = {
         // --- Status & Meta ---
         status: 'PENDING_REVIEW',
@@ -75,7 +82,7 @@ export default function StepSixFlow() {
 
         // --- Step 2: Governance & Operations ---
         legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
-        registration_state: formData.registration_state || 'UNDECIDED',
+        registration_state: cleanTwoChar(formData.registration_state), // Ensures max 2 chars (e.g. 'DE', 'GA')
         formation_year: formData.formation_year && !isNaN(parseInt(formData.formation_year, 10)) 
           ? parseInt(formData.formation_year, 10) 
           : null,
@@ -90,7 +97,7 @@ export default function StepSixFlow() {
         // --- Step 2: HQ Address Telemetry ---
         hq_address_line_1: formData.hq_address_line_1 || formData.hq_address_line1 || null,
         hq_city: formData.hq_city || null,
-        hq_state: formData.hq_state || formData.registration_state || null,
+        hq_state: cleanTwoChar(formData.hq_state || formData.registration_state), // Ensures max 2 chars (e.g. 'GA')
         hq_postal_code: formData.hq_postal_code || formData.hq_zip || null,
 
         // --- Step 3: Capital & Funding ---
