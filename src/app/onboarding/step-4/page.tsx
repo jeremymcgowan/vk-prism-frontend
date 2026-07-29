@@ -66,16 +66,28 @@ export default function StepFourShield() {
     setIsSubmitting(true);
     
     updateFormData({
+      step_completed: 4,
       workspace_vendor_audit: formData.email_workspace_suite && formData.email_workspace_suite !== 'NONE' ? workspaceAudit : null,
       mdm_vendor_audit: formData.mdm_provider && formData.mdm_provider !== 'NONE' ? mdmAudit : null,
       shield_managed_service_opt_in: true,
-      email_workspace_suite: formData.email_workspace_suite || 'NEED_WORKSPACE',
-      mdm_provider: formData.mdm_provider || 'NONE',
-      antivirus_status: formData.antivirus_status || 'NONE',
-      backup_frequency: formData.backup_frequency || 'NONE',
+      
+      // --- Standardized 1:1 Schema Mapping for Staging DB ---
+      workspace_suite: 'NEED_WORKSPACE',
+      mdm_provider: 'NONE',
+      endpoint_protection: 'NONE',
+      backup_system: 'NONE',
+      remote_workforce: formData.has_remote_workers || 'NO',
+      corporate_vpn: formData.has_vpn || 'NEED_VPN',
+      audit_flag: 'NEEDS_TURNKEY_SHIELD_SETUP',
+      
+      // --- Legacy UI Keys for Backwards Compatibility ---
+      email_workspace_suite: 'NEED_WORKSPACE',
+      antivirus_status: 'NONE',
+      backup_frequency: 'NONE',
       has_remote_workers: formData.has_remote_workers || 'NO',
       has_vpn: formData.has_vpn || 'NEED_VPN',
-      vpn_lead_flag: true
+      vpn_lead_flag: true,
+      readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 70)
     });
 
     router.push('/onboarding/step-5');
@@ -86,12 +98,24 @@ export default function StepFourShield() {
     setIsSubmitting(true);
     
     updateFormData({
+      step_completed: 4,
       workspace_vendor_audit: formData.email_workspace_suite !== 'NONE' ? workspaceAudit : null,
       mdm_vendor_audit: formData.mdm_provider !== 'NONE' ? mdmAudit : null,
       shield_managed_service_opt_in: false,
+      
+      // --- Standardized 1:1 Schema Mapping for Staging DB ---
+      workspace_suite: formData.email_workspace_suite || '',
+      mdm_provider: formData.mdm_provider || '',
+      endpoint_protection: formData.antivirus_status || '',
+      backup_system: formData.backup_frequency || '',
+      remote_workforce: formData.has_remote_workers || 'NO',
+      corporate_vpn: formData.has_vpn || 'NO',
+      
+      // --- Legacy UI Keys for Backwards Compatibility ---
       has_remote_workers: formData.has_remote_workers || 'NO',
       has_vpn: formData.has_vpn || 'NO',
-      vpn_lead_flag: isVpnNeeded
+      vpn_lead_flag: isVpnNeeded,
+      readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 70)
     });
 
     router.push('/onboarding/step-5');
