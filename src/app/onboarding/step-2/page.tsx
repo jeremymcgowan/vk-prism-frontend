@@ -162,7 +162,7 @@ export default function StepTwoStructure() {
     // Validate Partial EIN Entry
     const rawEinDigits = (formData.ein_number || '').replace(/\D/g, '');
     if (rawEinDigits.length > 0 && rawEinDigits.length < 9) {
-      setValidationError('EIN Tax ID must be exactly 9 digits (XX-XXXXXXX) Blank for Pending startups.');
+      setValidationError('EIN Tax ID must be exactly 9 digits (XX-XXXXXXX) or left blank for pending startups.');
       return;
     }
 
@@ -313,7 +313,7 @@ export default function StepTwoStructure() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                      EIN Tax ID (XX-XXXXXXX) <Tooltip text="9-digit IRS Federal Tax ID. Leave blank if pending." />
+                      EIN Tax ID (XX-XXXXXXX) <Tooltip text="9-digit IRS Federal Tax ID. Blank if N/A or Pending." />
                     </label>
                     <input
                       type="text"
