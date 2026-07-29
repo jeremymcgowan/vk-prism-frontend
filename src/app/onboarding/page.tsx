@@ -319,21 +319,21 @@ export default function StepOneGateway() {
                 </div>
               </div>
 
-              {/* 💎 THE GAMIFIED B2B FINTECH INCENTIVE BANNER */}
-              <div className="relative p-6 md:p-8 rounded-2xl bg-gradient-to-br from-[#121215] via-[#18181B] to-[#0A0A0C] border-2 border-[#C5A880]/60 shadow-[0_0_30px_rgba(197,168,128,0.15)] overflow-hidden transition-all duration-300 my-8">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-[#C5A880]/10 rounded-full blur-2xl pointer-events-none"></div>
+             {/* 💎 THE GAMIFIED B2B FINTECH INCENTIVE BANNER */}
+<div className="relative p-6 md:p-8 rounded-2xl bg-gradient-to-br from-[#121215] via-[#18181B] to-[#0A0A0C] border-2 border-[#6B21A8]/70 shadow-[0_0_30px_rgba(107,33,168,0.25)] overflow-hidden transition-all duration-300 my-8">
+  <div className="absolute top-0 right-0 w-40 h-40 bg-[#6B21A8]/15 rounded-full blur-2xl pointer-events-none"></div>
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-                  <div className="space-y-2 max-w-xl">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-[#C5A880] text-black font-extrabold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-widest">
-                        Exclusive Reward
-                      </span>
-                      <span className="text-xs font-mono font-bold text-[#C5A880] uppercase tracking-wider">
-                        V&amp;K Ecosystem Acceleration
-                      </span>
-                    </div>
-
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+    <div className="space-y-2 max-w-xl">
+      <div className="flex items-center gap-2">
+        {/* CHANGED FROM GOLD TO KINGLY PURPLE BADGE */}
+        <span className="bg-[#6B21A8] text-white border border-[#A855F7]/50 font-extrabold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-widest shadow-[0_0_12px_rgba(168,85,247,0.4)]">
+          Exclusive Reward
+        </span>
+        <span className="text-xs font-mono font-bold text-[#C5A880] uppercase tracking-wider">
+          V&amp;K Ecosystem Acceleration
+        </span>
+      </div>
                     <h4 className="text-lg md:text-xl font-bold text-white tracking-tight">
                       Unlock a $500 Ledger Credit &amp; 1-Hour Executive Architecture Roadmap Review
                     </h4>
@@ -346,25 +346,25 @@ export default function StepOneGateway() {
 
                   <div className="flex flex-col gap-3 shrink-0 sm:min-w-[260px]">
                     
-                    {/* OPT-IN BUTTON WITH SLOW KINGLY PURPLE LOOP WHEN OFF, RADIANT GOLD WHEN ON */}
-                    <button
-                      type="button"
-                      onClick={() => handleIncentiveToggle(true)}
-                      className={`w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
-                        isSeekingIncentive
-                          ? 'bg-[#C5A880] text-[#050507] border-[#C5A880] shadow-[0_0_30px_rgba(197,168,128,0.6)] ring-2 ring-white/60 scale-[1.02]'
-                          : 'animate-purple-pulse font-bold'
-                      }`}
-                    >
-                      <span>💎 Opt-In to Full Telemetry</span>
-                      {isSeekingIncentive && <span className="text-[#050507] text-sm font-black animate-bounce">✓</span>}
-                    </button>
+                  {/* OPT-IN BUTTON WITH SLOW KINGLY PURPLE LOOP WHEN OFF, RADIANT PURPLE WHEN ON */}
+<button
+  type="button"
+  onClick={() => handleIncentiveToggle(true)}
+  className={`w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
+    isSeekingIncentive
+      ? 'bg-[#6B21A8] text-white border-[#A855F7] shadow-[0_0_30px_rgba(168,85,247,0.6)] ring-2 ring-white/60 scale-[1.02]'
+      : 'animate-purple-pulse font-bold'
+  }`}
+>
+  <span>💎 Opt-In to Full Telemetry</span>
+  {isSeekingIncentive && <span className="text-white text-sm font-black animate-bounce">✓</span>}
+</button>
 
                     {/* BRIEF BASELINE WITH UPGRADED FONT SIZE */}
                     <button
                       type="button"
                       onClick={() => handleIncentiveToggle(false)}
-                      className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider transition-all cursor-pointer text-center border ${
+                      className={`w-full py-2.5 px-4 rounded-xl font-bold text-[11px] md:text-xs uppercase tracking-wider transition-all cursor-pointer text-center border ${
                         !isSeekingIncentive
                           ? 'bg-[#18181B] text-[#C5A880] border-[#C5A880]/80 shadow-[0_0_15px_rgba(197,168,128,0.2)] underline decoration-2 decoration-[#C5A880]'
                           : 'bg-transparent text-neutral-500 border-transparent hover:text-neutral-300'
