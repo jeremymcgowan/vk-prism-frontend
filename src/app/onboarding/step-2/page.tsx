@@ -109,15 +109,15 @@ export default function StepTwoStructure() {
     }
   };
 
-  // Eradicate Leading Zeros (e.g., 0434 -> 434) & Clamp (0 - 99,999)
+  // Eradicate Leading Zeros (e.g., "01" -> 1, "0231" -> 231) & Clamp (0 - 99,999)
   const handleNumberChange = (name: string, val: string) => {
     setValidationError(null);
-    const sanitizedStr = val.replace(/^0+(?=\d)/, '');
-    if (sanitizedStr === '') {
+    const cleanDigits = val.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    if (cleanDigits === '') {
       updateFormData({ [name]: 0 });
       return;
     }
-    const cleanNum = Math.min(99999, Math.max(0, parseInt(sanitizedStr, 10) || 0));
+    const cleanNum = Math.min(99999, Math.max(0, parseInt(cleanDigits, 10) || 0));
     updateFormData({ [name]: cleanNum });
   };
 
@@ -365,7 +365,7 @@ export default function StepTwoStructure() {
                       type="number"
                       min={0}
                       max={99999}
-                      value={formData.employee_count_w2_ft ?? 1}
+                      value={formData.employee_count_w2_ft ?? ''}
                       onChange={(e) => handleNumberChange('employee_count_w2_ft', e.target.value)}
                       className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
                     />
@@ -379,7 +379,7 @@ export default function StepTwoStructure() {
                       type="number"
                       min={0}
                       max={99999}
-                      value={formData.employee_count_w2_pt ?? 0}
+                      value={formData.employee_count_w2_pt ?? ''}
                       onChange={(e) => handleNumberChange('employee_count_w2_pt', e.target.value)}
                       className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
                     />
@@ -393,7 +393,7 @@ export default function StepTwoStructure() {
                       type="number"
                       min={0}
                       max={99999}
-                      value={formData.contractor_count_1099 ?? 0}
+                      value={formData.contractor_count_1099 ?? ''}
                       onChange={(e) => handleNumberChange('contractor_count_1099', e.target.value)}
                       className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
                     />
