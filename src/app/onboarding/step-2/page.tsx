@@ -195,6 +195,8 @@ export default function StepTwoStructure() {
       hq_city: effectiveHasPhysical ? (formData.hq_city || '') : '',
       hq_state: effectiveHasPhysical ? (formData.hq_state || '') : '',
       hq_postal_code: effectiveHasPhysical ? currentPostalCode : '',
+      status: 'ONBOARDING',
+      readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 35)
     });
 
     router.push('/onboarding/step-3');
