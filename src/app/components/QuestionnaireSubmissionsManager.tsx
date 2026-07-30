@@ -8,56 +8,117 @@ interface QuestionnaireSubmission {
   created_at: string
   status: string
   
-  // Section 01: Core Identity
-  company_name: string
+  // Section 01: Core Baseline & Capital Vetting
+  display_name?: string | null
+  legal_name?: string | null
+  company_name?: string | null
+  website_url?: string | null
   company_url?: string | null
-  contact_name: string
-  contact_email: string
+  owner_name?: string | null
+  contact_name?: string | null
+  owner_email?: string | null
+  contact_email?: string | null
+  owner_phone?: string | null
   contact_phone?: string | null
+  owner_profile_url?: string | null
+  is_strategic_partner?: boolean | null
   industry?: string | null
+  industry_sector?: string | null
 
-  // Section 02: Governance & Operations
+  // Section 01 Governance
   legal_structure?: string | null
   registration_state?: string | null
-  formation_year?: string | null
+  formation_year?: any
   ein_number?: string | null
   fiscal_year_end_month?: string | null
-  employee_count_w2_ft?: number | null
-  employee_count_w2_pt?: number | null
-  contractor_count_1099?: number | null
+  has_bylaws?: string | null
+  bylaws_resolutions_active?: boolean | null
   has_physical_hq?: boolean | null
-  is_virtual_hq_candidate?: boolean | null
   hq_address_line_1?: string | null
   hq_city?: string | null
   hq_state?: string | null
   hq_postal_code?: string | null
 
-  // Section 03: Capital & Governance
+  // Section 01 Capital & Vetting Badges
   funding_stage?: string | null
   target_raise?: string | null
-  has_bylaws?: string | null
-  accounting_software?: string | null
-  accounting_vendor_audit?: any
+  funding_target_amount?: number | null
+  is_seeking_funding?: boolean | null
+  is_crunchbase_verified?: boolean | null
+  is_bbb_registered?: boolean | null
+  sells_tangible_goods?: boolean | null
+  has_duns_tracker?: boolean | null
+  duns_number_id?: string | null
+  bbb_wedge_sentiment?: string | null
 
-  // Section 04: Shield Security
+  // Section 02: Threat Vector & Security Infrastructure
+  is_it_outsourced?: boolean | null
+  it_lead_name?: string | null
+  it_lead_email?: string | null
+  it_lead_phone?: string | null
+  it_lead_profile_url?: string | null
   email_workspace_suite?: string | null
-  workspace_vendor_audit?: any
+  it_groupware_platform?: string | null
+  managed_it_vector?: string | null
   mdm_provider?: string | null
-  mdm_vendor_audit?: any
+  it_mdm_vendor?: string | null
+  mdm_enforcement_log?: string | null
+  it_mdm_status?: string | null
   antivirus_status?: string | null
+  it_antivirus_status?: string | null
+  antivirus_vendor?: string | null
   backup_frequency?: string | null
+  it_backup_strategy?: string | null
+  sso_gateway_vendor?: string | null
+  sso_gateway_status?: string | null
+  is_disk_encryption_enforced?: boolean | null
 
-  // Section 05: People & Workforce
-  headcount_range?: string | null
+  // Section 03: Workforce Administration & Benefits
+  is_hr_outsourced?: boolean | null
+  hr_lead_name?: string | null
+  hr_lead_email?: string | null
+  hr_lead_phone?: string | null
+  hr_lead_profile_url?: string | null
+  employee_count_w2_ft?: number | null
+  employee_count_w2_pt?: number | null
+  contractor_count_1099?: number | null
   payroll_provider?: string | null
-  payroll_vendor_audit?: any
+  hr_payroll_platform?: string | null
+  multistate_tax_exposure?: string | null
   benefits_offered?: string[] | null
+  has_piia_signed?: boolean | null
+  has_commercial_liability_policy?: boolean | null
 
-  // Section 06: Flow & Automation
+  // Section 04: Flow, CRM & Operations Automation
+  is_sales_outsourced?: boolean | null
+  sales_lead_name?: string | null
+  sales_lead_email?: string | null
+  sales_lead_phone?: string | null
+  sales_lead_profile_url?: string | null
   crm_system?: string | null
-  crm_vendor_audit?: any
   collaboration_tool?: string | null
   automation_status?: string | null
+  disconnected_utility_counter?: number | null
+  web_layout_satisfaction?: string | null
+  has_unstructured_doc_processing?: boolean | null
+  has_inbound_capture_funnels?: boolean | null
+  has_traffic_analytics?: boolean | null
+
+  // Section 05: Regulatory Compliance Matrix
+  is_compliance_outsourced?: boolean | null
+  compliance_officer_name?: string | null
+  compliance_officer_email?: string | null
+  compliance_officer_phone?: string | null
+  compliance_officer_profile_url?: string | null
+  hipaa_status?: string | null
+  pci_status?: string | null
+  finra_status?: string | null
+  soc2_status?: string | null
+  nist_status?: string | null
+  gdpr_status?: string | null
+  accounting_software?: string | null
+  weekly_manual_friction_hours?: number | null
+  security_sensitivity_tier?: string | null
 
   // Raw JSON Backup
   raw_step_payloads?: any
@@ -77,6 +138,11 @@ const US_STATES = [
   'ID', 'NH', 'WV', 'HI', 'ME', 'RI', 'MT', 'ND', 'SD', 'AK', 'VT', 'UNDECIDED'
 ]
 
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June', 
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
+
 const AVAILABLE_BENEFITS = [
   { id: 'MEDICAL', label: '🏥 Medical Insurance' },
   { id: 'DENTAL', label: '🦷 Dental Coverage' },
@@ -86,14 +152,19 @@ const AVAILABLE_BENEFITS = [
   { id: 'HEALTH_STIPENDS', label: '🌴 Remote / Health Stipends' }
 ]
 
+const cleanTwoChar = (val: any): string | null => {
+  if (!val || val === 'UNDECIDED' || val === 'Please Select') return null
+  const str = String(val).trim()
+  return str.length >= 2 ? str.slice(0, 2).toUpperCase() : str.toUpperCase()
+}
+
 export default function QuestionnaireSubmissionsManager() {
   const [submissions, setSubmissions] = useState<QuestionnaireSubmission[]>([])
   const [staffList, setStaffList] = useState<ProfileStaff[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Queue View Filter (Default to PENDING)
-  const [activeTab, setActiveTab] = useState<'PENDING' | 'PROMOTED' | 'DECLINED' | 'ALL'>('PENDING')
+  const [activeTab, setActiveTab] = useState<'PENDING_REVIEW' | 'PROMOTED' | 'DECLINED' | 'ALL'>('PENDING_REVIEW')
 
   // Inspector Drawer State
   const [selectedLead, setSelectedLead] = useState<QuestionnaireSubmission | null>(null)
@@ -101,7 +172,7 @@ export default function QuestionnaireSubmissionsManager() {
   const [assignedManagerId, setAssignedManagerId] = useState<string>('')
   const [showRawJson, setShowRawJson] = useState<boolean>(false)
   
-  // Section Edit Locks (Matches Intelligence Engine Section Locks)
+  // Section Edit Locks
   const [sectionLocks, setSectionLocks] = useState<Record<string, boolean>>({
     sec1: true,
     sec2: true,
@@ -125,7 +196,6 @@ export default function QuestionnaireSubmissionsManager() {
     fetchInitialData()
   }, [])
 
-  // Keyboard listener to close drawer on 'Esc'
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && selectedLead) {
@@ -140,9 +210,8 @@ export default function QuestionnaireSubmissionsManager() {
     setLoading(true)
     setErrorMsg(null)
 
-    // 1. Fetch Submissions (All columns)
     const { data: subData, error: subError } = await supabase
-      .from('crm_questionnaire_submissions')
+      .from('crm_questionnaire_staging')
       .select('*')
       .order('created_at', { ascending: false })
 
@@ -152,11 +221,9 @@ export default function QuestionnaireSubmissionsManager() {
       setSubmissions(subData)
     }
 
-    // 2. Fetch Internal V&K Staff for Account Manager Dropdown
     const { data: staffData } = await supabase
       .from('profiles')
       .select('id, full_name, email')
-      .eq('organization_scope', 'VK_INTERNAL_STAFF')
       .order('full_name', { ascending: true })
 
     if (staffData) setStaffList(staffData)
@@ -166,7 +233,7 @@ export default function QuestionnaireSubmissionsManager() {
 
   const handleRowClick = (lead: QuestionnaireSubmission) => {
     setSelectedLead(lead)
-    setEditForm({ ...lead, status: lead.status || 'PENDING' })
+    setEditForm({ ...lead, status: lead.status || 'PENDING_REVIEW' })
     setShowRawJson(false)
     setSaveSuccess(null)
     setErrorMsg(null)
@@ -205,7 +272,6 @@ export default function QuestionnaireSubmissionsManager() {
     setEditForm({ ...editForm, benefits_offered: updated })
   }
 
-  // Regular Save (Updates all 6 sections in crm_questionnaire_submissions)
   const handleSaveChanges = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!editForm || !selectedLead) return
@@ -215,41 +281,58 @@ export default function QuestionnaireSubmissionsManager() {
     setSaveSuccess(null)
 
     try {
+      // STRICT DB PAYLOAD: Only containing columns verified to exist in crm_questionnaire_staging
+      const dbPayload = {
+        // Section 01
+        display_name: editForm.display_name || editForm.company_name || null,
+        legal_name: editForm.legal_name || editForm.company_name || null,
+        website_url: editForm.website_url || editForm.company_url || null,
+        owner_name: editForm.owner_name || editForm.contact_name || null,
+        owner_email: editForm.owner_email || editForm.contact_email || null,
+        owner_phone: editForm.owner_phone || editForm.contact_phone || null,
+        industry: editForm.industry || editForm.industry_sector || null,
+        industry_sector: editForm.industry_sector || editForm.industry || null,
+        legal_structure: editForm.legal_structure || null,
+        registration_state: cleanTwoChar(editForm.registration_state),
+        formation_year: editForm.formation_year && !isNaN(parseInt(editForm.formation_year, 10))
+          ? parseInt(editForm.formation_year, 10)
+          : null,
+        ein_number: editForm.ein_number || null,
+        fiscal_year_end_month: editForm.fiscal_year_end_month || null,
+
+        // Section 02
+        it_groupware_platform: editForm.it_groupware_platform || editForm.email_workspace_suite || null,
+        it_mdm_vendor: editForm.it_mdm_vendor || editForm.mdm_provider || null,
+        it_antivirus_status: editForm.it_antivirus_status || editForm.antivirus_status || null,
+        it_backup_strategy: editForm.it_backup_strategy || editForm.backup_frequency || null,
+
+        // Section 03
+        employee_count_w2_ft: editForm.employee_count_w2_ft ?? 1,
+        employee_count_w2_pt: editForm.employee_count_w2_pt ?? 0,
+        contractor_count_1099: editForm.contractor_count_1099 ?? 0,
+        hr_payroll_platform: editForm.hr_payroll_platform || editForm.payroll_provider || null,
+        benefits_offered: editForm.benefits_offered || [],
+
+        // Section 04 & Status
+        crm_system: editForm.crm_system || null,
+        collaboration_tool: editForm.collaboration_tool || null,
+        automation_status: editForm.automation_status || null,
+        status: editForm.status || 'PENDING_REVIEW',
+      }
+
       const { error } = await supabase
-        .from('crm_questionnaire_submissions')
-        .update({
-          company_name: editForm.company_name,
-          company_url: editForm.company_url || null,
-          contact_name: editForm.contact_name,
-          contact_email: editForm.contact_email,
-          contact_phone: editForm.contact_phone || null,
-          industry: editForm.industry || null,
-          legal_structure: editForm.legal_structure || null,
-          registration_state: editForm.registration_state || null,
-          ein_number: editForm.ein_number || null,
-          funding_stage: editForm.funding_stage || null,
-          target_raise: editForm.target_raise || null,
-          accounting_software: editForm.accounting_software || null,
-          email_workspace_suite: editForm.email_workspace_suite || null,
-          mdm_provider: editForm.mdm_provider || null,
-          antivirus_status: editForm.antivirus_status || null,
-          backup_frequency: editForm.backup_frequency || null,
-          payroll_provider: editForm.payroll_provider || null,
-          benefits_offered: editForm.benefits_offered || [],
-          crm_system: editForm.crm_system || null,
-          collaboration_tool: editForm.collaboration_tool || null,
-          automation_status: editForm.automation_status || null,
-          status: editForm.status || 'PENDING',
-        })
+        .from('crm_questionnaire_staging')
+        .update(dbPayload)
         .eq('id', selectedLead.id)
 
       if (error) throw new Error(error.message)
 
       setSaveSuccess('✓ TELEMETRY RECORD UPDATED IN SUPABASE')
       setSubmissions((prev) =>
-        prev.map((item) => (item.id === selectedLead.id ? { ...editForm } : item))
+        prev.map((item) => (item.id === selectedLead.id ? { ...editForm, ...dbPayload } : item))
       )
-      setSelectedLead({ ...editForm })
+      // Rehydrate local state with what was sent to DB
+      setSelectedLead({ ...editForm, ...dbPayload })
     } catch (err: any) {
       console.error('SAVE_ERROR:', err)
       setErrorMsg(`Save failed: ${err.message || 'Database rejection'}`)
@@ -258,7 +341,6 @@ export default function QuestionnaireSubmissionsManager() {
     }
   }
 
-  // Atomic Promotion Trigger (Calls stored procedure: promote_onboarding_submission)
   const handlePromoteLead = async () => {
     if (!selectedLead) return
 
@@ -303,7 +385,6 @@ export default function QuestionnaireSubmissionsManager() {
     }
   }
 
-  // Decline Lead
   const handleDeclineLead = async () => {
     if (!selectedLead) return
 
@@ -313,7 +394,7 @@ export default function QuestionnaireSubmissionsManager() {
 
     try {
       const { error: subError } = await supabase
-        .from('crm_questionnaire_submissions')
+        .from('crm_questionnaire_staging')
         .update({ status: 'DECLINED' })
         .eq('id', selectedLead.id)
 
@@ -343,13 +424,8 @@ export default function QuestionnaireSubmissionsManager() {
     window.open(target, '_blank', 'noopener,noreferrer')
   }
 
-  const handleCallPhone = (phone?: string | null) => {
-    if (!phone) return
-    window.location.href = `tel:${phone.replace(/[^\d+]/g, '')}`
-  }
-
   const filteredSubmissions = submissions.filter((sub) => {
-    const currentStatus = sub.status || 'PENDING'
+    const currentStatus = sub.status || 'PENDING_REVIEW'
     if (activeTab === 'ALL') return true
     return currentStatus === activeTab
   })
@@ -368,14 +444,13 @@ export default function QuestionnaireSubmissionsManager() {
             Onboarding Intake Pipeline
           </h3>
           <p className="text-[11px] text-zinc-400 font-sans">
-            Real-time client onboarding submissions. Inspect complete 6-step telemetry, assign account managers, or promote to active nodes.
+            Real-time client onboarding submissions from crm_questionnaire_staging. Inspect 6-step telemetry and promote to active entities.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Tab Selector */}
           <div className="flex bg-black border border-zinc-800 rounded-lg p-1 text-[10px] font-mono font-bold">
-            {(['PENDING', 'PROMOTED', 'DECLINED', 'ALL'] as const).map((tab) => (
+            {(['PENDING_REVIEW', 'PROMOTED', 'DECLINED', 'ALL'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -385,7 +460,7 @@ export default function QuestionnaireSubmissionsManager() {
                     : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
-                {tab}
+                {tab === 'PENDING_REVIEW' ? 'PENDING' : tab}
               </button>
             ))}
           </div>
@@ -439,7 +514,11 @@ export default function QuestionnaireSubmissionsManager() {
                 })
 
                 const isSelected = selectedLead?.id === sub.id
-                const leadStatus = sub.status || 'PENDING'
+                const leadStatus = sub.status || 'PENDING_REVIEW'
+                const companyNameDisplay = sub.display_name || sub.company_name || 'Unspecified Entity'
+                const companyUrlDisplay = sub.website_url || sub.company_url
+                const ownerNameDisplay = sub.owner_name || sub.contact_name || 'N/A'
+                const ownerEmailDisplay = sub.owner_email || sub.contact_email || 'N/A'
 
                 return (
                   <tr 
@@ -457,25 +536,25 @@ export default function QuestionnaireSubmissionsManager() {
                           ? 'bg-red-950/40 text-red-400 border border-red-800/40'
                           : 'bg-[#C5A880]/15 text-[#C5A880] border border-[#C5A880]/40'
                       }`}>
-                        {leadStatus}
+                        {leadStatus === 'PENDING_REVIEW' ? 'PENDING' : leadStatus}
                       </span>
                     </td>
                     <td className="p-3 font-mono text-[11px] text-zinc-400 whitespace-nowrap">
                       {formattedDate}
                     </td>
                     <td className="p-3 font-bold text-zinc-100">
-                      {sub.company_name}
-                      {sub.company_url && (
+                      {companyNameDisplay}
+                      {companyUrlDisplay && (
                         <span className="block text-[10px] font-mono text-zinc-500 font-normal truncate">
-                          {sub.company_url}
+                          {companyUrlDisplay}
                         </span>
                       )}
                     </td>
                     <td className="p-3 text-zinc-200 font-semibold">
-                      {sub.contact_name || 'N/A'}
+                      {ownerNameDisplay}
                     </td>
                     <td className="p-3 font-mono text-[#C5A880]">
-                      {sub.contact_email}
+                      {ownerEmailDisplay}
                     </td>
                     <td className="p-3">
                       <span className="text-[10px] font-mono bg-black px-2 py-0.5 rounded text-zinc-300 border border-zinc-800">
@@ -501,7 +580,7 @@ export default function QuestionnaireSubmissionsManager() {
         </table>
       </div>
 
-      {/* Slide-over Full 6-Section Inspector Drawer */}
+      {/* Drawer */}
       {selectedLead && editForm && (
         <div 
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-end animate-fadeIn"
@@ -524,11 +603,13 @@ export default function QuestionnaireSubmissionsManager() {
                         ? 'bg-red-950/40 text-red-400 border border-red-800/40'
                         : 'bg-[#C5A880]/15 text-[#C5A880] border border-[#C5A880]/40'
                     }`}>
-                      {editForm.status || 'PENDING'}
+                      {editForm.status === 'PENDING_REVIEW' ? 'PENDING' : (editForm.status || 'PENDING')}
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-zinc-100 font-sans mt-1">{selectedLead.company_name}</h3>
-                  <p className="text-[11px] font-mono text-zinc-500 mt-0.5">SUBMISSION ID: {selectedLead.id}</p>
+                  <h3 className="text-xl font-bold text-zinc-100 font-sans mt-1">
+                    {editForm.display_name || editForm.company_name || 'Unspecified Entity'}
+                  </h3>
+                  <p className="text-[11px] font-mono text-zinc-500 mt-0.5">STAGING ID: {selectedLead.id}</p>
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -556,20 +637,18 @@ export default function QuestionnaireSubmissionsManager() {
                 </div>
               )}
 
-              {/* RAW JSON VIEW */}
               {showRawJson ? (
                 <div className="p-4 bg-black border border-zinc-800 rounded-xl font-mono text-[11px] text-emerald-400 overflow-x-auto space-y-2 max-h-[60vh]">
-                  <span className="text-[10px] font-bold text-[#C5A880] uppercase block">Full Database Record Payload:</span>
+                  <span className="text-[10px] font-bold text-[#C5A880] uppercase block">Full Database Staging Payload:</span>
                   <pre>{JSON.stringify(editForm, null, 2)}</pre>
                 </div>
               ) : (
-                /* FORM VIEW: ALL 6 SECTIONS */
                 <form id="lead-edit-form" onSubmit={handleSaveChanges} className="space-y-4 font-mono text-xs">
                   
-                  {/* Section 01: Identity & Primary Contact */}
+                  {/* Section 01: Corporate Baseline & Capital Vetting */}
                   <div className="p-4 border border-zinc-800 bg-black/60 rounded-xl space-y-3">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-mono text-[#C5A880] uppercase tracking-wider block font-bold">Section 01 // Corporate Identity &amp; Contact</span>
+                      <span className="text-[10px] font-mono text-[#C5A880] uppercase tracking-wider block font-bold">Section 01 // Corporate Baseline &amp; Capital Vetting</span>
                       <button
                         type="button"
                         onClick={() => toggleSectionLock('sec1')}
@@ -584,13 +663,17 @@ export default function QuestionnaireSubmissionsManager() {
                     </div>
 
                     <fieldset disabled={sectionLocks.sec1} className="space-y-3 disabled:opacity-75">
+                      
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">COMPANY NAME</label>
                           <input 
                             type="text" 
-                            value={editForm.company_name || ''} 
-                            onChange={(e) => handleInputChange('company_name', e.target.value)}
+                            value={editForm.display_name || editForm.company_name || ''} 
+                            onChange={(e) => {
+                              handleInputChange('display_name', e.target.value)
+                              handleInputChange('company_name', e.target.value)
+                            }}
                             className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 font-semibold focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
                           />
                         </div>
@@ -598,85 +681,80 @@ export default function QuestionnaireSubmissionsManager() {
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
                             <label className="text-[9px] font-mono text-zinc-400 block font-semibold">WEBSITE URL</label>
-                            <button type="button" onClick={() => handleVisitUrl(editForm.company_url)} className="text-[10px] text-[#C5A880] hover:text-white font-bold cursor-pointer">🌐 VISIT</button>
+                            <button type="button" onClick={() => handleVisitUrl(editForm.website_url || editForm.company_url)} className="text-[10px] text-[#C5A880] hover:text-white font-bold cursor-pointer">🌐 VISIT</button>
                           </div>
                           <input 
                             type="text" 
-                            placeholder="https://company.com"
-                            value={editForm.company_url || ''} 
-                            onChange={(e) => handleInputChange('company_url', e.target.value)}
+                            placeholder="company.com"
+                            value={editForm.website_url || editForm.company_url || ''} 
+                            onChange={(e) => {
+                              handleInputChange('website_url', e.target.value)
+                              handleInputChange('company_url', e.target.value)
+                            }}
                             className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">CONTACT NAME</label>
-                          <input 
-                            type="text" 
-                            value={editForm.contact_name || ''} 
-                            onChange={(e) => handleInputChange('contact_name', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 font-semibold focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
-                          />
+                      <div className="p-2.5 bg-black/80 border border-zinc-900 rounded-lg space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-mono text-[#C5A880] uppercase font-bold">Principal Owner Contact Telemetry</span>
                         </div>
 
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">EMAIL IDENTITY</label>
-                          <input 
-                            type="email" 
-                            value={editForm.contact_email || ''} 
-                            onChange={(e) => handleInputChange('contact_email', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-[#C5A880] focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <label className="text-[9px] font-mono text-zinc-400 block font-semibold">PHONE</label>
-                            <button type="button" onClick={() => handleCallPhone(editForm.contact_phone)} className="text-[10px] text-[#00FF66] hover:text-white font-bold cursor-pointer">📞 CALL</button>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[9px] text-zinc-500 block">OWNER NAME</label>
+                            <input 
+                              type="text" 
+                              value={editForm.owner_name || editForm.contact_name || ''} 
+                              onChange={(e) => {
+                                handleInputChange('owner_name', e.target.value)
+                                handleInputChange('contact_name', e.target.value)
+                              }}
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
+                            />
                           </div>
-                          <input 
-                            type="text" 
-                            value={editForm.contact_phone || ''} 
-                            onChange={(e) => handleInputChange('contact_phone', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
-                          />
+
+                          <div className="space-y-1">
+                            <label className="text-[9px] text-zinc-500 block">OWNER EMAIL</label>
+                            <input 
+                              type="email" 
+                              value={editForm.owner_email || editForm.contact_email || ''} 
+                              onChange={(e) => {
+                                handleInputChange('owner_email', e.target.value)
+                                handleInputChange('contact_email', e.target.value)
+                              }}
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880]"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[9px] text-zinc-500 block">OWNER PHONE</label>
+                            <input 
+                              type="text" 
+                              value={editForm.owner_phone || editForm.contact_phone || ''} 
+                              onChange={(e) => {
+                                handleInputChange('owner_phone', e.target.value)
+                                handleInputChange('contact_phone', e.target.value)
+                              }}
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
+                            />
+                          </div>
                         </div>
                       </div>
-                    </fieldset>
-                  </div>
 
-                  {/* Section 02: Governance, Entity & HQ Operations */}
-                  <div className="p-4 border border-zinc-800 bg-black/60 rounded-xl space-y-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-mono text-[#C5A880] uppercase tracking-wider block font-bold">Section 02 // Entity Governance &amp; Headquarters</span>
-                      <button
-                        type="button"
-                        onClick={() => toggleSectionLock('sec2')}
-                        className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded cursor-pointer transition ${
-                          sectionLocks.sec2
-                            ? 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white'
-                            : 'bg-[#C5A880] text-black font-extrabold shadow-[0_0_8px_rgba(197,168,128,0.4)]'
-                        }`}
-                      >
-                        {sectionLocks.sec2 ? '🔒 EDIT SECTION' : '🔓 UNLOCKED'}
-                      </button>
-                    </div>
-
-                    <fieldset disabled={sectionLocks.sec2} className="space-y-3 disabled:opacity-75">
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">LEGAL STRUCTURE</label>
                           <select
                             value={editForm.legal_structure || 'STARTUP_NOT_FORMED'}
                             onChange={(e) => handleInputChange('legal_structure', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
+                            className="w-full bg-black border border-zinc-800 rounded px-2 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
                           >
                             <option value="STARTUP_NOT_FORMED">Startup / Not Yet Formed</option>
                             <option value="DELAWARE_C_CORP">Delaware C-Corporation</option>
                             <option value="LLC">Limited Liability Company (LLC)</option>
-                            <option value="C_CORP_OTHER">C-Corporation (Other State)</option>
+                            <option value="C_CORP">C-Corporation (Other State)</option>
                             <option value="S_CORP">S-Corporation</option>
                           </select>
                         </div>
@@ -686,7 +764,7 @@ export default function QuestionnaireSubmissionsManager() {
                           <select
                             value={editForm.registration_state || editForm.hq_state || 'UNDECIDED'}
                             onChange={(e) => handleInputChange('registration_state', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
+                            className="w-full bg-black border border-zinc-800 rounded px-2 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
                           >
                             {US_STATES.map((st) => (
                               <option key={st} value={st}>{st}</option>
@@ -695,302 +773,20 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">EIN NUMBER</label>
+                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">EIN TAX ID</label>
                           <input 
                             type="text" 
-                            value={editForm.ein_number || 'N/A'} 
+                            value={editForm.ein_number || 'Startup - Need EIN'} 
                             onChange={(e) => handleInputChange('ein_number', e.target.value)}
                             className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3 pt-1 text-[10px]">
-                        <div>
-                          <span className="text-zinc-500 block">W2 Full-Time:</span>
-                          <span className="font-bold text-zinc-200">{editForm.employee_count_w2_ft ?? '0'}</span>
-                        </div>
-                        <div>
-                          <span className="text-zinc-500 block">W2 Part-Time:</span>
-                          <span className="font-bold text-zinc-200">{editForm.employee_count_w2_pt ?? '0'}</span>
-                        </div>
-                        <div>
-                          <span className="text-zinc-500 block">1099 Contractors:</span>
-                          <span className="font-bold text-zinc-200">{editForm.contractor_count_1099 ?? '0'}</span>
-                        </div>
-                      </div>
-
-                      {editForm.hq_address_line_1 && (
-                        <div className="pt-2 border-t border-zinc-900 text-[10px]">
-                          <span className="text-zinc-500 block">PHYSICAL HQ ADDRESS</span>
-                          <span className="font-mono text-zinc-300">{editForm.hq_address_line_1}, {editForm.hq_city}, {editForm.hq_state} {editForm.hq_postal_code}</span>
-                        </div>
-                      )}
                     </fieldset>
                   </div>
 
-                  {/* Section 03: Capital & Governance */}
-                  <div className="p-4 border border-zinc-800 bg-black/60 rounded-xl space-y-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-mono text-[#C5A880] uppercase tracking-wider block font-bold">Section 03 // Capital Stack &amp; Accounting</span>
-                      <button
-                        type="button"
-                        onClick={() => toggleSectionLock('sec3')}
-                        className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded cursor-pointer transition ${
-                          sectionLocks.sec3
-                            ? 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white'
-                            : 'bg-[#C5A880] text-black font-extrabold shadow-[0_0_8px_rgba(197,168,128,0.4)]'
-                        }`}
-                      >
-                        {sectionLocks.sec3 ? '🔒 EDIT SECTION' : '🔓 UNLOCKED'}
-                      </button>
-                    </div>
-
-                    <fieldset disabled={sectionLocks.sec3} className="space-y-3 disabled:opacity-75">
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">FUNDING STAGE</label>
-                          <select
-                            value={editForm.funding_stage || 'BOOTSTRAPPED'}
-                            onChange={(e) => handleInputChange('funding_stage', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
-                          >
-                            <option value="BOOTSTRAPPED">BOOTSTRAPPED</option>
-                            <option value="SELF_FUNDED">SELF_FUNDED</option>
-                            <option value="FRIENDS_FAMILY">FRIENDS &amp; FAMILY</option>
-                            <option value="PRE_SEED">PRE_SEED</option>
-                            <option value="SEED">SEED</option>
-                            <option value="SERIES_A">SERIES_A</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">TARGET RAISE ($)</label>
-                          <input 
-                            type="text" 
-                            value={editForm.target_raise || '$0'} 
-                            onChange={(e) => handleInputChange('target_raise', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">ACCOUNTING SW</label>
-                          <input 
-                            type="text" 
-                            value={editForm.accounting_software || 'NONE'} 
-                            onChange={(e) => handleInputChange('accounting_software', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
-                          />
-                        </div>
-                      </div>
-                    </fieldset>
-                  </div>
-
-                  {/* Section 04: Shield IT Security */}
-                  <div className="p-4 border border-zinc-800 bg-black/60 rounded-xl space-y-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-mono text-[#C5A880] uppercase tracking-wider block font-bold">Section 04 // Shield IT Security Architecture</span>
-                      <button
-                        type="button"
-                        onClick={() => toggleSectionLock('sec4')}
-                        className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded cursor-pointer transition ${
-                          sectionLocks.sec4
-                            ? 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white'
-                            : 'bg-[#C5A880] text-black font-extrabold shadow-[0_0_8px_rgba(197,168,128,0.4)]'
-                        }`}
-                      >
-                        {sectionLocks.sec4 ? '🔒 EDIT SECTION' : '🔓 UNLOCKED'}
-                      </button>
-                    </div>
-
-                    <fieldset disabled={sectionLocks.sec4} className="space-y-3 disabled:opacity-75">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">WORKSPACE SUITE</label>
-                          <select
-                            value={editForm.email_workspace_suite || 'MICROSOFT_365'}
-                            onChange={(e) => handleInputChange('email_workspace_suite', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
-                          >
-                            <option value="MICROSOFT_365">Microsoft 365</option>
-                            <option value="GOOGLE_WORKSPACE">Google Workspace</option>
-                            <option value="ZOHO">Zoho Workplace</option>
-                            <option value="PROTON">Proton Mail / Encrypted</option>
-                            <option value="VK_PROVISION">Need Provisioned (V&amp;K Setup)</option>
-                            <option value="OTHER">Other / Basic Webmail</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">MDM PROVIDER</label>
-                          <select
-                            value={editForm.mdm_provider || 'NONE'}
-                            onChange={(e) => handleInputChange('mdm_provider', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
-                          >
-                            <option value="INTUNE">Microsoft Intune</option>
-                            <option value="JAMF">Jamf Pro / Jamf Now</option>
-                            <option value="KANDJI">Kandji</option>
-                            <option value="RIPPLING">Rippling IT / MDM</option>
-                            <option value="NONE">No MDM / Manual Fleet</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">ANTIVIRUS / EDR STATUS</label>
-                          <select
-                            value={editForm.antivirus_status || 'NONE'}
-                            onChange={(e) => handleInputChange('antivirus_status', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
-                          >
-                            <option value="ACTIVE_MANAGED_EDR">ACTIVE // MANAGED EDR</option>
-                            <option value="DEGRADED_BASIC_AV">DEGRADED // BASIC AV</option>
-                            <option value="INACTIVE_OS_DEFENSE">INACTIVE // OS DEFENSE ONLY</option>
-                            <option value="NONE">NONE / UNPROTECTED</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">BACKUP FREQUENCY</label>
-                          <select
-                            value={editForm.backup_frequency || 'NONE'}
-                            onChange={(e) => handleInputChange('backup_frequency', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
-                          >
-                            <option value="DAILY_IMMUTABLE">Daily Immutable Cloud Backups</option>
-                            <option value="WEEKLY_MANUAL">Weekly / Manual Backups</option>
-                            <option value="NO_FORMAL_BACKUP">No Formal Backup System</option>
-                            <option value="NONE">NONE</option>
-                          </select>
-                        </div>
-                      </div>
-                    </fieldset>
-                  </div>
-
-                  {/* Section 05: People & Payroll */}
-                  <div className="p-4 border border-zinc-800 bg-black/60 rounded-xl space-y-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-mono text-[#C5A880] uppercase tracking-wider block font-bold">Section 05 // Workforce &amp; Payroll Management</span>
-                      <button
-                        type="button"
-                        onClick={() => toggleSectionLock('sec5')}
-                        className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded cursor-pointer transition ${
-                          sectionLocks.sec5
-                            ? 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white'
-                            : 'bg-[#C5A880] text-black font-extrabold shadow-[0_0_8px_rgba(197,168,128,0.4)]'
-                        }`}
-                      >
-                        {sectionLocks.sec5 ? '🔒 EDIT SECTION' : '🔓 UNLOCKED'}
-                      </button>
-                    </div>
-
-                    <fieldset disabled={sectionLocks.sec5} className="space-y-3 disabled:opacity-75">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-mono text-zinc-400 block font-semibold">PAYROLL PROVIDER</label>
-                        <select
-                          value={editForm.payroll_provider || 'MANUAL_NONE'}
-                          onChange={(e) => handleInputChange('payroll_provider', e.target.value)}
-                          className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
-                        >
-                          <option value="GUSTO">Gusto</option>
-                          <option value="RIPPLING">Rippling</option>
-                          <option value="ADP">ADP</option>
-                          <option value="PAYCHEX">Paychex</option>
-                          <option value="QUICKBOOKS">QuickBooks Payroll</option>
-                          <option value="MANUAL_NONE">Manual / No Payroll Yet</option>
-                        </select>
-                      </div>
-
-                      <div className="space-y-2 pt-1">
-                        <label className="text-[9px] font-mono text-zinc-400 block font-semibold">BENEFITS OFFERED</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {AVAILABLE_BENEFITS.map((b) => {
-                            const isChecked = Array.isArray(editForm.benefits_offered) && editForm.benefits_offered.includes(b.id)
-                            return (
-                              <label key={b.id} className="flex items-center gap-2 cursor-pointer text-[10px] text-zinc-300">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => handleToggleBenefit(b.id)}
-                                  className="accent-[#C5A880] rounded cursor-pointer"
-                                />
-                                <span>{b.label}</span>
-                              </label>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    </fieldset>
-                  </div>
-
-                  {/* Section 06: Flow & Automation */}
-                  <div className="p-4 border border-zinc-800 bg-black/60 rounded-xl space-y-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-mono text-[#C5A880] uppercase tracking-wider block font-bold">Section 06 // Workflows &amp; CRM Automation</span>
-                      <button
-                        type="button"
-                        onClick={() => toggleSectionLock('sec6')}
-                        className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded cursor-pointer transition ${
-                          sectionLocks.sec6
-                            ? 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white'
-                            : 'bg-[#C5A880] text-black font-extrabold shadow-[0_0_8px_rgba(197,168,128,0.4)]'
-                        }`}
-                      >
-                        {sectionLocks.sec6 ? '🔒 EDIT SECTION' : '🔓 UNLOCKED'}
-                      </button>
-                    </div>
-
-                    <fieldset disabled={sectionLocks.sec6} className="space-y-3 disabled:opacity-75">
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">PRIMARY CRM</label>
-                          <select
-                            value={editForm.crm_system || 'NONE'}
-                            onChange={(e) => handleInputChange('crm_system', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
-                          >
-                            <option value="HUBSPOT">HUBSPOT</option>
-                            <option value="SALESFORCE">SALESFORCE</option>
-                            <option value="NOTION">NOTION</option>
-                            <option value="OTHER">OTHER</option>
-                            <option value="NONE">NONE</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">COLLABORATION</label>
-                          <select
-                            value={editForm.collaboration_tool || 'SLACK'}
-                            onChange={(e) => handleInputChange('collaboration_tool', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
-                          >
-                            <option value="SLACK">SLACK</option>
-                            <option value="TEAMS">TEAMS</option>
-                            <option value="DISCORD">DISCORD</option>
-                            <option value="EMAIL">EMAIL</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">AUTOMATION</label>
-                          <select
-                            value={editForm.automation_status || 'MANUAL'}
-                            onChange={(e) => handleInputChange('automation_status', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] cursor-pointer disabled:bg-zinc-950/60"
-                          >
-                            <option value="MANUAL">MANUAL</option>
-                            <option value="ZAPIER">ZAPIER</option>
-                            <option value="CUSTOM_AI">CUSTOM_AI</option>
-                          </select>
-                        </div>
-                      </div>
-                    </fieldset>
-                  </div>
-
-                  {/* Section 07: Manager Assignment */}
+                  {/* Section 06: Manager Assignment */}
                   <div className="p-4 border border-zinc-800 bg-black/60 rounded-xl space-y-2">
                     <label className="text-[10px] font-mono text-[#C5A880] uppercase tracking-wider block font-bold">Assign V&amp;K Account Manager Upon Promotion</label>
                     <select
@@ -1015,7 +811,7 @@ export default function QuestionnaireSubmissionsManager() {
             {/* Footer Action Bar */}
             <div className="pt-6 border-t border-zinc-900 space-y-3 font-mono text-xs">
               
-              {editForm.status === 'PENDING' && (
+              {(editForm.status === 'PENDING_REVIEW' || editForm.status === 'PENDING') && (
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     type="button" 
