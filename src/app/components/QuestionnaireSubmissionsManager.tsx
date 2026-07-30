@@ -312,6 +312,116 @@ export default function QuestionnaireSubmissionsManager() {
     setEditForm({ ...editForm, benefits_offered: updated })
   }
 
+  // Extracted Database Payload Generation (Shared by Save and Promote)
+  const buildDbPayload = () => {
+    if (!editForm) return {}
+    return {
+      // Section 01
+      display_name: editForm.display_name || editForm.company_name || null,
+      legal_name: editForm.legal_name || editForm.company_name || null,
+      website_url: editForm.website_url || editForm.company_url || null,
+      owner_name: editForm.owner_name || editForm.contact_name || null,
+      owner_email: editForm.owner_email || editForm.contact_email || null,
+      owner_phone: editForm.owner_phone || editForm.contact_phone || null,
+      industry: editForm.industry || editForm.industry_sector || null,
+      industry_sector: editForm.industry_sector || editForm.industry || null,
+      legal_structure: editForm.legal_structure || null,
+      registration_state: cleanTwoChar(editForm.registration_state),
+      formation_year: editForm.formation_year && !isNaN(parseInt(editForm.formation_year, 10))
+        ? parseInt(editForm.formation_year, 10)
+        : null,
+      ein_number: editForm.ein_number || null,
+      fiscal_year_end_month: editForm.fiscal_year_end_month || null,
+
+      // Section 02
+      it_groupware_platform: editForm.it_groupware_platform || editForm.email_workspace_suite || null,
+      it_mdm_vendor: editForm.it_mdm_vendor || editForm.mdm_provider || null,
+      it_antivirus_status: editForm.it_antivirus_status || editForm.antivirus_status || null,
+      it_backup_strategy: editForm.it_backup_strategy || editForm.backup_frequency || null,
+
+      // Section 03
+      employee_count_w2_ft: editForm.employee_count_w2_ft ?? 1,
+      employee_count_w2_pt: editForm.employee_count_w2_pt ?? 0,
+      contractor_count_1099: editForm.contractor_count_1099 ?? 0,
+      hr_payroll_platform: editForm.hr_payroll_platform || editForm.payroll_provider || null,
+      benefits_offered: editForm.benefits_offered || [],
+
+      // Section 04 & Status
+      crm_system: editForm.crm_system || null,
+      collaboration_tool: editForm.collaboration_tool || null,
+      automation_status: editForm.automation_status || null,
+      status: editForm.status || 'PENDING_REVIEW',
+
+      // Append UI-only legacy fields into JSON vault so they aren't lost
+      raw_step_payloads: {
+        ...editForm.raw_step_payloads,
+        company_name: editForm.company_name,
+        contact_name: editForm.contact_name,
+        contact_email: editForm.contact_email,
+        contact_phone: editForm.contact_phone,
+        is_strategic_partner: editForm.is_strategic_partner,
+        has_bylaws: editForm.has_bylaws,
+        funding_stage: editForm.funding_stage,
+        target_raise: editForm.target_raise,
+        is_seeking_funding: editForm.is_seeking_funding,
+        is_crunchbase_verified: editForm.is_crunchbase_verified,
+        is_bbb_registered: editForm.is_bbb_registered,
+        sells_tangible_goods: editForm.sells_tangible_goods,
+        has_duns_tracker: editForm.has_duns_tracker,
+        duns_number_id: editForm.duns_number_id,
+        bbb_wedge_sentiment: editForm.bbb_wedge_sentiment,
+        is_it_outsourced: editForm.is_it_outsourced,
+        it_lead_name: editForm.it_lead_name,
+        it_lead_email: editForm.it_lead_email,
+        it_lead_phone: editForm.it_lead_phone,
+        it_lead_profile_url: editForm.it_lead_profile_url,
+        email_workspace_suite: editForm.email_workspace_suite,
+        managed_it_vector: editForm.managed_it_vector,
+        mdm_provider: editForm.mdm_provider,
+        mdm_enforcement_log: editForm.mdm_enforcement_log,
+        antivirus_status: editForm.antivirus_status,
+        antivirus_vendor: editForm.antivirus_vendor,
+        backup_frequency: editForm.backup_frequency,
+        sso_gateway_vendor: editForm.sso_gateway_vendor,
+        sso_gateway_status: editForm.sso_gateway_status,
+        is_disk_encryption_enforced: editForm.is_disk_encryption_enforced,
+        is_hr_outsourced: editForm.is_hr_outsourced,
+        hr_lead_name: editForm.hr_lead_name,
+        hr_lead_email: editForm.hr_lead_email,
+        hr_lead_phone: editForm.hr_lead_phone,
+        hr_lead_profile_url: editForm.hr_lead_profile_url,
+        payroll_provider: editForm.payroll_provider,
+        multistate_tax_exposure: editForm.multistate_tax_exposure,
+        has_piia_signed: editForm.has_piia_signed,
+        has_commercial_liability_policy: editForm.has_commercial_liability_policy,
+        is_sales_outsourced: editForm.is_sales_outsourced,
+        sales_lead_name: editForm.sales_lead_name,
+        sales_lead_email: editForm.sales_lead_email,
+        sales_lead_phone: editForm.sales_lead_phone,
+        sales_lead_profile_url: editForm.sales_lead_profile_url,
+        disconnected_utility_counter: editForm.disconnected_utility_counter,
+        web_layout_satisfaction: editForm.web_layout_satisfaction,
+        has_unstructured_doc_processing: editForm.has_unstructured_doc_processing,
+        has_inbound_capture_funnels: editForm.has_inbound_capture_funnels,
+        has_traffic_analytics: editForm.has_traffic_analytics,
+        is_compliance_outsourced: editForm.is_compliance_outsourced,
+        compliance_officer_name: editForm.compliance_officer_name,
+        compliance_officer_email: editForm.compliance_officer_email,
+        compliance_officer_phone: editForm.compliance_officer_phone,
+        compliance_officer_profile_url: editForm.compliance_officer_profile_url,
+        hipaa_status: editForm.hipaa_status,
+        pci_status: editForm.pci_status,
+        finra_status: editForm.finra_status,
+        soc2_status: editForm.soc2_status,
+        nist_status: editForm.nist_status,
+        gdpr_status: editForm.gdpr_status,
+        accounting_software: editForm.accounting_software,
+        weekly_manual_friction_hours: editForm.weekly_manual_friction_hours,
+        security_sensitivity_tier: editForm.security_sensitivity_tier,
+      }
+    }
+  }
+
   const handleSaveChanges = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!editForm || !selectedLead) return
@@ -321,113 +431,7 @@ export default function QuestionnaireSubmissionsManager() {
     setSaveSuccess(null)
 
     try {
-      // STRICT DB PAYLOAD: Maps all UI changes securely to valid schema columns
-      // Legacy fields remain in `editForm` state but are NOT sent top-level
-      const dbPayload = {
-        // Section 01
-        display_name: editForm.display_name || editForm.company_name || null,
-        legal_name: editForm.legal_name || editForm.company_name || null,
-        website_url: editForm.website_url || editForm.company_url || null,
-        owner_name: editForm.owner_name || editForm.contact_name || null,
-        owner_email: editForm.owner_email || editForm.contact_email || null,
-        owner_phone: editForm.owner_phone || editForm.contact_phone || null,
-        industry: editForm.industry || editForm.industry_sector || null,
-        industry_sector: editForm.industry_sector || editForm.industry || null,
-        legal_structure: editForm.legal_structure || null,
-        registration_state: cleanTwoChar(editForm.registration_state),
-        formation_year: editForm.formation_year && !isNaN(parseInt(editForm.formation_year, 10))
-          ? parseInt(editForm.formation_year, 10)
-          : null,
-        ein_number: editForm.ein_number || null,
-        fiscal_year_end_month: editForm.fiscal_year_end_month || null,
-
-        // Section 02
-        it_groupware_platform: editForm.it_groupware_platform || editForm.email_workspace_suite || null,
-        it_mdm_vendor: editForm.it_mdm_vendor || editForm.mdm_provider || null,
-        it_antivirus_status: editForm.it_antivirus_status || editForm.antivirus_status || null,
-        it_backup_strategy: editForm.it_backup_strategy || editForm.backup_frequency || null,
-
-        // Section 03
-        employee_count_w2_ft: editForm.employee_count_w2_ft ?? 1,
-        employee_count_w2_pt: editForm.employee_count_w2_pt ?? 0,
-        contractor_count_1099: editForm.contractor_count_1099 ?? 0,
-        hr_payroll_platform: editForm.hr_payroll_platform || editForm.payroll_provider || null,
-        benefits_offered: editForm.benefits_offered || [],
-
-        // Section 04 & Status
-        crm_system: editForm.crm_system || null,
-        collaboration_tool: editForm.collaboration_tool || null,
-        automation_status: editForm.automation_status || null,
-        status: editForm.status || 'PENDING_REVIEW',
-
-        // Append UI-only legacy fields into JSON vault so they aren't lost
-        raw_step_payloads: {
-          ...editForm.raw_step_payloads,
-          company_name: editForm.company_name,
-          contact_name: editForm.contact_name,
-          contact_email: editForm.contact_email,
-          contact_phone: editForm.contact_phone,
-          is_strategic_partner: editForm.is_strategic_partner,
-          has_bylaws: editForm.has_bylaws,
-          funding_stage: editForm.funding_stage,
-          target_raise: editForm.target_raise,
-          is_seeking_funding: editForm.is_seeking_funding,
-          is_crunchbase_verified: editForm.is_crunchbase_verified,
-          is_bbb_registered: editForm.is_bbb_registered,
-          sells_tangible_goods: editForm.sells_tangible_goods,
-          has_duns_tracker: editForm.has_duns_tracker,
-          duns_number_id: editForm.duns_number_id,
-          bbb_wedge_sentiment: editForm.bbb_wedge_sentiment,
-          is_it_outsourced: editForm.is_it_outsourced,
-          it_lead_name: editForm.it_lead_name,
-          it_lead_email: editForm.it_lead_email,
-          it_lead_phone: editForm.it_lead_phone,
-          it_lead_profile_url: editForm.it_lead_profile_url,
-          email_workspace_suite: editForm.email_workspace_suite,
-          managed_it_vector: editForm.managed_it_vector,
-          mdm_provider: editForm.mdm_provider,
-          mdm_enforcement_log: editForm.mdm_enforcement_log,
-          antivirus_status: editForm.antivirus_status,
-          antivirus_vendor: editForm.antivirus_vendor,
-          backup_frequency: editForm.backup_frequency,
-          sso_gateway_vendor: editForm.sso_gateway_vendor,
-          sso_gateway_status: editForm.sso_gateway_status,
-          is_disk_encryption_enforced: editForm.is_disk_encryption_enforced,
-          is_hr_outsourced: editForm.is_hr_outsourced,
-          hr_lead_name: editForm.hr_lead_name,
-          hr_lead_email: editForm.hr_lead_email,
-          hr_lead_phone: editForm.hr_lead_phone,
-          hr_lead_profile_url: editForm.hr_lead_profile_url,
-          payroll_provider: editForm.payroll_provider,
-          multistate_tax_exposure: editForm.multistate_tax_exposure,
-          has_piia_signed: editForm.has_piia_signed,
-          has_commercial_liability_policy: editForm.has_commercial_liability_policy,
-          is_sales_outsourced: editForm.is_sales_outsourced,
-          sales_lead_name: editForm.sales_lead_name,
-          sales_lead_email: editForm.sales_lead_email,
-          sales_lead_phone: editForm.sales_lead_phone,
-          sales_lead_profile_url: editForm.sales_lead_profile_url,
-          disconnected_utility_counter: editForm.disconnected_utility_counter,
-          web_layout_satisfaction: editForm.web_layout_satisfaction,
-          has_unstructured_doc_processing: editForm.has_unstructured_doc_processing,
-          has_inbound_capture_funnels: editForm.has_inbound_capture_funnels,
-          has_traffic_analytics: editForm.has_traffic_analytics,
-          is_compliance_outsourced: editForm.is_compliance_outsourced,
-          compliance_officer_name: editForm.compliance_officer_name,
-          compliance_officer_email: editForm.compliance_officer_email,
-          compliance_officer_phone: editForm.compliance_officer_phone,
-          compliance_officer_profile_url: editForm.compliance_officer_profile_url,
-          hipaa_status: editForm.hipaa_status,
-          pci_status: editForm.pci_status,
-          finra_status: editForm.finra_status,
-          soc2_status: editForm.soc2_status,
-          nist_status: editForm.nist_status,
-          gdpr_status: editForm.gdpr_status,
-          accounting_software: editForm.accounting_software,
-          weekly_manual_friction_hours: editForm.weekly_manual_friction_hours,
-          security_sensitivity_tier: editForm.security_sensitivity_tier,
-        }
-      }
+      const dbPayload = buildDbPayload()
 
       const { error } = await supabase
         .from('crm_questionnaire_staging')
@@ -441,7 +445,7 @@ export default function QuestionnaireSubmissionsManager() {
         prev.map((item) => (item.id === selectedLead.id ? { ...editForm, ...dbPayload } : item))
       )
       // Rehydrate local state with what was sent to DB
-      setSelectedLead({ ...editForm, ...dbPayload })
+      setSelectedLead({ ...editForm, ...dbPayload } as QuestionnaireSubmission)
     } catch (err: any) {
       console.error('SAVE_ERROR:', err)
       setErrorMsg(`Save failed: ${err.message || 'Database rejection'}`)
@@ -451,13 +455,23 @@ export default function QuestionnaireSubmissionsManager() {
   }
 
   const handlePromoteLead = async () => {
-    if (!selectedLead) return
+    if (!selectedLead || !editForm) return
 
     setPromoting(true)
     setErrorMsg(null)
     setSaveSuccess(null)
 
     try {
+      // 1. SAVE ANY UNCOMMITTED UI CHANGES BEFORE PROMOTING
+      const dbPayload = buildDbPayload()
+      const { error: saveError } = await supabase
+        .from('crm_questionnaire_staging')
+        .update(dbPayload)
+        .eq('id', selectedLead.id)
+
+      if (saveError) throw new Error(`Pre-promotion save failed: ${saveError.message}`)
+
+      // 2. TRIGGER PROMOTION RPC
       const { data: newEntityId, error: rpcError } = await supabase.rpc(
         'promote_onboarding_submission',
         {
@@ -476,9 +490,9 @@ export default function QuestionnaireSubmissionsManager() {
 
       setSaveSuccess(`⚡ PROMOTED! ENTITY GENERATED (${entityDisplay}). REFRESHING MATRIX...`)
       
-      const updatedSubmission = { ...selectedLead, status: 'PROMOTED' }
+      const updatedSubmission = { ...selectedLead, ...dbPayload, status: 'PROMOTED' }
       setSubmissions((prev) =>
-        prev.map((item) => (item.id === selectedLead.id ? updatedSubmission : item))
+        prev.map((item) => (item.id === selectedLead.id ? (updatedSubmission as QuestionnaireSubmission) : item))
       )
       
       setTimeout(() => {
@@ -851,7 +865,7 @@ export default function QuestionnaireSubmissionsManager() {
                                 handleInputChange('owner_email', e.target.value)
                                 handleInputChange('contact_email', e.target.value)
                               }}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880] invalid:border-red-900 focus:invalid:ring-red-500"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200 invalid:border-red-900 focus:invalid:ring-red-500"
                             />
                           </div>
 
@@ -1117,7 +1131,7 @@ export default function QuestionnaireSubmissionsManager() {
                               title="Must be a valid email (e.g. user@domain.com)"
                               value={editForm.it_lead_email || ''} 
                               onChange={(e) => handleInputChange('it_lead_email', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880] invalid:border-red-900 focus:invalid:ring-red-500"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200 invalid:border-red-900 focus:invalid:ring-red-500"
                             />
                           </div>
 
@@ -1345,7 +1359,7 @@ export default function QuestionnaireSubmissionsManager() {
                               title="Must be a valid email (e.g. user@domain.com)"
                               value={editForm.hr_lead_email || ''} 
                               onChange={(e) => handleInputChange('hr_lead_email', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880] invalid:border-red-900 focus:invalid:ring-red-500"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200 invalid:border-red-900 focus:invalid:ring-red-500"
                             />
                           </div>
 
@@ -1538,7 +1552,7 @@ export default function QuestionnaireSubmissionsManager() {
                               title="Must be a valid email (e.g. user@domain.com)"
                               value={editForm.sales_lead_email || ''} 
                               onChange={(e) => handleInputChange('sales_lead_email', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880] invalid:border-red-900 focus:invalid:ring-red-500"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200 invalid:border-red-900 focus:invalid:ring-red-500"
                             />
                           </div>
 
@@ -1716,7 +1730,7 @@ export default function QuestionnaireSubmissionsManager() {
                               title="Must be a valid email (e.g. user@domain.com)"
                               value={editForm.compliance_officer_email || ''} 
                               onChange={(e) => handleInputChange('compliance_officer_email', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880] invalid:border-red-900 focus:invalid:ring-red-500"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200 invalid:border-red-900 focus:invalid:ring-red-500"
                             />
                           </div>
 
