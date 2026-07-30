@@ -805,7 +805,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
                       
-                      {/* Add Industry Sector Dropdown */}
+                      {/* Industry Sector Dropdown */}
                       <div className="space-y-1 pt-1 border-t border-zinc-900 mt-2 pt-2">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">INDUSTRY SECTOR</label>
                           <select
@@ -870,6 +870,26 @@ export default function QuestionnaireSubmissionsManager() {
                             />
                           </div>
                         </div>
+
+                        <div className="space-y-1 pt-1">
+                            <label className="text-[9px] text-zinc-500 block">OWNER LINKEDIN PROFILE URL</label>
+                            <input 
+                              type="url" 
+                              pattern="^https:\/\/(www\.)?linkedin\.com\/.*$"
+                              title="Must be a valid LinkedIn URL (e.g. https://linkedin.com/in/username)"
+                              placeholder="https://linkedin.com/in/..."
+                              value={editForm.owner_profile_url || ''} 
+                              onFocus={() => {
+                                if (!editForm.owner_profile_url) handleInputChange('owner_profile_url', 'https://linkedin.com/in/')
+                              }}
+                              onBlur={(e) => {
+                                if (e.target.value === 'https://linkedin.com/in/') handleInputChange('owner_profile_url', '')
+                              }}
+                              onChange={(e) => handleInputChange('owner_profile_url', e.target.value)}
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200 invalid:border-red-900 focus:invalid:ring-red-500 transition-colors"
+                            />
+                        </div>
+
                       </div>
 
                       <div className="grid grid-cols-3 gap-3">
@@ -1113,13 +1133,21 @@ export default function QuestionnaireSubmissionsManager() {
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[9px] text-zinc-500 block">IT PROFILE URL (LINKEDIN / SITE)</label>
+                            <label className="text-[9px] text-zinc-500 block">IT LINKEDIN PROFILE URL</label>
                             <input 
-                              type="text" 
+                              type="url" 
+                              pattern="^https:\/\/(www\.)?linkedin\.com\/.*$"
+                              title="Must be a valid LinkedIn URL (e.g. https://linkedin.com/in/username)"
                               placeholder="https://linkedin.com/in/..."
                               value={editForm.it_lead_profile_url || ''} 
+                              onFocus={() => {
+                                if (!editForm.it_lead_profile_url) handleInputChange('it_lead_profile_url', 'https://linkedin.com/in/')
+                              }}
+                              onBlur={(e) => {
+                                if (e.target.value === 'https://linkedin.com/in/') handleInputChange('it_lead_profile_url', '')
+                              }}
                               onChange={(e) => handleInputChange('it_lead_profile_url', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200 invalid:border-red-900 focus:invalid:ring-red-500 transition-colors"
                             />
                           </div>
                         </div>
@@ -1333,13 +1361,21 @@ export default function QuestionnaireSubmissionsManager() {
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[9px] text-zinc-500 block">ADMIN PROFILE URL (LINKEDIN / SITE)</label>
+                            <label className="text-[9px] text-zinc-500 block">ADMIN LINKEDIN PROFILE URL</label>
                             <input 
-                              type="text" 
+                              type="url" 
+                              pattern="^https:\/\/(www\.)?linkedin\.com\/.*$"
+                              title="Must be a valid LinkedIn URL (e.g. https://linkedin.com/in/username)"
                               placeholder="https://linkedin.com/in/..."
                               value={editForm.hr_lead_profile_url || ''} 
+                              onFocus={() => {
+                                if (!editForm.hr_lead_profile_url) handleInputChange('hr_lead_profile_url', 'https://linkedin.com/in/')
+                              }}
+                              onBlur={(e) => {
+                                if (e.target.value === 'https://linkedin.com/in/') handleInputChange('hr_lead_profile_url', '')
+                              }}
                               onChange={(e) => handleInputChange('hr_lead_profile_url', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200 invalid:border-red-900 focus:invalid:ring-red-500 transition-colors"
                             />
                           </div>
                         </div>
@@ -1518,13 +1554,21 @@ export default function QuestionnaireSubmissionsManager() {
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[9px] text-zinc-500 block">SALES PROFILE URL (LINKEDIN / SITE)</label>
+                            <label className="text-[9px] text-zinc-500 block">SALES LINKEDIN PROFILE URL</label>
                             <input 
-                              type="text" 
+                              type="url" 
+                              pattern="^https:\/\/(www\.)?linkedin\.com\/.*$"
+                              title="Must be a valid LinkedIn URL (e.g. https://linkedin.com/in/username)"
                               placeholder="https://linkedin.com/in/..."
                               value={editForm.sales_lead_profile_url || ''} 
+                              onFocus={() => {
+                                if (!editForm.sales_lead_profile_url) handleInputChange('sales_lead_profile_url', 'https://linkedin.com/in/')
+                              }}
+                              onBlur={(e) => {
+                                if (e.target.value === 'https://linkedin.com/in/') handleInputChange('sales_lead_profile_url', '')
+                              }}
                               onChange={(e) => handleInputChange('sales_lead_profile_url', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200 invalid:border-red-900 focus:invalid:ring-red-500 transition-colors"
                             />
                           </div>
                         </div>
@@ -1688,13 +1732,21 @@ export default function QuestionnaireSubmissionsManager() {
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[9px] text-zinc-500 block">OFFICER PROFILE URL (LINKEDIN / SITE)</label>
+                            <label className="text-[9px] text-zinc-500 block">OFFICER LINKEDIN PROFILE URL</label>
                             <input 
-                              type="text" 
+                              type="url" 
+                              pattern="^https:\/\/(www\.)?linkedin\.com\/.*$"
+                              title="Must be a valid LinkedIn URL (e.g. https://linkedin.com/in/username)"
                               placeholder="https://linkedin.com/in/..."
                               value={editForm.compliance_officer_profile_url || ''} 
+                              onFocus={() => {
+                                if (!editForm.compliance_officer_profile_url) handleInputChange('compliance_officer_profile_url', 'https://linkedin.com/in/')
+                              }}
+                              onBlur={(e) => {
+                                if (e.target.value === 'https://linkedin.com/in/') handleInputChange('compliance_officer_profile_url', '')
+                              }}
                               onChange={(e) => handleInputChange('compliance_officer_profile_url', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200 invalid:border-red-900 focus:invalid:ring-red-500 transition-colors"
                             />
                           </div>
                         </div>
@@ -1728,12 +1780,21 @@ export default function QuestionnaireSubmissionsManager() {
                       <div className="grid grid-cols-3 gap-3 pt-1 border-t border-zinc-900">
                         <div className="space-y-1">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">ACCOUNTING PLATFORM</label>
-                          <input 
-                            type="text" 
-                            value={editForm.accounting_software || ''} 
+                          <select
+                            value={editForm.accounting_software || ''}
                             onChange={(e) => handleInputChange('accounting_software', e.target.value)}
-                            className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
-                          />
+                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 cursor-pointer"
+                          >
+                            <option value="" disabled className="text-zinc-500">Select Platform...</option>
+                            <option value="QUICKBOOKS">QuickBooks</option>
+                            <option value="XERO">Xero</option>
+                            <option value="NETSUITE">Oracle NetSuite</option>
+                            <option value="SAGE">Sage</option>
+                            <option value="FRESHBOOKS">FreshBooks</option>
+                            <option value="WAVE">Wave</option>
+                            <option value="MANUAL_NONE">Manual / Spreadsheets</option>
+                            <option value="OTHER">Other</option>
+                          </select>
                         </div>
 
                         <div className="space-y-1">
