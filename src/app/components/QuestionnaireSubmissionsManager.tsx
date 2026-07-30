@@ -152,10 +152,41 @@ const AVAILABLE_BENEFITS = [
   { id: 'HEALTH_STIPENDS', label: '🌴 Remote / Health Stipends' }
 ]
 
+const INDUSTRY_SECTORS = [
+  'FinTech / Financial Services',
+  'Healthcare / MedTech',
+  'SaaS / Software',
+  'E-Commerce / Retail',
+  'Manufacturing / Logistics',
+  'Professional Services / Agency',
+  'Real Estate / PropTech',
+  'Education / EdTech',
+  'Non-Profit / Government',
+  'Other / Unspecified'
+]
+
+// HELPER: Limits string to 2 chars max for State DB insertions
 const cleanTwoChar = (val: any): string | null => {
   if (!val || val === 'UNDECIDED' || val === 'Please Select') return null
   const str = String(val).trim()
   return str.length >= 2 ? str.slice(0, 2).toUpperCase() : str.toUpperCase()
+}
+
+// HELPER: Formats phone visually to (xxx) xxx-xxxx 
+const formatPhoneNumber = (value: string) => {
+  if (!value) return ''
+  const digits = value.replace(/[^\d]/g, '')
+  if (digits.length < 4) return digits
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`
+}
+
+// HELPER: Strips leading zeros and non-digits, formats currency
+const formatCurrency = (value: string) => {
+  if (!value) return ''
+  const digits = value.replace(/[^\d]/g, '')
+  if (!digits) return ''
+  return `$${parseInt(digits, 10).toLocaleString()}`
 }
 
 export default function QuestionnaireSubmissionsManager() {
@@ -742,16 +773,15 @@ export default function QuestionnaireSubmissionsManager() {
 
                     <fieldset disabled={sectionLocks.sec1} className="space-y-3 disabled:opacity-75">
                       
-                      {/* Company & Principal Owner */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">COMPANY NAME</label>
                           <input 
                             type="text" 
-                            value={editForm.company_name || editForm.display_name || ''} 
+                            value={editForm.display_name || editForm.company_name || ''} 
                             onChange={(e) => {
-                              handleInputChange('company_name', e.target.value)
                               handleInputChange('display_name', e.target.value)
+                              handleInputChange('company_name', e.target.value)
                             }}
                             className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 font-semibold focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
                           />
@@ -760,45 +790,51 @@ export default function QuestionnaireSubmissionsManager() {
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
                             <label className="text-[9px] font-mono text-zinc-400 block font-semibold">WEBSITE URL</label>
-                            <button type="button" onClick={() => handleVisitUrl(editForm.company_url || editForm.website_url)} className="text-[10px] text-[#C5A880] hover:text-white font-bold cursor-pointer">🌐 VISIT</button>
+                            <button type="button" onClick={() => handleVisitUrl(editForm.website_url || editForm.company_url)} className="text-[10px] text-[#C5A880] hover:text-white font-bold cursor-pointer">🌐 VISIT</button>
                           </div>
                           <input 
                             type="text" 
-                            placeholder="https://company.com"
-                            value={editForm.company_url || editForm.website_url || ''} 
+                            placeholder="company.com"
+                            value={editForm.website_url || editForm.company_url || ''} 
                             onChange={(e) => {
-                              handleInputChange('company_url', e.target.value)
                               handleInputChange('website_url', e.target.value)
+                              handleInputChange('company_url', e.target.value)
                             }}
                             className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
                           />
                         </div>
                       </div>
+                      
+                      {/* Add Industry Sector Dropdown */}
+                      <div className="space-y-1 pt-1 border-t border-zinc-900 mt-2 pt-2">
+                          <label className="text-[9px] font-mono text-zinc-400 block font-semibold">INDUSTRY SECTOR</label>
+                          <select
+                            value={editForm.industry || editForm.industry_sector || ''}
+                            onChange={(e) => {
+                              handleInputChange('industry', e.target.value)
+                              handleInputChange('industry_sector', e.target.value)
+                            }}
+                            className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60 cursor-pointer"
+                          >
+                            <option value="" disabled>Select Industry...</option>
+                            {INDUSTRY_SECTORS.map(ind => <option key={ind} value={ind}>{ind}</option>)}
+                          </select>
+                      </div>
 
-                      {/* Owner Contact & Partner Toggle */}
-                      <div className="p-2.5 bg-black/80 border border-zinc-900 rounded-lg space-y-2">
+                      <div className="p-2.5 bg-black/80 border border-zinc-900 rounded-lg space-y-2 mt-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] font-mono text-[#C5A880] uppercase font-bold">Principal Owner Contact Telemetry</span>
-                          <label className="flex items-center gap-1.5 cursor-pointer text-[9px] text-[#C5A880] font-bold">
-                            <input
-                              type="checkbox"
-                              checked={!!editForm.is_strategic_partner}
-                              onChange={(e) => handleInputChange('is_strategic_partner', e.target.checked)}
-                              className="accent-[#C5A880]"
-                            />
-                            ⚡ Strategic Ecosystem Partner
-                          </label>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1">
                             <label className="text-[9px] text-zinc-500 block">OWNER NAME</label>
                             <input 
                               type="text" 
-                              value={editForm.contact_name || editForm.owner_name || ''} 
+                              value={editForm.owner_name || editForm.contact_name || ''} 
                               onChange={(e) => {
-                                handleInputChange('contact_name', e.target.value)
                                 handleInputChange('owner_name', e.target.value)
+                                handleInputChange('contact_name', e.target.value)
                               }}
                               className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
                             />
@@ -807,13 +843,15 @@ export default function QuestionnaireSubmissionsManager() {
                           <div className="space-y-1">
                             <label className="text-[9px] text-zinc-500 block">OWNER EMAIL</label>
                             <input 
-                              type="email" 
-                              value={editForm.contact_email || editForm.owner_email || ''} 
+                              type="email"
+                              pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                              title="Must be a valid email (e.g. user@domain.com)"
+                              value={editForm.owner_email || editForm.contact_email || ''} 
                               onChange={(e) => {
-                                handleInputChange('contact_email', e.target.value)
                                 handleInputChange('owner_email', e.target.value)
+                                handleInputChange('contact_email', e.target.value)
                               }}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880]"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880] invalid:border-red-900 focus:invalid:ring-red-500"
                             />
                           </div>
 
@@ -821,29 +859,19 @@ export default function QuestionnaireSubmissionsManager() {
                             <label className="text-[9px] text-zinc-500 block">OWNER PHONE</label>
                             <input 
                               type="text" 
-                              value={editForm.contact_phone || editForm.owner_phone || ''} 
+                              placeholder="(555) 555-5555"
+                              value={editForm.owner_phone || editForm.contact_phone || ''} 
                               onChange={(e) => {
-                                handleInputChange('contact_phone', e.target.value)
-                                handleInputChange('owner_phone', e.target.value)
+                                const formatted = formatPhoneNumber(e.target.value)
+                                handleInputChange('owner_phone', formatted)
+                                handleInputChange('contact_phone', formatted)
                               }}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-[9px] text-zinc-500 block">PROFILE URL (LINKEDIN / SITE)</label>
-                            <input 
-                              type="text" 
-                              placeholder="https://linkedin.com/in/..."
-                              value={editForm.owner_profile_url || ''} 
-                              onChange={(e) => handleInputChange('owner_profile_url', e.target.value)}
                               className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
                             />
                           </div>
                         </div>
                       </div>
 
-                      {/* Structure, Governance & Fiscal */}
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">LEGAL STRUCTURE</label>
@@ -855,7 +883,7 @@ export default function QuestionnaireSubmissionsManager() {
                             <option value="STARTUP_NOT_FORMED">Startup / Not Yet Formed</option>
                             <option value="DELAWARE_C_CORP">Delaware C-Corporation</option>
                             <option value="LLC">Limited Liability Company (LLC)</option>
-                            <option value="C_CORP_OTHER">C-Corporation (Other State)</option>
+                            <option value="C_CORP">C-Corporation (Other State)</option>
                             <option value="S_CORP">S-Corporation</option>
                           </select>
                         </div>
@@ -877,7 +905,8 @@ export default function QuestionnaireSubmissionsManager() {
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">EIN TAX ID</label>
                           <input 
                             type="text" 
-                            value={editForm.ein_number || 'N/A'} 
+                            placeholder="Startup - Need EIN"
+                            value={editForm.ein_number || ''} 
                             onChange={(e) => handleInputChange('ein_number', e.target.value)}
                             className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-[#C5A880] disabled:bg-zinc-950/60"
                           />
@@ -944,9 +973,10 @@ export default function QuestionnaireSubmissionsManager() {
                         <div className="space-y-1">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">TARGET CAPITAL ($)</label>
                           <input 
-                            type="text" 
-                            value={editForm.target_raise || '$0'} 
-                            onChange={(e) => handleInputChange('target_raise', e.target.value)}
+                            type="text"
+                            placeholder="$0"
+                            value={editForm.target_raise || ''} 
+                            onChange={(e) => handleInputChange('target_raise', formatCurrency(e.target.value))}
                             className="w-full bg-black border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200"
                           />
                         </div>
@@ -988,9 +1018,9 @@ export default function QuestionnaireSubmissionsManager() {
                             <label className="text-[9px] text-zinc-500 block">DUNS NUMBER ID</label>
                             <input 
                               type="text" 
-                              placeholder="098765432"
+                              placeholder="9 Digit DUNS Number"
                               value={editForm.duns_number_id || ''} 
-                              onChange={(e) => handleInputChange('duns_number_id', e.target.value)}
+                              onChange={(e) => handleInputChange('duns_number_id', e.target.value.replace(/[^\d]/g, '').slice(0, 9))}
                               className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
                             />
                           </div>
@@ -1062,10 +1092,12 @@ export default function QuestionnaireSubmissionsManager() {
                           <div className="space-y-1">
                             <label className="text-[9px] text-zinc-500 block">IT LEAD EMAIL</label>
                             <input 
-                              type="email" 
+                              type="email"
+                              pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                              title="Must be a valid email (e.g. user@domain.com)"
                               value={editForm.it_lead_email || ''} 
                               onChange={(e) => handleInputChange('it_lead_email', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880]"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880] invalid:border-red-900 focus:invalid:ring-red-500"
                             />
                           </div>
 
@@ -1073,8 +1105,9 @@ export default function QuestionnaireSubmissionsManager() {
                             <label className="text-[9px] text-zinc-500 block">IT LEAD PHONE</label>
                             <input 
                               type="text" 
+                              placeholder="(555) 555-5555"
                               value={editForm.it_lead_phone || ''} 
-                              onChange={(e) => handleInputChange('it_lead_phone', e.target.value)}
+                              onChange={(e) => handleInputChange('it_lead_phone', formatPhoneNumber(e.target.value))}
                               className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
                             />
                           </div>
@@ -1279,10 +1312,12 @@ export default function QuestionnaireSubmissionsManager() {
                           <div className="space-y-1">
                             <label className="text-[9px] text-zinc-500 block">ADMIN EMAIL</label>
                             <input 
-                              type="email" 
+                              type="email"
+                              pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                              title="Must be a valid email (e.g. user@domain.com)"
                               value={editForm.hr_lead_email || ''} 
                               onChange={(e) => handleInputChange('hr_lead_email', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880]"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880] invalid:border-red-900 focus:invalid:ring-red-500"
                             />
                           </div>
 
@@ -1290,8 +1325,9 @@ export default function QuestionnaireSubmissionsManager() {
                             <label className="text-[9px] text-zinc-500 block">ADMIN PHONE</label>
                             <input 
                               type="text" 
+                              placeholder="(555) 555-5555"
                               value={editForm.hr_lead_phone || ''} 
-                              onChange={(e) => handleInputChange('hr_lead_phone', e.target.value)}
+                              onChange={(e) => handleInputChange('hr_lead_phone', formatPhoneNumber(e.target.value))}
                               className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
                             />
                           </div>
@@ -1461,10 +1497,12 @@ export default function QuestionnaireSubmissionsManager() {
                           <div className="space-y-1">
                             <label className="text-[9px] text-zinc-500 block">SALES LEAD EMAIL</label>
                             <input 
-                              type="email" 
+                              type="email"
+                              pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                              title="Must be a valid email (e.g. user@domain.com)"
                               value={editForm.sales_lead_email || ''} 
                               onChange={(e) => handleInputChange('sales_lead_email', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880]"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880] invalid:border-red-900 focus:invalid:ring-red-500"
                             />
                           </div>
 
@@ -1472,8 +1510,9 @@ export default function QuestionnaireSubmissionsManager() {
                             <label className="text-[9px] text-zinc-500 block">SALES LEAD PHONE</label>
                             <input 
                               type="text" 
+                              placeholder="(555) 555-5555"
                               value={editForm.sales_lead_phone || ''} 
-                              onChange={(e) => handleInputChange('sales_lead_phone', e.target.value)}
+                              onChange={(e) => handleInputChange('sales_lead_phone', formatPhoneNumber(e.target.value))}
                               className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
                             />
                           </div>
@@ -1628,10 +1667,12 @@ export default function QuestionnaireSubmissionsManager() {
                           <div className="space-y-1">
                             <label className="text-[9px] text-zinc-500 block">OFFICER EMAIL</label>
                             <input 
-                              type="email" 
+                              type="email"
+                              pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                              title="Must be a valid email (e.g. user@domain.com)"
                               value={editForm.compliance_officer_email || ''} 
                               onChange={(e) => handleInputChange('compliance_officer_email', e.target.value)}
-                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880]"
+                              className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[#C5A880] invalid:border-red-900 focus:invalid:ring-red-500"
                             />
                           </div>
 
@@ -1639,8 +1680,9 @@ export default function QuestionnaireSubmissionsManager() {
                             <label className="text-[9px] text-zinc-500 block">OFFICER PHONE</label>
                             <input 
                               type="text" 
+                              placeholder="(555) 555-5555"
                               value={editForm.compliance_officer_phone || ''} 
-                              onChange={(e) => handleInputChange('compliance_officer_phone', e.target.value)}
+                              onChange={(e) => handleInputChange('compliance_officer_phone', formatPhoneNumber(e.target.value))}
                               className="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-zinc-200"
                             />
                           </div>
