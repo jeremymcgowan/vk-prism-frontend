@@ -448,16 +448,21 @@ export default function StepOneGateway() {
                     </button>
 
                     <button
-                      type="button"
+                     type="button"
                       onClick={() => handleIncentiveToggle(false)}
-                      className={`w-full py-2.5 px-4 rounded-xl font-semibold text-[11px] md:text-xs tracking-wide transition-all cursor-pointer text-center border ${
-                        !isSeekingIncentive
-                          ? 'bg-[#18181B] text-[#C5A880] border-[#C5A880]/80 shadow-[0_0_15px_rgba(197,168,128,0.2)] underline decoration-1 decoration-[#C5A880]'
-                          : 'bg-transparent text-neutral-500 border-transparent hover:text-neutral-300'
-                      }`}
-                    >
-                      ⚡ I hate free money // Onboard me after Step 2
-                    </button>
+                        className={`w-full py-2.5 px-4 rounded-xl text-center transition-all cursor-pointer border ${
+                          !isSeekingIncentive
+                            ? 'bg-[#18181B] text-[#C5A880] border-[#C5A880]/80 shadow-[0_0_15px_rgba(197,168,128,0.2)]'
+                            : 'bg-transparent text-neutral-500 border-transparent hover:text-neutral-300'
+                        }`}
+                      >
+                        <span className="block text-xs font-bold tracking-wide">
+                          ⚡ I HATE FREE,
+                        </span>
+                        <span className="block text-[10px] font-medium tracking-normal opacity-80 mt-0.5">
+                          Onboard me after Step-2
+                        </span>
+                      </button>
 
                   </div>
                 </div>
