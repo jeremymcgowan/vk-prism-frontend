@@ -1,21 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import OnboardingHeader from './components/OnboardingHeader';
 import { useOnboarding } from '@/app/onboarding/OnboardingContext';
 
+// Alphabetized Industry List
 const INDUSTRY_SECTORS = [
-  'B2B SaaS',
-  'E-Commerce / Consumer Goods',
-  'FinTech / Financial Services',
-  'HealthTech / Healthcare',
-  'Professional Services / Consulting',
-  'GovTech / Defense',
-  'Real Estate / Construction',
   'AI & Machine Learning Infrastructure',
-  'Cleantech & Energy',
-  'Other / Stealth'
+  'B2B SaaS & Enterprise Software',
+  'Biotech, Pharma & Life Sciences',
+  'Cleantech, Energy & Sustainability',
+  'E-Commerce, Retail & Consumer Goods',
+  'FinTech & Financial Services',
+  'GovTech, Defense & Aerospace',
+  'Healthcare & HealthTech',
+  'Legal Services & LegalTech',
+  'Logistics, Supply Chain & Distribution',
+  'Manufacturing, Hardware & Industrial',
+  'Professional Services & Consulting',
+  'Real Estate, Property & Construction',
+  'Robotics & DeepTech',
+  'Software & Mobile App Development',
+  'Stealth / Confidential',
+  'Other'
 ];
 
 export default function StepOneGateway() {
@@ -24,7 +32,24 @@ export default function StepOneGateway() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const isSeekingIncentive = formData.is_seeking_incentive === true;
+  // Default to Opt-In (true) if undefined
+  const isSeekingIncentive = formData.is_seeking_incentive !== false;
+
+  // Custom "Other" Industry State
+  const [isOtherSelected, setIsOtherSelected] = useState(false);
+  const [customIndustry, setCustomIndustry] = useState('');
+
+  // Sync "Other" industry selection on mount or hydrate
+  useEffect(() => {
+    if (formData.industry) {
+      if (!INDUSTRY_SECTORS.includes(formData.industry) && formData.industry !== '') {
+        setIsOtherSelected(true);
+        setCustomIndustry(formData.industry);
+      } else if (formData.industry === 'Other') {
+        setIsOtherSelected(true);
+      }
+    }
+  }, [formData.industry]);
 
   if (!isHydrated) return null;
 
@@ -33,24 +58,38 @@ export default function StepOneGateway() {
     updateFormData({ [e.target.name]: e.target.value });
   };
 
+  const handleIndustryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setValidationError(null);
+    const selected = e.target.value;
+    if (selected === 'Other') {
+      setIsOtherSelected(true);
+      updateFormData({ industry: 'Other' });
+    } else {
+      setIsOtherSelected(false);
+      setCustomIndustry('');
+      updateFormData({ industry: selected });
+    }
+  };
+
+  const handleCustomIndustryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValidationError(null);
+    const val = e.target.value;
+    setCustomIndustry(val);
+  };
+
   // --- Strict Domain & Junk Sanitizer on Blur ---
   const handleUrlBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     let raw = e.target.value.trim().toLowerCase();
     if (!raw || raw === 'i need a website!') return;
 
-    // 1. Remove http://, https://, www., spaces
     raw = raw
       .replace(/^https?:\/\//i, '')
       .replace(/^www\./i, '')
       .replace(/\s+/g, '');
 
-    // 2. Strip semicolons, commas, quotes, and non-domain punctuation
     raw = raw.replace(/[^a-z0-9\.\-]/gi, '');
-
-    // 3. Remove trailing slashes or dots
     raw = raw.replace(/[\.\/]+$/, '');
 
-    // 4. Validate domain structure (e.g., domain.com)
     const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*\.[a-zA-Z]{2,11}$/;
 
     if (domainRegex.test(raw)) {
@@ -58,7 +97,6 @@ export default function StepOneGateway() {
     } else if (raw.length > 2 && !raw.includes('.')) {
       updateFormData({ company_url: `${raw}.com` });
     } else {
-      // If it contains bad structure, wipe it clean so it doesn't block the user
       updateFormData({ company_url: '' });
     }
   };
@@ -111,6 +149,7 @@ export default function StepOneGateway() {
   const handleIncentiveToggle = (optIn: boolean) => {
     updateFormData({
       is_seeking_incentive: optIn,
+      is_fast_track: !optIn,
       readiness_completion_pct: optIn ? 25 : 15
     });
   };
@@ -143,6 +182,11 @@ export default function StepOneGateway() {
       return false;
     }
 
+    if (isOtherSelected && !customIndustry.trim()) {
+      setValidationError('Please specify your industry in the box provided.');
+      return false;
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
     if (!formData.contact_email || !emailRegex.test(formData.contact_email)) {
       setValidationError('Please enter a valid email address with domain extension (e.g., name@company.com).');
@@ -165,18 +209,19 @@ export default function StepOneGateway() {
     setIsSubmitting(true);
     
     const formattedName = formatContactName(formData.contact_name || '');
+    const finalIndustry = isOtherSelected ? customIndustry.trim() : (formData.industry || '');
 
     updateFormData({
       display_name: formData.company_name || '',
       legal_name: formData.company_name || '',
-      website_url: formData.company_url || null,
+      website_url: formData.company_url || '',
       owner_name: formattedName,
       owner_email: formData.contact_email || '',
       owner_phone: formData.contact_phone || '',
-      industry: formData.industry || '',
+      industry: finalIndustry,
 
       company_name: formData.company_name || '',
-      company_url: formData.company_url || null,
+      company_url: formData.company_url || '',
       contact_name: formattedName,
       contact_email: formData.contact_email || '',
       contact_phone: formData.contact_phone || '',
@@ -319,8 +364,8 @@ export default function StepOneGateway() {
                   <select
                     name="industry"
                     required
-                    value={formData.industry || ''}
-                    onChange={handleChange}
+                    value={isOtherSelected ? 'Other' : (formData.industry || '')}
+                    onChange={handleIndustryChange}
                     className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
                   >
                     <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">
@@ -332,6 +377,20 @@ export default function StepOneGateway() {
                       </option>
                     ))}
                   </select>
+
+                  {/* Animated Slide-Down Custom Industry Text Field */}
+                  {isOtherSelected && (
+                    <div className="mt-3 transition-all duration-300 animate-fadeIn">
+                      <input
+                        type="text"
+                        name="custom_industry"
+                        value={customIndustry}
+                        onChange={handleCustomIndustryChange}
+                        placeholder="Please specify your industry sector..."
+                        className="w-full bg-[#18181B] border border-[#C5A880]/60 text-white font-medium placeholder:text-neutral-500 p-3 text-xs rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -350,6 +409,7 @@ export default function StepOneGateway() {
                 </div>
               </div>
 
+              {/* Reward Card Box */}
               <div className="relative p-6 md:p-8 rounded-2xl bg-gradient-to-br from-[#121215] via-[#18181B] to-[#0A0A0C] border-2 border-[#6B21A8]/70 shadow-[0_0_30px_rgba(107,33,168,0.25)] overflow-hidden transition-all duration-300 my-8">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-[#6B21A8]/15 rounded-full blur-2xl pointer-events-none"></div>
 
@@ -369,15 +429,15 @@ export default function StepOneGateway() {
                     </h4>
                     
                     <p className="text-xs text-neutral-300 leading-relaxed">
-                      Complete your full deep-dive corporate telemetry across Steps 02 to 06. We apply a <strong>$500 credit</strong>&nbsp;instantly toward your first V&amp;K operational sprint and schedule your complimentary compliance architecture session ($750 retail value).
+                      Complete your full deep-dive corporate telemetry across <strong>Steps 3 through 6</strong>. We apply a <strong>$500 credit</strong>&nbsp;instantly toward your first V&amp;K operational sprint and schedule your complimentary compliance architecture session ($750 retail value).
                     </p>
                   </div>
 
-                  <div className="flex flex-col gap-3 shrink-0 sm:min-w-[260px]">
+                  <div className="flex flex-col gap-3 shrink-0 sm:min-w-[280px]">
                     <button
                       type="button"
                       onClick={() => handleIncentiveToggle(true)}
-                      className={`w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
+                      className={`w-full py-3.5 px-5 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
                         isSeekingIncentive
                           ? 'bg-[#6B21A8] text-white border-[#A855F7] shadow-[0_0_30px_rgba(168,85,247,0.6)] ring-2 ring-white/60 scale-[1.02]'
                           : 'animate-purple-pulse font-bold'
@@ -390,13 +450,13 @@ export default function StepOneGateway() {
                     <button
                       type="button"
                       onClick={() => handleIncentiveToggle(false)}
-                      className={`w-full py-2.5 px-4 rounded-xl font-normal text-[11px] md:text-xs tracking-wide transition-all cursor-pointer text-center border ${
+                      className={`w-full py-2.5 px-4 rounded-xl font-semibold text-[11px] md:text-xs tracking-wide transition-all cursor-pointer text-center border ${
                         !isSeekingIncentive
                           ? 'bg-[#18181B] text-[#C5A880] border-[#C5A880]/80 shadow-[0_0_15px_rgba(197,168,128,0.2)] underline decoration-1 decoration-[#C5A880]'
                           : 'bg-transparent text-neutral-500 border-transparent hover:text-neutral-300'
                       }`}
                     >
-                      ⚡ Skip rewards // Brief baseline only
+                      ⚡ I hate free money // Onboard me after Step 2
                     </button>
 
                   </div>
