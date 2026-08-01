@@ -5,49 +5,70 @@ import { createClient } from "@supabase/supabase-js";
 
 const STORAGE_KEY = "vk_prism_onboarding_payload";
 
-// Complete form payload type structure
+// Complete form payload type structure with index signature for build resilience
 export interface OnboardingData {
   company_name?: string;
+  company_url?: string;
   contact_name?: string;
   contact_email?: string;
   contact_phone?: string;
   legal_structure?: string;
   formation_year?: string;
+  registration_state?: string;
+  ein_number?: string;
+  fiscal_year_end_month?: string;
+  employee_count_w2_ft?: number;
+  employee_count_w2_pt?: number;
+  contractor_count_1099?: number;
   hq_address_line_1?: string;
+  hq_address_line1?: string;
   hq_city?: string;
   hq_state?: string;
   hq_postal_code?: string;
+  hq_zip?: string;
   hq_address_type?: string;
-  hq_address_verified_usps?: boolean; // Required for Step 2
+  hq_address_verified_usps?: boolean;
+  is_seeking_incentive?: boolean; // Holds the $500 Credit flag!
   funding_stage?: string;
   target_raise?: string;
   has_bylaws?: string | null;
-  bylaws_governance_status?: string; // Required for Step 3
+  bylaws_governance_status?: string;
   accounting_software?: string;
   accounting_vendor_audit?: any;
   email_workspace_suite?: string;
   workspace_vendor_audit?: any;
   mdm_provider?: string;
   mdm_vendor_audit?: any;
-  shield_managed_service_opt_in?: boolean; // Required for Step 4
+  shield_managed_service_opt_in?: boolean;
   antivirus_status?: string;
   backup_frequency?: string;
+  has_remote_workers?: string;
+  has_vpn?: string;
+  vpn_lead_flag?: boolean;
   headcount_range?: string;
+  team_headcount?: string;
   payroll_provider?: string;
+  payroll_system?: string;
   payroll_vendor_audit?: any;
-  people_managed_service_opt_in?: boolean; // Required for Step 5
+  people_managed_service_opt_in?: boolean;
   benefits_offered?: string[];
+  corporate_benefits?: string[];
   crm_provider?: string;
+  crm_system?: string;
   crm_vendor_audit?: any;
   collaboration_tool?: string;
   automation_platform?: string;
-  // Metadata
+  automation_status?: string;
+  industry?: string;
+  // Metadata & Status
   is_fast_track?: boolean;
   onboarding_mode?: string;
   step_completed?: number;
   audit_flag?: string;
-  readiness_completion_pct?: number; // Required for partial submission
-  status?: string; // Required for partial submission
+  readiness_completion_pct?: number;
+  status?: string;
+  // Index signature: Allows dynamic form fields without breaking builds
+  [key: string]: any;
 }
 
 interface OnboardingContextType {
@@ -90,7 +111,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     sessionStorage.removeItem(STORAGE_KEY);
   };
 
-  // --- NEW: Global Submission Handler for the "Skip" Path ---
+  // --- Global Submission Handler for the "Skip" Path ---
   const submitPartialPayload = async (router: any) => {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -123,15 +144,15 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         has_bylaws: formData.has_bylaws || null,
         accounting_software: formData.accounting_software || null,
         accounting_vendor_audit: formData.accounting_vendor_audit || null,
-        email_workspace_suite: formData.email_workspace_suite || null, // Will be null if skipped
-        mdm_provider: formData.mdm_provider || null, // Will be null if skipped
-        antivirus_status: formData.antivirus_status || null, // Will be null if skipped
-        headcount_range: formData.headcount_range || null, // Will be null if skipped
-        payroll_provider: formData.payroll_provider || null, // Will be null if skipped
-        benefits_offered: formData.benefits_offered || null, // Will be null if skipped
-        crm_provider: formData.crm_provider || null, // Will be null if skipped
-        readiness_completion_pct: 35, // Flags as a partial profile
-        status: 'ONBOARDING_PARTIAL' // Special status for your admin pipeline
+        email_workspace_suite: formData.email_workspace_suite || null,
+        mdm_provider: formData.mdm_provider || null,
+        antivirus_status: formData.antivirus_status || null,
+        headcount_range: formData.headcount_range || null,
+        payroll_provider: formData.payroll_provider || null,
+        benefits_offered: formData.benefits_offered || null,
+        crm_provider: formData.crm_provider || null,
+        readiness_completion_pct: 35,
+        status: 'ONBOARDING_PARTIAL'
       };
 
       const { error } = await supabase
