@@ -18,20 +18,24 @@ export interface OnboardingData {
   hq_state?: string;
   hq_postal_code?: string;
   hq_address_type?: string;
+  hq_address_verified_usps?: boolean; // Required for Step 2
   funding_stage?: string;
   target_raise?: string;
   has_bylaws?: string | null;
+  bylaws_governance_status?: string; // Required for Step 3
   accounting_software?: string;
   accounting_vendor_audit?: any;
   email_workspace_suite?: string;
   workspace_vendor_audit?: any;
   mdm_provider?: string;
   mdm_vendor_audit?: any;
+  shield_managed_service_opt_in?: boolean; // Required for Step 4
   antivirus_status?: string;
   backup_frequency?: string;
   headcount_range?: string;
   payroll_provider?: string;
   payroll_vendor_audit?: any;
+  people_managed_service_opt_in?: boolean; // Required for Step 5
   benefits_offered?: string[];
   crm_provider?: string;
   crm_vendor_audit?: any;
@@ -42,6 +46,8 @@ export interface OnboardingData {
   onboarding_mode?: string;
   step_completed?: number;
   audit_flag?: string;
+  readiness_completion_pct?: number; // Required for partial submission
+  status?: string; // Required for partial submission
 }
 
 interface OnboardingContextType {

@@ -23,7 +23,8 @@ function Tooltip({ text }: { text: string }) {
 
 export default function StepThreeCapital() {
   const router = useRouter();
-  const { formData, updateFormData, isHydrated } = useOnboarding();
+  // ADDED submitPartialPayload to the destructuring here
+  const { formData, updateFormData, isHydrated, submitPartialPayload } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Local state for formatted UI strings and validation feedback
@@ -46,7 +47,6 @@ export default function StepThreeCapital() {
     if (val === 'SELF_FUNDED') {
       setFormattedRaise('');
       setRaiseError('');
-      // FIXED: Use empty string instead of null to satisfy TypeScript strict types
       updateFormData({ funding_stage: val, target_raise: '' });
     } else {
       updateFormData({ funding_stage: val });
@@ -58,7 +58,6 @@ export default function StepThreeCapital() {
     const digits = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
     if (!digits) {
       setFormattedRaise('');
-      // FIXED: Use empty string instead of null
       updateFormData({ target_raise: '' });
       setRaiseError('');
       return;
@@ -66,7 +65,6 @@ export default function StepThreeCapital() {
 
     const numVal = Math.min(999999999, parseInt(digits, 10));
     setFormattedRaise(numVal.toString());
-    // FIXED: Convert number to string for state context
     updateFormData({ target_raise: numVal.toString() });
     setRaiseError('');
   };
@@ -85,7 +83,6 @@ export default function StepThreeCapital() {
       const roundedVal = Math.ceil(clampedVal / 10) * 10;
       
       setFormattedRaise(`$${roundedVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-      // FIXED: Convert rounded value to string for state context
       updateFormData({ target_raise: roundedVal.toString() });
       
       if (roundedVal < 5000) {
@@ -320,23 +317,45 @@ export default function StepThreeCapital() {
                 </div>
               </button>
 
-              {/* Navigation Buttons */}
-              <div className="flex justify-between items-center pt-4 border-t border-[#27272A]/80">
+              {/* UPGRADED NAVIGATION BUTTONS: Includes the global skip/eject action */}
+              <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-[#27272A]/80 gap-4">
+                
+                {/* Back Button */}
                 <button
                   type="button"
                   onClick={() => router.push('/onboarding/step-2')}
-                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer w-full sm:w-auto disabled:opacity-50"
                 >
                   ← Back
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
-                >
-                  Continue →
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                  
+                  {/* The New "Eject" Skip Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsSubmitting(true);
+                      submitPartialPayload(router);
+                    }}
+                    disabled={isSubmitting}
+                    className="text-[#71717A] hover:text-[#E4E4E7] text-sm font-medium tracking-wide transition-colors disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Saving...' : 'Skip remaining steps for now ➔'}
+                  </button>
+
+                  {/* Primary Continue Button */}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? 'Processing...' : 'Continue to IT Shield →'}
+                  </button>
+                </div>
+                
               </div>
             </form>
 
