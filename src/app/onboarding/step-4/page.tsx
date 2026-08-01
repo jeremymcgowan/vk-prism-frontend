@@ -23,7 +23,8 @@ function Tooltip({ text }: { text: string }) {
 
 export default function StepFourShield() {
   const router = useRouter();
-  const { formData, updateFormData, isHydrated } = useOnboarding();
+  // ADDED submitPartialPayload to the destructuring here
+  const { formData, updateFormData, isHydrated, submitPartialPayload } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [workspaceAudit, setWorkspaceAudit] = useState({
@@ -72,21 +73,11 @@ export default function StepFourShield() {
       shield_managed_service_opt_in: true,
       
       // --- Standardized 1:1 Schema Mapping for Staging DB ---
-      workspace_suite: 'NEED_WORKSPACE',
-      mdm_provider: 'NONE',
-      endpoint_protection: 'NONE',
-      backup_system: 'NONE',
-      remote_workforce: formData.has_remote_workers || 'NO',
-      corporate_vpn: formData.has_vpn || 'NEED_VPN',
-      audit_flag: 'NEEDS_TURNKEY_SHIELD_SETUP',
-      
-      // --- Legacy UI Keys for Backwards Compatibility ---
       email_workspace_suite: 'NEED_WORKSPACE',
+      mdm_provider: 'NONE',
       antivirus_status: 'NONE',
       backup_frequency: 'NONE',
-      has_remote_workers: formData.has_remote_workers || 'NO',
-      has_vpn: formData.has_vpn || 'NEED_VPN',
-      vpn_lead_flag: true,
+      audit_flag: 'NEEDS_TURNKEY_SHIELD_SETUP',
       readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 70)
     });
 
@@ -102,19 +93,6 @@ export default function StepFourShield() {
       workspace_vendor_audit: formData.email_workspace_suite !== 'NONE' ? workspaceAudit : null,
       mdm_vendor_audit: formData.mdm_provider !== 'NONE' ? mdmAudit : null,
       shield_managed_service_opt_in: false,
-      
-      // --- Standardized 1:1 Schema Mapping for Staging DB ---
-      workspace_suite: formData.email_workspace_suite || '',
-      mdm_provider: formData.mdm_provider || '',
-      endpoint_protection: formData.antivirus_status || '',
-      backup_system: formData.backup_frequency || '',
-      remote_workforce: formData.has_remote_workers || 'NO',
-      corporate_vpn: formData.has_vpn || 'NO',
-      
-      // --- Legacy UI Keys for Backwards Compatibility ---
-      has_remote_workers: formData.has_remote_workers || 'NO',
-      has_vpn: formData.has_vpn || 'NO',
-      vpn_lead_flag: isVpnNeeded,
       readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 70)
     });
 
@@ -338,23 +316,45 @@ export default function StepFourShield() {
                 </div>
               </button>
 
-              {/* Navigation Buttons */}
-              <div className="flex justify-between items-center pt-4 border-t border-[#27272A]/80">
+              {/* UPGRADED NAVIGATION BUTTONS: Includes the global skip/eject action */}
+              <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-[#27272A]/80 gap-4">
+                
+                {/* Back Button */}
                 <button
                   type="button"
                   onClick={() => router.push('/onboarding/step-3')}
-                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer w-full sm:w-auto disabled:opacity-50"
                 >
                   ← Back
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
-                >
-                  Continue →
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                  
+                  {/* The New "Eject" Skip Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsSubmitting(true);
+                      submitPartialPayload(router);
+                    }}
+                    disabled={isSubmitting}
+                    className="text-[#71717A] hover:text-[#E4E4E7] text-sm font-medium tracking-wide transition-colors disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Saving...' : 'Skip remaining steps for now ➔'}
+                  </button>
+
+                  {/* Primary Continue Button */}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? 'Processing...' : 'Continue to People & HR →'}
+                  </button>
+                </div>
+                
               </div>
             </form>
 
