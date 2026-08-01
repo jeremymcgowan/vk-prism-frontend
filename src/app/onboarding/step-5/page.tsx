@@ -23,7 +23,8 @@ function Tooltip({ text }: { text: string }) {
 
 export default function StepFivePeople() {
   const router = useRouter();
-  const { formData, updateFormData, isHydrated } = useOnboarding();
+  // ADDED submitPartialPayload to the destructuring here
+  const { formData, updateFormData, isHydrated, submitPartialPayload } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userOverrodeHeadcount, setUserOverrodeHeadcount] = useState(false);
 
@@ -127,10 +128,6 @@ export default function StepFivePeople() {
       payroll_system: formData.payroll_provider || 'NONE',
       corporate_benefits: selectedBenefits,
       audit_flag: 'NEEDS_TURNKEY_PEOPLE_SETUP',
-      
-      // --- Legacy UI Keys for Backwards Compatibility ---
-      headcount_range: currentRange,
-      payroll_provider: formData.payroll_provider || 'NONE',
       readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 85)
     });
 
@@ -153,9 +150,6 @@ export default function StepFivePeople() {
       team_headcount: currentRange,
       payroll_system: formData.payroll_provider || '',
       corporate_benefits: selectedBenefits,
-      
-      // --- Legacy UI Keys for Backwards Compatibility ---
-      headcount_range: currentRange,
       readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 85)
     });
 
@@ -309,23 +303,45 @@ export default function StepFivePeople() {
                 </div>
               </button>
 
-              {/* Navigation Buttons */}
-              <div className="flex justify-between items-center pt-4 border-t border-[#27272A]/80">
+              {/* UPGRADED NAVIGATION BUTTONS: Includes the global skip/eject action */}
+              <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-[#27272A]/80 gap-4">
+                
+                {/* Back Button */}
                 <button
                   type="button"
                   onClick={() => router.push('/onboarding/step-4')}
-                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer w-full sm:w-auto disabled:opacity-50"
                 >
                   ← Back
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
-                >
-                  Continue →
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                  
+                  {/* The New "Eject" Skip Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsSubmitting(true);
+                      submitPartialPayload(router);
+                    }}
+                    disabled={isSubmitting}
+                    className="text-[#71717A] hover:text-[#E4E4E7] text-sm font-medium tracking-wide transition-colors disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Saving...' : 'Skip remaining steps for now ➔'}
+                  </button>
+
+                  {/* Primary Continue Button */}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? 'Processing...' : 'Continue to Final Step →'}
+                  </button>
+                </div>
+                
               </div>
             </form>
 
