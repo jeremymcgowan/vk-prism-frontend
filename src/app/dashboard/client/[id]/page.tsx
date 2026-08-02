@@ -1,3 +1,4 @@
+import CapitalReadinessScore from '@/components/widgets/CapitalReadinessScore'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'

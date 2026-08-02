@@ -1,5 +1,5 @@
 'use client'
-
+import CapitalReadinessScore from '@/components/widgets/CapitalReadinessScore'
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 
@@ -671,6 +671,7 @@ export default function EcosystemEntitiesManager() {
             <div className="text-xs font-mono text-zinc-300 animate-pulse uppercase py-12 text-center">Interlocking Profile Matrices...</div>
           ) : (
             <div className="space-y-6">
+              <CapitalReadinessScore entityData={telemetry} />
               
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 
