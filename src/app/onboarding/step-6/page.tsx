@@ -1,18 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Script from 'next/script';
 import { createClient } from '@supabase/supabase-js';
 import OnboardingHeader from '../components/OnboardingHeader';
-import VendorValueWedge from '../components/VendorValueWedge';
 import { useOnboarding } from '@/app/onboarding/OnboardingContext';
+
+const US_STATES = [
+  'DE', 'CA', 'NY', 'TX', 'FL', 'NV', 'WY', 'IL', 'MA', 'WA', 'CO', 'GA', 'NC', 'OH',
+  'PA', 'VA', 'AZ', 'MI', 'NJ', 'TN', 'OR', 'MO', 'UT', 'MD', 'MN', 'IN', 'SC', 'CT',
+  'WI', 'AL', 'OK', 'KY', 'IA', 'LA', 'KS', 'AR', 'NE', 'MS', 'NM', 'ID', 'NH', 'WV',
+  'HI', 'ME', 'RI', 'MT', 'ND', 'SD', 'AK', 'VT'
+];
+
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June', 
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 
 // Helper Tooltip Component
 function Tooltip({ text }: { text: string }) {
   return (
     <span className="relative group inline-block ml-1 cursor-help">
       <span className="text-[#C5A880] text-xs font-bold hover:text-white transition-colors">ⓘ</span>
-      <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-30 w-max max-w-[270px] animate-fadeIn">
+      <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-30 w-max max-w-[250px] animate-fadeIn">
         <span className="bg-[#18181B] text-[#C5A880] text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-[#C5A880]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] text-center leading-tight whitespace-normal">
           {text}
         </span>
@@ -22,51 +34,147 @@ function Tooltip({ text }: { text: string }) {
   );
 }
 
-// 2-Character Safe Formatter (prevents VARCHAR(2) overflow in Postgres)
-const cleanTwoChar = (val: any): string | null => {
-  if (!val || val === 'UNDECIDED' || val === 'Please Select') return null;
-  const str = String(val).trim();
-  return str.length >= 2 ? str.slice(0, 2).toUpperCase() : str.toUpperCase();
+// Ensure 2-char DB constraint
+const cleanTwoChar = (val: any) => {
+  if (!val) return null;
+  return String(val).trim().substring(0, 2).toUpperCase();
 };
 
-export default function StepSixFlow() {
+export default function StepTwoStructure() {
   const router = useRouter();
   const { formData, updateFormData, clearFormData, isHydrated } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement>(null);
 
-  const [crmAudit, setCrmAudit] = useState({
-    satisfaction: formData.crm_vendor_audit?.satisfaction || 'GREAT',
-    costPerception: formData.crm_vendor_audit?.costPerception || 'FAIR',
-  });
+  const hasPhysicalHq = formData.has_physical_hq !== false; // Default true
+  const isFastTrack = formData.is_fast_track === true;
+
+  // --- Initialize Google Places Autocomplete ---
+  const initAutocomplete = () => {
+    if (!addressInputRef.current || typeof window === 'undefined') return;
+    const google = (window as any).google;
+    if (!google?.maps?.places) return;
+
+    try {
+      const autocomplete = new google.maps.places.Autocomplete(addressInputRef.current, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+      });
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (!place || !place.address_components) return;
+
+        let streetNumber = '';
+        let route = '';
+        let city = '';
+        let state = '';
+        let zip = '';
+
+        for (const component of place.address_components) {
+          const types = component.types;
+          if (types.includes('street_number')) streetNumber = component.long_name;
+          if (types.includes('route')) route = component.long_name;
+          if (types.includes('locality')) city = component.long_name;
+          if (types.includes('administrative_area_level_1')) state = component.short_name;
+          if (types.includes('postal_code')) zip = component.long_name;
+        }
+
+        const line1 = `${streetNumber} ${route}`.trim() || place.formatted_address || '';
+
+        updateFormData({
+          hq_address_line_1: line1,
+          hq_city: city,
+          hq_state: state,
+          hq_postal_code: zip,
+        });
+      });
+    } catch (err) {
+      console.warn('Google Places Init Notice:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (hasPhysicalHq && (googleScriptLoaded || (window as any).google?.maps?.places)) {
+      initAutocomplete();
+    }
+  }, [hasPhysicalHq, googleScriptLoaded]);
 
   if (!isHydrated) return null;
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    updateFormData({ [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setValidationError(null);
+    const { name, value } = e.target;
+
+    if (name === 'legal_structure' && value === 'DELAWARE_C_CORP') {
+      updateFormData({ legal_structure: value, registration_state: 'DE' });
+    } else {
+      updateFormData({ [name]: value });
+    }
   };
 
-  const handleCrmAuditChange = (field: 'satisfaction' | 'costPerception', value: string) => {
-    const updated = { ...crmAudit, [field]: value };
-    setCrmAudit(updated);
-    updateFormData({ crm_vendor_audit: updated });
+  const handleNumberChange = (name: string, val: string) => {
+    setValidationError(null);
+    const cleanDigits = val.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    if (cleanDigits === '') {
+      updateFormData({ [name]: 0 });
+      return;
+    }
+    const cleanNum = Math.min(99999, Math.max(0, parseInt(cleanDigits, 10) || 0));
+    updateFormData({ [name]: cleanNum });
   };
 
-  // --- Master Submission Handler: Standardized 1:1 against crm_questionnaire_staging schema ---
-  const executeFinalSubmission = async (flowOptIn: boolean) => {
-    setIsSubmitting(true);
-    setError(null);
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.select();
+  };
 
+  const handleEINChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValidationError(null);
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
+    let formatted = digits;
+    if (digits.length > 2) {
+      formatted = `${digits.slice(0, 2)}-${digits.slice(2)}`;
+    }
+    updateFormData({ ein_number: formatted });
+  };
+
+  const sanitizeFormationYear = (val: string): string => {
+    const trimmed = (val || '').trim();
+    if (!trimmed || trimmed.toUpperCase() === 'N/A') return 'N/A';
+    const num = parseInt(trimmed, 10);
+    if (!isNaN(num)) {
+      const currentYear = new Date().getFullYear();
+      if (num < 1900) return '1900';
+      if (num > currentYear + 1) return String(currentYear);
+      return String(num);
+    }
+    return trimmed;
+  };
+
+  const handleHqToggle = (hasPhysical: boolean) => {
+    setValidationError(null);
+    updateFormData({
+      has_physical_hq: hasPhysical,
+      is_virtual_hq_candidate: !hasPhysical
+    });
+  };
+
+  // --- Fast-Track DB Submission Logic ---
+  const executeFastTrackSubmission = async (effectiveHasPhysical: boolean, currentLine1: string, currentPostalCode: string, rawEinDigits: string) => {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-      // Strict Payload: EVERY 2-CHAR COLUMN IS SAFELY TRUNCATED
+      const formattedFormationYear = sanitizeFormationYear(formData.formation_year || '');
+      const parsedYear = formattedFormationYear !== 'N/A' && formattedFormationYear !== '' ? parseInt(formattedFormationYear, 10) : null;
+
       const dbPayload: Record<string, any> = {
-        // --- Status & Meta ---
-        status: 'PENDING_REVIEW',
-        readiness_completion_pct: 100,
+        // --- Status & Meta (PARTIAL) ---
+        status: 'ONBOARDING_PARTIAL',
+        readiness_completion_pct: 35,
         node_status: 'PENDING',
         
         // --- Step 1: Identity & Primary Contact ---
@@ -82,46 +190,35 @@ export default function StepSixFlow() {
 
         // --- Step 2: Governance & Operations ---
         legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
-        registration_state: cleanTwoChar(formData.registration_state), // Ensures max 2 chars (e.g. 'DE', 'GA')
-        formation_year: formData.formation_year && !isNaN(parseInt(formData.formation_year, 10)) 
-          ? parseInt(formData.formation_year, 10) 
-          : null,
-        ein_number: formData.ein_number || 'Startup - Need EIN',
+        registration_state: cleanTwoChar(formData.registration_state),
+        formation_year: parsedYear,
+        ein_number: rawEinDigits.length === 9 ? formData.ein_number : 'Startup - Need EIN',
         fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
 
-        // --- Step 2: Workforce Counts ---
         employee_count_w2_ft: formData.employee_count_w2_ft ?? 1,
         employee_count_w2_pt: formData.employee_count_w2_pt ?? 0,
         contractor_count_1099: formData.contractor_count_1099 ?? 0,
 
         // --- Step 2: HQ Address Telemetry ---
-        hq_address_line_1: formData.hq_address_line_1 || formData.hq_address_line1 || null,
-        hq_city: formData.hq_city || null,
-        hq_state: cleanTwoChar(formData.hq_state || formData.registration_state), // Ensures max 2 chars (e.g. 'GA')
-        hq_postal_code: formData.hq_postal_code || formData.hq_zip || null,
+        hq_address_line_1: effectiveHasPhysical ? currentLine1 : null,
+        hq_city: effectiveHasPhysical ? (formData.hq_city || null) : null,
+        hq_state: effectiveHasPhysical ? cleanTwoChar(formData.hq_state) : null,
+        hq_postal_code: effectiveHasPhysical ? currentPostalCode : null,
 
-        // --- Step 3: Capital & Funding ---
-        funding_stage: formData.funding_stage || null,
-        funding_target_amount: formData.target_raise && !isNaN(parseFloat(formData.target_raise)) 
-          ? parseFloat(formData.target_raise) 
-          : null,
-        bylaws_resolutions_active: formData.has_bylaws === 'YES' || formData.has_bylaws === 'true',
-
-        // --- Step 4: Shield Security & IT Telemetry ---
-        it_groupware_platform: formData.email_workspace_suite || formData.accounting_software || null,
-        it_mdm_status: formData.mdm_provider ? 'DEPLOYED' : 'NOT_ENFORCED',
-        it_mdm_vendor: formData.mdm_provider || null,
-        it_antivirus_status: formData.antivirus_status ? 'ACTIVE' : 'INACTIVE',
-        it_backup_strategy: formData.backup_frequency || null,
-
-        // --- Step 5: People & Payroll ---
-        hr_payroll_platform: formData.payroll_provider || null,
-        benefits_offered: Array.isArray(formData.benefits_offered) ? formData.benefits_offered : [],
-
-        // --- Step 6: Flow & Operations Automation ---
-        crm_system: formData.crm_system || (flowOptIn ? 'NONE' : null),
-        collaboration_tool: formData.collaboration_tool || (flowOptIn ? 'SLACK' : null),
-        automation_status: formData.automation_status || (flowOptIn ? 'MANUAL' : null)
+        // --- Steps 3-6 Defaults (The Fast-Track Bypass) ---
+        funding_stage: null,
+        funding_target_amount: null,
+        bylaws_resolutions_active: false,
+        it_groupware_platform: null,
+        it_mdm_status: 'NOT_ENFORCED',
+        it_mdm_vendor: null,
+        it_antivirus_status: 'INACTIVE',
+        it_backup_strategy: null,
+        hr_payroll_platform: null,
+        benefits_offered: [],
+        crm_system: 'NONE',
+        collaboration_tool: 'NONE',
+        automation_status: 'NONE'
       };
 
       if (supabaseUrl && supabaseAnonKey) {
@@ -129,38 +226,85 @@ export default function StepSixFlow() {
           .from('crm_questionnaire_staging')
           .insert([dbPayload]);
 
-        if (insertError) {
-          console.error('Supabase DB Insert Error:', insertError.message);
-          throw new Error(`Database insert failed: ${insertError.message}`);
-        }
+        if (insertError) throw new Error(`Database insert failed: ${insertError.message}`);
       } else {
         throw new Error('Supabase client credentials missing.');
       }
 
       clearFormData();
       localStorage.removeItem('prism_onboarding_draft');
-
       router.push('/onboarding/success');
 
     } catch (err: unknown) {
-      console.error('FINAL_SUBMISSION_ERROR:', err);
+      console.error('FAST_TRACK_SUBMISSION_ERROR:', err);
       const message = err instanceof Error ? err.message : 'Failed to transmit onboarding dataset.';
-      setError(message);
-    } finally {
-      setIsSubmitting(false);
+      setValidationError(message);
+      setIsSubmitting(false); // Re-enable form on error
     }
   };
 
-  const handleFlowBypass = () => executeFinalSubmission(true);
-
-  const handleStandardSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    executeFinalSubmission(false);
+    setValidationError(null);
+
+    const rawEinDigits = (formData.ein_number || '').replace(/\D/g, '');
+    if (rawEinDigits.length > 0 && rawEinDigits.length < 9) {
+      setValidationError('EIN Tax ID must be exactly 9 digits (XX-XXXXXXX) or left blank for pending startups.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const currentLine1 = (formData.hq_address_line_1 || formData.hq_address_line1 || '').trim();
+    const currentPostalCode = (formData.hq_postal_code || formData.hq_zip || '').trim();
+
+    const isAddressBlank = !currentLine1 && !formData.hq_city?.trim() && !currentPostalCode;
+    const effectiveHasPhysical = hasPhysicalHq && !isAddressBlank;
+
+    if (isFastTrack) {
+      // ⚡ FAST-TRACK PATH: Bypass context update and push directly to DB & Success Page
+      await executeFastTrackSubmission(effectiveHasPhysical, currentLine1, currentPostalCode, rawEinDigits);
+    } else {
+      // 🔄 STANDARD PATH: Update context and continue to Step 3
+      updateFormData({
+        step_completed: 2,
+        legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
+        registration_state: formData.registration_state || 'UNDECIDED',
+        formation_year: sanitizeFormationYear(formData.formation_year || ''),
+        ein_number: rawEinDigits.length === 9 ? formData.ein_number : 'Startup - Need EIN',
+        fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
+        employee_count_w2_ft: Math.min(99999, Math.max(0, formData.employee_count_w2_ft ?? 1)),
+        employee_count_w2_pt: Math.min(99999, Math.max(0, formData.employee_count_w2_pt ?? 0)),
+        contractor_count_1099: Math.min(99999, Math.max(0, formData.contractor_count_1099 ?? 0)),
+        has_physical_hq: effectiveHasPhysical,
+        is_virtual_hq_candidate: !effectiveHasPhysical,
+        hq_address_line_1: effectiveHasPhysical ? currentLine1 : '',
+        hq_city: effectiveHasPhysical ? (formData.hq_city || '') : '',
+        hq_state: effectiveHasPhysical ? (formData.hq_state || '') : '',
+        hq_postal_code: effectiveHasPhysical ? currentPostalCode : '',
+        status: 'ONBOARDING',
+        readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 35)
+      });
+      router.push('/onboarding/step-3');
+    }
   };
+
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
   return (
     <div className="min-h-screen bg-[#050507] text-[#E4E4E7] flex flex-col font-sans antialiased">
-      <OnboardingHeader currentStep={6} />
+      {apiKey && (
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`}
+          strategy="afterInteractive"
+          onLoad={() => {
+            setGoogleScriptLoaded(true);
+            initAutocomplete();
+          }}
+        />
+      )}
+
+      <OnboardingHeader currentStep={2} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-10">
         
@@ -174,136 +318,299 @@ export default function StepSixFlow() {
 
             <div className="text-center mb-10">
               <h2 className="text-xs font-bold tracking-[0.25em] text-[#C5A880] uppercase mb-3">
-                Step 6 of 6: VK Flow — Workflows &amp; Automation
+                Step 2 of 6: Governance &amp; Operations
               </h2>
               <h1 className="text-3xl lg:text-4xl font-light text-white tracking-tight">
-                How does your business run day-to-day?
+                Corporate Structure &amp; Workforce
               </h1>
             </div>
 
-            <form onSubmit={handleStandardSubmit} className="space-y-6">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                  Primary CRM &amp; Customer Data System <span className="text-[#C5A880]">*</span> <Tooltip text="The central platform used to manage prospective client leads, pipelines, and deals." />
-                </label>
-                <select 
-                  name="crm_system"
-                  required
-                  value={formData.crm_system || ''}
-                  onChange={handleChange}
-                  className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
-                >
-                  <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select CRM System...</option>
-                  <option value="HUBSPOT" className="bg-[#0A0A0C] text-white">HubSpot</option>
-                  <option value="SALESFORCE" className="bg-[#0A0A0C] text-white">Salesforce</option>
-                  <option value="NOTION" className="bg-[#0A0A0C] text-white">Notion / Airtable</option>
-                  <option value="OTHER" className="bg-[#0A0A0C] text-white">Other CRM</option>
-                  <option value="NONE" className="bg-[#0A0A0C] text-white">No CRM / Spreadsheets Only</option>
-                </select>
+            {validationError && (
+              <div className="mb-6 p-4 bg-red-950/50 border border-red-500/50 rounded-xl text-red-200 text-xs font-semibold flex items-center gap-3 animate-fadeIn">
+                <span>⚠️</span>
+                <span>{validationError}</span>
+              </div>
+            )}
 
-                {formData.crm_system && formData.crm_system !== 'NONE' && (
-                  <div className="mt-4">
-                    <VendorValueWedge 
-                      vendorName={formData.crm_system}
-                      data={crmAudit}
-                      onChange={handleCrmAuditChange}
+            <form onSubmit={handleSubmit} className="space-y-8">
+              
+              {/* SECTION A: LEGAL STRUCTURE & REGISTRATION */}
+              <div className="space-y-4 border-b border-[#27272A]/80 pb-6">
+                <h3 className="text-xs font-bold tracking-[0.2em] text-[#C5A880] uppercase">
+                  01 // Legal Registration &amp; Tax Telemetry
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                      Entity Structure <Tooltip text="Select your registered legal structure or flag as 'Startup / Not Yet Formed'." />
+                    </label>
+                    <select
+                      name="legal_structure"
+                      value={formData.legal_structure || ''}
+                      onChange={handleChange}
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
+                    >
+                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select</option>
+                      <option value="STARTUP_NOT_FORMED" className="bg-[#0A0A0C] text-white">Startup / Not Yet Formed</option>
+                      <option value="DELAWARE_C_CORP" className="bg-[#0A0A0C] text-white">Delaware C-Corporation</option>
+                      <option value="C_CORP" className="bg-[#0A0A0C] text-white">C-Corporation (Other State)</option>
+                      <option value="S_CORP" className="bg-[#0A0A0C] text-white">S-Corporation</option>
+                      <option value="LLC" className="bg-[#0A0A0C] text-white">LLC</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                      Formation State <Tooltip text="Primary jurisdiction where corporate filing documents are registered." />
+                    </label>
+                    <select
+                      name="registration_state"
+                      value={formData.registration_state || ''}
+                      onChange={handleChange}
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
+                    >
+                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select</option>
+                      <option value="UNDECIDED" className="bg-[#0A0A0C] text-white">Undecided / N/A</option>
+                      {US_STATES.map((st) => (
+                        <option key={st} value={st} className="bg-[#0A0A0C] text-white">{st}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                      Formation Year <Tooltip text="Year of incorporation or legal state registration." />
+                    </label>
+                    <input
+                      type="text"
+                      name="formation_year"
+                      placeholder="e.g. 2026 or N/A"
+                      value={formData.formation_year || ''}
+                      onChange={handleChange}
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                      EIN Tax ID (XX-XXXXXXX) <Tooltip text="9-digit IRS Federal Tax ID. Leave blank if pending." />
+                    </label>
+                    <input
+                      type="text"
+                      name="ein_number"
+                      maxLength={10}
+                      placeholder="12-3456789 (or leave blank if pending)"
+                      value={formData.ein_number || ''}
+                      onChange={handleEINChange}
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
+                      Fiscal Year-End Month <Tooltip text="The closing month of your annual financial accounting cycle." />
+                    </label>
+                    <select
+                      name="fiscal_year_end_month"
+                      value={formData.fiscal_year_end_month || ''}
+                      onChange={handleChange}
+                      className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all cursor-pointer"
+                    >
+                      <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select</option>
+                      {MONTHS.map((m) => (
+                        <option key={m} value={m} className="bg-[#0A0A0C] text-white">{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION B: 👥 WORKFORCE BREAKDOWN */}
+              <div className="space-y-4 border-b border-[#27272A]/80 pb-6">
+                <div>
+                  <h3 className="text-xs font-bold tracking-[0.2em] text-[#C5A880] uppercase">
+                    02 // 👥 Workforce &amp; Team Distribution <Tooltip text="Enter active headcount numbers across your W2 payroll and 1099 contractor workforce." />
+                  </h3>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    Quantify active staffing assets across your corporate perimeter.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-[#121215] border border-[#27272A] p-4 rounded-xl space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200">
+                      W2 Full-Time (Default: 1)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={99999}
+                      value={formData.employee_count_w2_ft ?? 1}
+                      onFocus={handleFocus}
+                      onChange={(e) => handleNumberChange('employee_count_w2_ft', e.target.value)}
+                      className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="bg-[#121215] border border-[#27272A] p-4 rounded-xl space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200">
+                      W2 Part-Time
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={99999}
+                      value={formData.employee_count_w2_pt ?? 0}
+                      onFocus={handleFocus}
+                      onChange={(e) => handleNumberChange('employee_count_w2_pt', e.target.value)}
+                      className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="bg-[#121215] border border-[#27272A] p-4 rounded-xl space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200">
+                      1099 Contractors
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={99999}
+                      value={formData.contractor_count_1099 ?? 0}
+                      onFocus={handleFocus}
+                      onChange={(e) => handleNumberChange('contractor_count_1099', e.target.value)}
+                      className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-bold p-3 text-base rounded-lg focus:border-[#C5A880] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION C: 🏢 HEADQUARTERS ADDRESS & VIRTUAL HQ TOGGLE */}
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-xs font-bold tracking-[0.2em] text-[#C5A880] uppercase">
+                      03 // 🏢 Principal Headquarters <Tooltip text="Unselect if operating virtually to flag entity for V&K Virtual HQ & Registered Agent forwarding." />
+                    </h3>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Does your organization maintain a physical headquarters facility?
+                    </p>
+                  </div>
+
+                  <label className="flex items-center gap-3 cursor-pointer bg-[#121215] border border-[#27272A] px-4 py-2 rounded-xl hover:border-[#C5A880]/50 transition-colors self-start sm:self-auto">
+                    <input
+                      type="checkbox"
+                      checked={hasPhysicalHq}
+                      onChange={(e) => handleHqToggle(e.target.checked)}
+                      className="accent-[#C5A880] h-4 w-4 rounded cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-white tracking-wide">
+                      Physical HQ
+                    </span>
+                  </label>
+                </div>
+
+                {hasPhysicalHq ? (
+                  <div className="space-y-4 bg-[#121215]/60 p-5 rounded-xl border border-[#27272A] animate-fadeIn">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">
+                        Street Address (Start typing for Google Places Autocomplete)
+                      </label>
+                      <input
+                        ref={addressInputRef}
+                        type="text"
+                        name="hq_address_line_1"
+                        placeholder="100 Tech Boulevard, Suite 400"
+                        value={formData.hq_address_line_1 || formData.hq_address_line1 || ''}
+                        onChange={handleChange}
+                        className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">City</label>
+                        <input
+                          type="text"
+                          name="hq_city"
+                          placeholder="San Francisco"
+                          value={formData.hq_city || ''}
+                          onChange={handleChange}
+                          className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">State</label>
+                        <select
+                          name="hq_state"
+                          value={formData.hq_state || ''}
+                          onChange={handleChange}
+                          className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none cursor-pointer"
+                        >
+                          <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select</option>
+                          {US_STATES.map((st) => (
+                            <option key={st} value={st} className="bg-[#0A0A0C] text-white">{st}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-200 mb-1.5">Zip Code</label>
+                        <input
+                          type="text"
+                          name="hq_postal_code"
+                          placeholder="94107"
+                          value={formData.hq_postal_code || formData.hq_zip || ''}
+                          onChange={handleChange}
+                          className="w-full bg-[#0A0A0C] border border-[#27272A] text-[#C5A880] font-semibold placeholder:text-neutral-600 p-3 text-sm rounded-xl focus:border-[#C5A880] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-5 bg-[#C5A880]/10 border border-[#C5A880]/30 rounded-xl space-y-1 animate-fadeIn">
+                    <p className="text-xs font-bold text-[#C5A880] uppercase tracking-wider">
+                      ⚡ Virtual HQ &amp; Mail Processing Candidate Flagged
+                    </p>
+                    <p className="text-xs text-neutral-300 leading-relaxed">
+                      Skipping physical HQ automatically flags your corporate entity for V&amp;K Virtual Office &amp; Registered Agent Mail Forwarding provisioning.
+                    </p>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                    Team Communication <span className="text-[#C5A880]">*</span> <Tooltip text="Primary messaging platform for internal team collaboration and operational alerts." />
-                  </label>
-                  <select 
-                    name="collaboration_tool"
-                    required
-                    value={formData.collaboration_tool || ''}
-                    onChange={handleChange}
-                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
-                  >
-                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select Communication Tool...</option>
-                    <option value="SLACK" className="bg-[#0A0A0C] text-white">Slack</option>
-                    <option value="TEAMS" className="bg-[#0A0A0C] text-white">Microsoft Teams</option>
-                    <option value="DISCORD" className="bg-[#0A0A0C] text-white">Discord</option>
-                    <option value="EMAIL" className="bg-[#0A0A0C] text-white">Email / SMS Only</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-neutral-200 mb-2">
-                    Current Automation Level <span className="text-[#C5A880]">*</span> <Tooltip text="Measures how much of your daily routine data transfer is handled automatically." />
-                  </label>
-                  <select 
-                    name="automation_status"
-                    required
-                    value={formData.automation_status || ''}
-                    onChange={handleChange}
-                    className="w-full bg-[#121215] border border-[#27272A] text-[#C5A880] font-semibold p-3.5 text-sm rounded-xl focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] focus:outline-none transition-all shadow-inner cursor-pointer"
-                  >
-                    <option value="" disabled className="bg-[#0A0A0C] text-neutral-500">Please Select Automation Level...</option>
-                    <option value="MANUAL" className="bg-[#0A0A0C] text-white">100% Manual Processes</option>
-                    <option value="ZAPIER" className="bg-[#0A0A0C] text-white">Basic Zapier / Make Zaps</option>
-                    <option value="CUSTOM_AI" className="bg-[#0A0A0C] text-white">Custom AI &amp; API Workflows</option>
-                  </select>
-                </div>
-              </div>
-
-              {error && (
-                <div className="rounded-xl border border-red-900/40 bg-red-950/20 px-5 py-3 text-xs text-red-400 font-mono shadow-inner animate-fadeIn">
-                  SUBMISSION_ERROR // {error}
-                </div>
-              )}
-
-              {/* Divider */}
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#27272A]/80"></div>
-                </div>
-                <div className="relative flex justify-center text-[10px] font-bold">
-                  <span className="px-4 bg-[#0A0A0C] text-neutral-500 uppercase tracking-[0.2em]">OR</span>
-                </div>
-              </div>
-
-              {/* Flow Fast-Track Card */}
-              <button
-                type="button"
-                onClick={handleFlowBypass}
-                disabled={isSubmitting}
-                className="w-full group relative overflow-hidden bg-gradient-to-r from-[#C5A880]/20 via-transparent to-[#8B7325]/20 border border-[#C5A880]/40 p-[1px] rounded-xl hover:border-[#C5A880] hover:shadow-[0_0_30px_rgba(197,168,128,0.25)] transition-all duration-300 cursor-pointer"
-              >
-                <div className="relative w-full bg-[#121215]/95 backdrop-blur-md px-6 py-5 rounded-xl flex items-center justify-between group-hover:bg-[#161619] transition-colors">
-                  <div className="flex items-center gap-4">
-                    <span className="text-2xl filter drop-shadow-[0_0_8px_rgba(197,168,128,0.4)] group-hover:scale-110 transition-transform">⚡</span>
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-white tracking-wide">I Need Turnkey AI &amp; Workflows!</p>
-                      <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">Automate operations with V&amp;K custom agents and automated software integrations.</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#C5A880] group-hover:translate-x-1 transition-transform whitespace-nowrap pl-4">Automate Us →</span>
-                </div>
-              </button>
-
-              {/* Navigation Buttons */}
-              <div className="flex justify-between items-center pt-4 border-t border-[#27272A]/80">
+              {/* NAVIGATION BUTTONS */}
+              <div className="flex justify-between items-center pt-6 border-t border-[#27272A]/80">
                 <button
                   type="button"
-                  onClick={() => router.push('/onboarding/step-5')}
-                  className="px-6 py-3 border border-[#27272A] text-neutral-400 hover:text-white hover:border-neutral-500 text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-colors cursor-pointer"
+                  onClick={() => router.push('/onboarding')}
+                  className="text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-white px-4 py-2 transition-colors cursor-pointer"
                 >
-                  ← Back
+                  ← Back to Step 1
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
-                >
-                  {isSubmitting ? 'Transmitting Dataset...' : 'Complete Onboarding ✨'}
-                </button>
+                {isFastTrack ? (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-8 py-3.5 bg-neutral-100 hover:bg-white text-black text-xs font-black uppercase tracking-[0.15em] rounded-xl transition-all shadow-[0_0_25px_rgba(255,255,255,0.25)] hover:shadow-[0_0_40px_rgba(255,255,255,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  >
+                    <span>⚡ Complete Onboarding Now</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+                  >
+                    Continue to Step 3 →
+                  </button>
+                )}
               </div>
+
             </form>
 
           </div>
