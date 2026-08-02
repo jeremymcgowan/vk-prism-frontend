@@ -457,10 +457,10 @@ export default function StepOneGateway() {
                         }`}
                       >
                         <span className="block text-xs font-bold tracking-wide">
-                          ⚡ I HATE FREE,
+                          ⚡ Express Baseline Intake
                         </span>
                         <span className="block text-[10px] font-medium tracking-normal opacity-80 mt-0.5">
-                          Onboard me after Step-2
+                          Fast-Track Setup // Complete After Step 2
                         </span>
                       </button>
 
