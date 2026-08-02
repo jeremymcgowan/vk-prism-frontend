@@ -120,6 +120,7 @@ interface QuestionnaireSubmission {
   weekly_manual_friction_hours?: number | null
   security_sensitivity_tier?: string | null
 
+  // Raw JSON Backup
   raw_step_payloads?: any
   node_id?: string | null
 }
@@ -144,7 +145,7 @@ const MONTHS = [
 
 const AVAILABLE_BENEFITS = [
   { id: 'MEDICAL', label: '🏥 Medical Insurance' },
-  { id: 'DENTAL', label: 'DENTAL', labelText: '🦷 Dental Coverage' },
+  { id: 'DENTAL', label: '🦷 Dental Coverage' },
   { id: 'VISION', label: '👓 Vision Coverage' },
   { id: '401K', label: '💰 401(k) / Roth' },
   { id: 'EQUITY_ESOP', label: '📊 Stock Options (ESOP)' },
@@ -164,12 +165,14 @@ const INDUSTRY_SECTORS = [
   'Other / Unspecified'
 ]
 
+// HELPER: Limits string to 2 chars max for State DB insertions
 const cleanTwoChar = (val: any): string | null => {
   if (!val || val === 'UNDECIDED' || val === 'Please Select') return null
   const str = String(val).trim()
   return str.length >= 2 ? str.slice(0, 2).toUpperCase() : str.toUpperCase()
 }
 
+// HELPER: Formats phone visually to (xxx) xxx-xxxx 
 const formatPhoneNumber = (value: string) => {
   if (!value) return ''
   const digits = value.replace(/[^\d]/g, '')
@@ -178,6 +181,7 @@ const formatPhoneNumber = (value: string) => {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`
 }
 
+// HELPER: Strips leading zeros and non-digits, formats currency
 const formatCurrency = (value: string) => {
   if (!value) return ''
   const digits = value.replace(/[^\d]/g, '')
@@ -193,11 +197,13 @@ export default function QuestionnaireSubmissionsManager() {
 
   const [activeTab, setActiveTab] = useState<'PENDING_REVIEW' | 'PROMOTED' | 'DECLINED' | 'ALL'>('PENDING_REVIEW')
 
+  // Inspector Drawer State
   const [selectedLead, setSelectedLead] = useState<QuestionnaireSubmission | null>(null)
   const [editForm, setEditForm] = useState<QuestionnaireSubmission | null>(null)
   const [assignedManagerId, setAssignedManagerId] = useState<string>('')
   const [showRawJson, setShowRawJson] = useState<boolean>(false)
   
+  // Section Edit Locks
   const [sectionLocks, setSectionLocks] = useState<Record<string, boolean>>({
     sec1: true,
     sec2: true,
@@ -235,6 +241,7 @@ export default function QuestionnaireSubmissionsManager() {
     setLoading(true)
     setErrorMsg(null)
 
+    // Pulling exclusively from the live staging table we wired up in Step 6
     const { data: subData, error: subError } = await supabase
       .from('crm_questionnaire_staging')
       .select('*')
@@ -243,11 +250,12 @@ export default function QuestionnaireSubmissionsManager() {
     if (subError) {
       setErrorMsg(`Failed to fetch leads: ${subError.message}`)
     } else if (subData) {
+      // Merge raw_payloads back into the main object to populate legacy UI fields
       const hydratedData = subData.map(row => {
         const raw = row.raw_step_payloads || {}
         return {
           ...row,
-          ...raw,
+          ...raw, // Overlays legacy form fields into the object so the UI inputs populate
         }
       })
       setSubmissions(hydratedData)
@@ -304,95 +312,113 @@ export default function QuestionnaireSubmissionsManager() {
     setEditForm({ ...editForm, benefits_offered: updated })
   }
 
+  // Extracted Database Payload Generation (Shared by Save and Promote)
   const buildDbPayload = () => {
     if (!editForm) return {}
-
-    let parsedFundingAmount: number | null = null
-    if (editForm.funding_target_amount !== undefined && editForm.funding_target_amount !== null) {
-      parsedFundingAmount = Number(editForm.funding_target_amount)
-    } else if (editForm.target_raise) {
-      const digits = String(editForm.target_raise).replace(/[^\d]/g, '')
-      parsedFundingAmount = digits ? parseInt(digits, 10) : null
-    }
-
     return {
-      status: editForm.status || 'PENDING_REVIEW',
-
+      // Section 01
       display_name: editForm.display_name || editForm.company_name || null,
       legal_name: editForm.legal_name || editForm.company_name || null,
       website_url: editForm.website_url || editForm.company_url || null,
       owner_name: editForm.owner_name || editForm.contact_name || null,
       owner_email: editForm.owner_email || editForm.contact_email || null,
       owner_phone: editForm.owner_phone || editForm.contact_phone || null,
-      owner_url: editForm.owner_profile_url || null,
       industry: editForm.industry || editForm.industry_sector || null,
       industry_sector: editForm.industry_sector || editForm.industry || null,
       legal_structure: editForm.legal_structure || null,
-      registration_state: cleanTwoChar(editForm.registration_state || editForm.hq_state),
-      formation_year: editForm.formation_year && !isNaN(parseInt(String(editForm.formation_year), 10))
-        ? parseInt(String(editForm.formation_year), 10)
+      registration_state: cleanTwoChar(editForm.registration_state),
+      formation_year: editForm.formation_year && !isNaN(parseInt(editForm.formation_year, 10))
+        ? parseInt(editForm.formation_year, 10)
         : null,
       ein_number: editForm.ein_number || null,
       fiscal_year_end_month: editForm.fiscal_year_end_month || null,
-      has_bylaws: editForm.has_bylaws || null,
-      funding_stage: editForm.funding_stage || null,
-      funding_target_amount: parsedFundingAmount,
-      is_seeking_funding: editForm.is_seeking_funding ?? false,
-      crunchbase_active: editForm.is_crunchbase_verified ?? false,
-      bbb_registered: editForm.is_bbb_registered ?? false,
-      sells_tangible_goods: editForm.sells_tangible_goods ?? false,
-      has_duns_number: editForm.has_duns_tracker ?? false,
-      duns_number: editForm.duns_number_id || null,
-      bbb_wedge_sentiment: editForm.bbb_wedge_sentiment || 'SATISFIED',
 
-      it_is_outsourced: editForm.is_it_outsourced ?? false,
-      it_lead_name: editForm.it_lead_name || null,
-      it_lead_email: editForm.it_lead_email || null,
-      it_lead_phone: editForm.it_lead_phone || null,
-      it_lead_url: editForm.it_lead_profile_url || null,
+      // Section 02
       it_groupware_platform: editForm.it_groupware_platform || editForm.email_workspace_suite || null,
-      has_managed_it: editForm.managed_it_vector || 'FALSE',
       it_mdm_vendor: editForm.it_mdm_vendor || editForm.mdm_provider || null,
       it_antivirus_status: editForm.it_antivirus_status || editForm.antivirus_status || null,
-      it_antivirus_vendor: editForm.antivirus_vendor || null,
       it_backup_strategy: editForm.it_backup_strategy || editForm.backup_frequency || null,
-      it_sso_vendor: editForm.sso_gateway_vendor || null,
-      it_sso_status: editForm.sso_gateway_status || null,
-      it_encryption_enabled: editForm.is_disk_encryption_enforced ?? false,
 
-      hr_is_outsourced: editForm.is_hr_outsourced ?? false,
-      benefits_admin_name: editForm.hr_lead_name || null,
-      benefits_admin_email: editForm.hr_lead_email || null,
-      benefits_admin_phone: editForm.hr_lead_phone || null,
-      benefits_admin_url: editForm.hr_lead_profile_url || null,
+      // Section 03
       employee_count_w2_ft: editForm.employee_count_w2_ft ?? 1,
       employee_count_w2_pt: editForm.employee_count_w2_pt ?? 0,
       contractor_count_1099: editForm.contractor_count_1099 ?? 0,
       hr_payroll_platform: editForm.hr_payroll_platform || editForm.payroll_provider || null,
-      hr_multistate_tax_registered: editForm.multistate_tax_exposure || 'CLEAR_NO_NEXUS',
       benefits_offered: editForm.benefits_offered || [],
-      hr_all_staff_piia_signed: editForm.has_piia_signed ?? false,
-      ins_commercial_policy_active: editForm.has_commercial_liability_policy ?? false,
 
-      sales_is_outsourced: editForm.is_sales_outsourced ?? false,
-      sales_lead_name: editForm.sales_lead_name || null,
-      sales_lead_email: editForm.sales_lead_email || null,
-      sales_lead_phone: editForm.sales_lead_phone || null,
-      sales_lead_url: editForm.sales_lead_profile_url || null,
+      // Section 04 & Status
       crm_system: editForm.crm_system || null,
       collaboration_tool: editForm.collaboration_tool || null,
       automation_status: editForm.automation_status || null,
-      flow_disconnected_tool_count: editForm.disconnected_utility_counter ?? 0,
-      web_design_satisfaction: editForm.web_layout_satisfaction || 'SATISFIED',
-      flow_unstructured_pdf_parsing_manual: editForm.has_unstructured_doc_processing ?? false,
-      web_yields_leads: editForm.has_inbound_capture_funnels ?? false,
-      web_analytics_active: editForm.has_traffic_analytics ?? false,
+      status: editForm.status || 'PENDING_REVIEW',
 
-      compliance_is_outsourced: editForm.is_compliance_outsourced ?? false,
-      compliance_officer_name: editForm.compliance_officer_name || null,
-      compliance_officer_email: editForm.compliance_officer_email || null,
-      compliance_officer_phone: editForm.compliance_officer_phone || null,
-      compliance_officer_url: editForm.compliance_officer_profile_url || null,
+      // Append UI-only legacy fields into JSON vault so they aren't lost
+      raw_step_payloads: {
+        ...editForm.raw_step_payloads,
+        company_name: editForm.company_name,
+        contact_name: editForm.contact_name,
+        contact_email: editForm.contact_email,
+        contact_phone: editForm.contact_phone,
+        is_strategic_partner: editForm.is_strategic_partner,
+        has_bylaws: editForm.has_bylaws,
+        funding_stage: editForm.funding_stage,
+        target_raise: editForm.target_raise,
+        is_seeking_funding: editForm.is_seeking_funding,
+        is_crunchbase_verified: editForm.is_crunchbase_verified,
+        is_bbb_registered: editForm.is_bbb_registered,
+        sells_tangible_goods: editForm.sells_tangible_goods,
+        has_duns_tracker: editForm.has_duns_tracker,
+        duns_number_id: editForm.duns_number_id,
+        bbb_wedge_sentiment: editForm.bbb_wedge_sentiment,
+        is_it_outsourced: editForm.is_it_outsourced,
+        it_lead_name: editForm.it_lead_name,
+        it_lead_email: editForm.it_lead_email,
+        it_lead_phone: editForm.it_lead_phone,
+        it_lead_profile_url: editForm.it_lead_profile_url,
+        email_workspace_suite: editForm.email_workspace_suite,
+        managed_it_vector: editForm.managed_it_vector,
+        mdm_provider: editForm.mdm_provider,
+        mdm_enforcement_log: editForm.mdm_enforcement_log,
+        antivirus_status: editForm.antivirus_status,
+        antivirus_vendor: editForm.antivirus_vendor,
+        backup_frequency: editForm.backup_frequency,
+        sso_gateway_vendor: editForm.sso_gateway_vendor,
+        sso_gateway_status: editForm.sso_gateway_status,
+        is_disk_encryption_enforced: editForm.is_disk_encryption_enforced,
+        is_hr_outsourced: editForm.is_hr_outsourced,
+        hr_lead_name: editForm.hr_lead_name,
+        hr_lead_email: editForm.hr_lead_email,
+        hr_lead_phone: editForm.hr_lead_phone,
+        hr_lead_profile_url: editForm.hr_lead_profile_url,
+        payroll_provider: editForm.payroll_provider,
+        multistate_tax_exposure: editForm.multistate_tax_exposure,
+        has_piia_signed: editForm.has_piia_signed,
+        has_commercial_liability_policy: editForm.has_commercial_liability_policy,
+        is_sales_outsourced: editForm.is_sales_outsourced,
+        sales_lead_name: editForm.sales_lead_name,
+        sales_lead_email: editForm.sales_lead_email,
+        sales_lead_phone: editForm.sales_lead_phone,
+        sales_lead_profile_url: editForm.sales_lead_profile_url,
+        disconnected_utility_counter: editForm.disconnected_utility_counter,
+        web_layout_satisfaction: editForm.web_layout_satisfaction,
+        has_unstructured_doc_processing: editForm.has_unstructured_doc_processing,
+        has_inbound_capture_funnels: editForm.has_inbound_capture_funnels,
+        has_traffic_analytics: editForm.has_traffic_analytics,
+        is_compliance_outsourced: editForm.is_compliance_outsourced,
+        compliance_officer_name: editForm.compliance_officer_name,
+        compliance_officer_email: editForm.compliance_officer_email,
+        compliance_officer_phone: editForm.compliance_officer_phone,
+        compliance_officer_profile_url: editForm.compliance_officer_profile_url,
+        hipaa_status: editForm.hipaa_status,
+        pci_status: editForm.pci_status,
+        finra_status: editForm.finra_status,
+        soc2_status: editForm.soc2_status,
+        nist_status: editForm.nist_status,
+        gdpr_status: editForm.gdpr_status,
+        accounting_software: editForm.accounting_software,
+        weekly_manual_friction_hours: editForm.weekly_manual_friction_hours,
+        security_sensitivity_tier: editForm.security_sensitivity_tier,
+      }
     }
   }
 
@@ -418,6 +444,7 @@ export default function QuestionnaireSubmissionsManager() {
       setSubmissions((prev) =>
         prev.map((item) => (item.id === selectedLead.id ? { ...editForm, ...dbPayload } : item))
       )
+      // Rehydrate local state with what was sent to DB
       setSelectedLead({ ...editForm, ...dbPayload } as QuestionnaireSubmission)
     } catch (err: any) {
       console.error('SAVE_ERROR:', err)
@@ -435,6 +462,7 @@ export default function QuestionnaireSubmissionsManager() {
     setSaveSuccess(null)
 
     try {
+      // 1. SAVE ANY UNCOMMITTED UI CHANGES BEFORE PROMOTING
       const dbPayload = buildDbPayload()
       const { error: saveError } = await supabase
         .from('crm_questionnaire_staging')
@@ -443,6 +471,7 @@ export default function QuestionnaireSubmissionsManager() {
 
       if (saveError) throw new Error(`Pre-promotion save failed: ${saveError.message}`)
 
+      // 2. TRIGGER PROMOTION RPC
       const { data: newEntityId, error: rpcError } = await supabase.rpc(
         'promote_onboarding_submission',
         {
@@ -461,7 +490,7 @@ export default function QuestionnaireSubmissionsManager() {
 
       setSaveSuccess(`⚡ PROMOTED! ENTITY GENERATED (${entityDisplay}). REFRESHING MATRIX...`)
       
-      const updatedSubmission = { ...selectedLead, ...dbPayload, status: 'ACTIVE' }
+      const updatedSubmission = { ...selectedLead, ...dbPayload, status: 'PROMOTED' }
       setSubmissions((prev) =>
         prev.map((item) => (item.id === selectedLead.id ? (updatedSubmission as QuestionnaireSubmission) : item))
       )
@@ -512,39 +541,6 @@ export default function QuestionnaireSubmissionsManager() {
     }
   }
 
-  const handleRestoreLead = async () => {
-    if (!selectedLead) return
-
-    const isConfirmed = window.confirm('Are you sure you want to restore this lead to the PENDING queue?')
-    if (!isConfirmed) return
-
-    setErrorMsg(null)
-    setSaveSuccess(null)
-
-    try {
-      const { error: subError } = await supabase
-        .from('crm_questionnaire_staging')
-        .update({ status: 'PENDING_REVIEW' })
-        .eq('id', selectedLead.id)
-
-      if (subError) throw new Error(subError.message)
-
-      setSaveSuccess('🔄 LEAD RESTORED TO PENDING QUEUE.')
-      
-      const updatedSubmission = { ...selectedLead, status: 'PENDING_REVIEW' }
-      setSubmissions((prev) =>
-        prev.map((item) => (item.id === selectedLead.id ? updatedSubmission : item))
-      )
-
-      setTimeout(() => {
-        handleClose()
-      }, 1200)
-
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Restore failed.')
-    }
-  }
-
   const handleVisitUrl = (url?: string | null) => {
     if (!url) return
     const target = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`
@@ -554,12 +550,6 @@ export default function QuestionnaireSubmissionsManager() {
   const filteredSubmissions = submissions.filter((sub) => {
     const currentStatus = sub.status || 'PENDING_REVIEW'
     if (activeTab === 'ALL') return true
-    if (activeTab === 'PENDING_REVIEW') {
-      return currentStatus === 'PENDING' || currentStatus === 'PENDING_REVIEW'
-    }
-    if (activeTab === 'PROMOTED') {
-      return currentStatus === 'ACTIVE' || currentStatus === 'PROMOTED'
-    }
     return currentStatus === activeTab
   })
 
@@ -663,13 +653,13 @@ export default function QuestionnaireSubmissionsManager() {
                   >
                     <td className="p-3">
                       <span className={`text-[9px] font-mono px-2 py-0.5 rounded font-extrabold uppercase tracking-wider ${
-                        leadStatus === 'ACTIVE' || leadStatus === 'PROMOTED'
+                        leadStatus === 'PROMOTED' || leadStatus === 'ACTIVE'
                           ? 'bg-[#00FF66]/15 text-[#00FF66] border border-[#00FF66]/40'
                           : leadStatus === 'DECLINED'
                           ? 'bg-red-950/40 text-red-400 border border-red-800/40'
                           : 'bg-[#C5A880]/15 text-[#C5A880] border border-[#C5A880]/40'
                       }`}>
-                        {leadStatus === 'PENDING_REVIEW' || leadStatus === 'PENDING' ? 'PENDING' : leadStatus === 'ACTIVE' ? 'PROMOTED' : leadStatus}
+                        {leadStatus === 'PENDING_REVIEW' ? 'PENDING' : leadStatus}
                       </span>
                     </td>
                     <td className="p-3 font-mono text-[11px] text-zinc-400 whitespace-nowrap">
@@ -730,13 +720,13 @@ export default function QuestionnaireSubmissionsManager() {
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-mono text-[#C5A880] font-bold uppercase tracking-widest">FULL 6-STEP ONBOARDING TELEMETRY</span>
                     <span className={`text-[9px] font-mono px-2 py-0.5 rounded font-extrabold uppercase ${
-                      editForm.status === 'ACTIVE' || editForm.status === 'PROMOTED'
+                      editForm.status === 'PROMOTED' || editForm.status === 'ACTIVE'
                         ? 'bg-[#00FF66]/15 text-[#00FF66] border border-[#00FF66]/40' 
                         : editForm.status === 'DECLINED'
                         ? 'bg-red-950/40 text-red-400 border border-red-800/40'
                         : 'bg-[#C5A880]/15 text-[#C5A880] border border-[#C5A880]/40'
                     }`}>
-                      {editForm.status === 'PENDING_REVIEW' || editForm.status === 'PENDING' ? 'PENDING' : editForm.status === 'ACTIVE' ? 'PROMOTED' : editForm.status}
+                      {editForm.status === 'PENDING_REVIEW' ? 'PENDING' : (editForm.status || 'PENDING')}
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-zinc-100 font-sans mt-1">
@@ -829,6 +819,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
                       
+                      {/* Industry Sector Dropdown */}
                       <div className="space-y-1 pt-1 border-t border-zinc-900 mt-2 pt-2">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">INDUSTRY SECTOR</label>
                           <select
@@ -995,6 +986,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
 
+                      {/* Capital Stack & Corporate Vetting Badges */}
                       <div className="grid grid-cols-2 gap-3 pt-1 border-t border-zinc-900">
                         <div className="space-y-1">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">FUNDING STAGE</label>
@@ -1024,6 +1016,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
 
+                      {/* Vetting Checkboxes */}
                       <div className="p-2.5 bg-black/80 border border-zinc-900 rounded-lg space-y-2">
                         <span className="text-[9px] font-mono text-zinc-400 font-bold block uppercase">Corporate Vetting Badges &amp; Registry Checks</span>
                         
@@ -1104,6 +1097,7 @@ export default function QuestionnaireSubmissionsManager() {
 
                     <fieldset disabled={sectionLocks.sec2} className="space-y-3 disabled:opacity-75">
                       
+                      {/* IT Lead Telemetry */}
                       <div className="p-2.5 bg-black/80 border border-zinc-900 rounded-lg space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] font-mono text-[#C5A880] uppercase font-bold">IT &amp; Security Lead Telemetry</span>
@@ -1173,6 +1167,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
 
+                      {/* Security Stack */}
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">WORKSPACE SUITE</label>
@@ -1330,6 +1325,7 @@ export default function QuestionnaireSubmissionsManager() {
 
                     <fieldset disabled={sectionLocks.sec3} className="space-y-3 disabled:opacity-75">
                       
+                      {/* HR Lead Telemetry */}
                       <div className="p-2.5 bg-black/80 border border-zinc-900 rounded-lg space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] font-mono text-[#C5A880] uppercase font-bold">Benefits Admin Lead Telemetry</span>
@@ -1399,6 +1395,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
 
+                      {/* Headcount Numbers */}
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">W2 FULL-TIME</label>
@@ -1465,6 +1462,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
 
+                      {/* Benefits offered */}
                       <div className="space-y-2 pt-1">
                         <label className="text-[9px] font-mono text-zinc-400 block font-semibold">BENEFITS OFFERED</label>
                         <div className="grid grid-cols-2 gap-2">
@@ -1485,6 +1483,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
 
+                      {/* Workforce Checkpoints */}
                       <div className="space-y-1.5 pt-2 border-t border-zinc-900 text-[10px]">
                         <span className="text-zinc-500 block font-mono">WORKFORCE COMPLIANCE CHECKPOINTS</span>
                         <label className="flex items-center gap-2 cursor-pointer text-zinc-300">
@@ -1519,6 +1518,7 @@ export default function QuestionnaireSubmissionsManager() {
 
                     <fieldset disabled={sectionLocks.sec4} className="space-y-3 disabled:opacity-75">
                       
+                      {/* Sales Lead Telemetry */}
                       <div className="p-2.5 bg-black/80 border border-zinc-900 rounded-lg space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] font-mono text-[#C5A880] uppercase font-bold">Sales &amp; Flow Lead Telemetry</span>
@@ -1588,6 +1588,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
 
+                      {/* CRM & Stack */}
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <label className="text-[9px] font-mono text-zinc-400 block font-semibold">PRIMARY CRM</label>
@@ -1656,6 +1657,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
 
+                      {/* Funnel Checkpoints */}
                       <div className="space-y-1.5 pt-2 border-t border-zinc-900 text-[10px]">
                         <span className="text-zinc-500 block font-mono">FLOW &amp; WEB FUNNEL CHECKPOINTS</span>
                         <label className="flex items-center gap-2 cursor-pointer text-zinc-300">
@@ -1694,6 +1696,7 @@ export default function QuestionnaireSubmissionsManager() {
 
                     <fieldset disabled={sectionLocks.sec5} className="space-y-3 disabled:opacity-75">
                       
+                      {/* Officer Telemetry */}
                       <div className="p-2.5 bg-black/80 border border-zinc-900 rounded-lg space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] font-mono text-[#C5A880] uppercase font-bold">Compliance Officer Telemetry</span>
@@ -1763,6 +1766,7 @@ export default function QuestionnaireSubmissionsManager() {
                         </div>
                       </div>
 
+                      {/* Framework Status Grid */}
                       <div className="grid grid-cols-3 gap-2">
                         {[
                           { key: 'hipaa_status', label: 'HIPAA PROTOCOL' },
@@ -1881,16 +1885,6 @@ export default function QuestionnaireSubmissionsManager() {
               )}
 
               <div className="flex justify-end gap-3 pt-2">
-                {editForm.status === 'DECLINED' && (
-                  <button
-                    type="button"
-                    onClick={handleRestoreLead}
-                    className="px-5 py-2 rounded-lg bg-[#0C1222] text-[#60A5FA] border border-[#3B82F6]/40 hover:bg-[#152340] font-bold uppercase transition cursor-pointer"
-                  >
-                    🔄 Restore to Pending
-                  </button>
-                )}
-
                 <button 
                   type="button" 
                   onClick={handleClose}
