@@ -173,7 +173,7 @@ export default function StepTwoStructure() {
 
       const dbPayload: Record<string, any> = {
         // --- Status & Meta (PARTIAL) ---
-        status: 'ONBOARDING_PARTIAL',
+        status: 'PENDING_REVIEW',
         readiness_completion_pct: 35,
         node_status: 'PENDING',
         
