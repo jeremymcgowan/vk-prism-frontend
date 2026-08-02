@@ -540,6 +540,38 @@ export default function QuestionnaireSubmissionsManager() {
       setDeclining(false)
     }
   }
+  const handleRestoreLead = async () => {
+    if (!selectedLead) return
+
+    const isConfirmed = window.confirm('Are you sure you want to restore this lead to the PENDING queue?')
+    if (!isConfirmed) return
+
+    setErrorMsg(null)
+    setSaveSuccess(null)
+
+    try {
+      const { error: subError } = await supabase
+        .from('crm_questionnaire_staging')
+        .update({ status: 'PENDING_REVIEW' })
+        .eq('id', selectedLead.id)
+
+      if (subError) throw new Error(subError.message)
+
+      setSaveSuccess('🔄 LEAD RESTORED TO PENDING QUEUE.')
+      
+      const updatedSubmission = { ...selectedLead, status: 'PENDING_REVIEW' }
+      setSubmissions((prev) =>
+        prev.map((item) => (item.id === selectedLead.id ? updatedSubmission : item))
+      )
+
+      setTimeout(() => {
+        handleClose()
+      }, 1200)
+
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Restore failed.')
+    }
+  }
 
   const handleVisitUrl = (url?: string | null) => {
     if (!url) return
@@ -1885,6 +1917,17 @@ export default function QuestionnaireSubmissionsManager() {
               )}
 
               <div className="flex justify-end gap-3 pt-2">
+                {/* NEW RESTORE BUTTON (Only shows if declined) */}
+                {editForm.status === 'DECLINED' && (
+                  <button
+                    type="button"
+                    onClick={handleRestoreLead}
+                    className="px-5 py-2 rounded-lg bg-[#0C1222] text-[#60A5FA] border border-[#3B82F6]/40 hover:bg-[#152340] font-bold uppercase transition cursor-pointer"
+                  >
+                    🔄 Restore to Pending
+                  </button>
+                )}
+
                 <button 
                   type="button" 
                   onClick={handleClose}
