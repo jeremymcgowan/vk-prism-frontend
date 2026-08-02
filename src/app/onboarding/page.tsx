@@ -434,19 +434,19 @@ export default function StepOneGateway() {
                   </div>
 
                   <div className="flex flex-col gap-3 shrink-0 sm:min-w-[280px]">
-                    {/* PRIMARY CTA: Bold, High-Contrast, Glowing */}
-                    <button
-                      type="button"
-                      onClick={() => handleIncentiveToggle(true)}
-                      className={`w-full py-3.5 px-5 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
-                        isSeekingIncentive
-                          ? 'bg-[#6B21A8] text-white border-[#A855F7] shadow-[0_0_30px_rgba(168,85,247,0.6)] ring-2 ring-white/60 scale-[1.02]'
-                          : 'animate-purple-pulse font-bold'
-                      }`}
-                    >
-                      <span>💎 Opt-In to Full Telemetry</span>
-                      {isSeekingIncentive && <span className="text-white text-sm font-black animate-bounce">✓</span>}
-                    </button>
+                    {/* PRIMARY CTA: Bold, High-Contrast, Glowing when active, Static when inactive */}
+                      <button
+                        type="button"
+                        onClick={() => handleIncentiveToggle(true)}
+                        className={`w-full py-3.5 px-5 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
+                          isSeekingIncentive
+                            ? 'bg-[#6B21A8] text-white border-[#A855F7] shadow-[0_0_30px_rgba(168,85,247,0.6)] ring-2 ring-white/60 scale-[1.02]'
+                            : 'bg-[#121215] text-[#C5A880] border-[#C5A880]/40 hover:border-[#C5A880]/80 shadow-none'
+                        }`}
+                      >
+                        <span>💎 Opt-In to Full Telemetry</span>
+                        {isSeekingIncentive && <span className="text-white text-sm font-black animate-bounce">✓</span>}
+                      </button>
 
                     {/* SECONDARY CTA: De-emphasized "Ghost" Style */}
                     <button
