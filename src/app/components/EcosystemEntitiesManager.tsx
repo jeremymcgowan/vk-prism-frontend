@@ -175,7 +175,7 @@ const MONTHS = [
 
 const BENEFIT_TOGGLES = [
   { id: 'MEDICAL', label: '🏥 Medical Insurance' },
-  { id: 'DENTAL', label: 'DENTAL', labelText: '🦷 Dental Coverage' },
+  { id: 'DENTAL', label: 'DENTAL', labelText: 'DENTAL Coverage' },
   { id: 'VISION', label: '👓 Vision Coverage' },
   { id: 'RETIREMENT_401K', label: '💰 401(k) / Roth' },
   { id: 'SIMPLE_IRA', label: '📈 SIMPLE / SEP IRA' },
@@ -188,6 +188,7 @@ export default function EcosystemEntitiesManager() {
   const [staffList, setStaffList] = useState<{ id: string; full_name: string; email: string }[]>([])
   const [selectedId, setSelectedId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false)
   
   const [telemetry, setTelemetry] = useState<EntityTelemetry | null>(null)
   const [assessment, setAssessment] = useState<ITAssessment | null>(null)
@@ -625,18 +626,27 @@ export default function EcosystemEntitiesManager() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="space-y-1 flex-1 max-w-xs">
+          <div className="space-y-1 flex-1 max-w-xs relative">
             <label className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest block font-bold">Search Matrix Nodes</label>
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search name, status, ID, EIN..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setIsSearchFocused(true)
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && filteredNodes.length > 0) {
                     e.preventDefault()
                     handleSelectChange(filteredNodes[0].id)
+                    setIsSearchFocused(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setIsSearchFocused(false)
                   }
                 }}
                 className="bg-black border border-zinc-800 text-[#C5A880] placeholder-zinc-600 font-mono text-xs rounded-lg pl-3 pr-8 py-2 w-full focus:outline-none focus:border-[#C5A880] font-bold transition-colors"
@@ -644,11 +654,56 @@ export default function EcosystemEntitiesManager() {
               {searchQuery && (
                 <button
                   type="button"
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => {
+                    setSearchQuery('')
+                    setIsSearchFocused(false)
+                  }}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#C5A880] hover:text-white cursor-pointer"
                 >
                   ✕
                 </button>
+              )}
+
+              {/* Live Auto-Dropdown Menu Overlay */}
+              {isSearchFocused && searchQuery.trim() !== '' && (
+                <div className="absolute left-0 right-0 top-full mt-1 bg-zinc-950 border border-[#C5A880] rounded-lg shadow-2xl z-50 max-h-60 overflow-y-auto font-mono text-xs divide-y divide-zinc-800">
+                  {filteredNodes.length === 0 ? (
+                    <div className="p-3 text-zinc-500 text-[11px] italic">
+                      No matching nodes found
+                    </div>
+                  ) : (
+                    filteredNodes.map((n) => (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          handleSelectChange(n.id)
+                          setIsSearchFocused(false)
+                        }}
+                        className={`w-full text-left px-3 py-2.5 hover:bg-[#C5A880]/10 transition flex items-center justify-between cursor-pointer ${
+                          selectedId === n.id ? 'bg-[#C5A880]/20 text-[#C5A880] font-bold' : 'text-zinc-200'
+                        }`}
+                      >
+                        <div className="truncate pr-2">
+                          <span className="text-[#C5A880] font-bold mr-1.5">
+                            [VK-{n.id.slice(0, 6).toUpperCase()}]
+                          </span>
+                          <span>{n.display_name}</span>
+                        </div>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded border shrink-0 font-bold ${
+                          n.status === 'ACTIVE' 
+                            ? 'border-[#00FF66]/40 text-[#00FF66] bg-[#00FF66]/10'
+                            : n.status === 'SUSPENDED'
+                            ? 'border-yellow-500/40 text-yellow-400 bg-yellow-500/10'
+                            : 'border-zinc-700 text-zinc-400 bg-zinc-900'
+                        }`}>
+                          {n.status}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
               )}
             </div>
           </div>
