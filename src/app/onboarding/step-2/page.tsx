@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
+import { createClient } from '@supabase/supabase-js';
 import OnboardingHeader from '../components/OnboardingHeader';
 import { useOnboarding } from '@/app/onboarding/OnboardingContext';
 
@@ -33,15 +34,22 @@ function Tooltip({ text }: { text: string }) {
   );
 }
 
+// Ensure 2-char DB constraint
+const cleanTwoChar = (val: any) => {
+  if (!val) return null;
+  return String(val).trim().substring(0, 2).toUpperCase();
+};
+
 export default function StepTwoStructure() {
   const router = useRouter();
-  const { formData, updateFormData, isHydrated } = useOnboarding();
+  const { formData, updateFormData, clearFormData, isHydrated } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
   const addressInputRef = useRef<HTMLInputElement>(null);
 
   const hasPhysicalHq = formData.has_physical_hq !== false; // Default true
+  const isFastTrack = formData.is_fast_track === true;
 
   // --- Initialize Google Places Autocomplete ---
   const initAutocomplete = () => {
@@ -107,7 +115,6 @@ export default function StepTwoStructure() {
     }
   };
 
-  // Eradicate Leading Zeros (e.g., "01" -> 1, "0231" -> 231) & Clamp (0 - 99,999)
   const handleNumberChange = (name: string, val: string) => {
     setValidationError(null);
     const cleanDigits = val.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
@@ -119,12 +126,10 @@ export default function StepTwoStructure() {
     updateFormData({ [name]: cleanNum });
   };
 
-  // Auto-Select Text on Mouse Focus
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.select();
   };
 
-  // Auto-Formatting EIN Tax ID: XX-XXXXXXX
   const handleEINChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValidationError(null);
     const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
@@ -135,7 +140,6 @@ export default function StepTwoStructure() {
     updateFormData({ ein_number: formatted });
   };
 
-  // Formation Year Sanitization & Clamping
   const sanitizeFormationYear = (val: string): string => {
     const trimmed = (val || '').trim();
     if (!trimmed || trimmed.toUpperCase() === 'N/A') return 'N/A';
@@ -149,7 +153,6 @@ export default function StepTwoStructure() {
     return trimmed;
   };
 
-  // HQ Toggle Logic
   const handleHqToggle = (hasPhysical: boolean) => {
     setValidationError(null);
     updateFormData({
@@ -158,7 +161,89 @@ export default function StepTwoStructure() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // --- Fast-Track DB Submission Logic ---
+  const executeFastTrackSubmission = async (effectiveHasPhysical: boolean, currentLine1: string, currentPostalCode: string, rawEinDigits: string) => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+      const formattedFormationYear = sanitizeFormationYear(formData.formation_year || '');
+      const parsedYear = formattedFormationYear !== 'N/A' && formattedFormationYear !== '' ? parseInt(formattedFormationYear, 10) : null;
+
+      const dbPayload: Record<string, any> = {
+        // --- Status & Meta (PARTIAL) ---
+        status: 'ONBOARDING_PARTIAL',
+        readiness_completion_pct: 35,
+        node_status: 'PENDING',
+        
+        // --- Step 1: Identity & Primary Contact ---
+        display_name: formData.company_name || 'Unspecified Entity',
+        legal_name: formData.company_name || 'Unspecified Entity LLC',
+        legal_corporate_name: formData.company_name || 'Unspecified Entity LLC',
+        website_url: formData.company_url || null,
+        owner_name: formData.contact_name || null,
+        owner_email: formData.contact_email || null,
+        owner_phone: formData.contact_phone || null,
+        industry: formData.industry || null,
+        industry_sector: formData.industry || null,
+
+        // --- Step 2: Governance & Operations ---
+        legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
+        registration_state: cleanTwoChar(formData.registration_state),
+        formation_year: parsedYear,
+        ein_number: rawEinDigits.length === 9 ? formData.ein_number : 'Startup - Need EIN',
+        fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
+
+        employee_count_w2_ft: formData.employee_count_w2_ft ?? 1,
+        employee_count_w2_pt: formData.employee_count_w2_pt ?? 0,
+        contractor_count_1099: formData.contractor_count_1099 ?? 0,
+
+        // --- Step 2: HQ Address Telemetry ---
+        hq_address_line_1: effectiveHasPhysical ? currentLine1 : null,
+        hq_city: effectiveHasPhysical ? (formData.hq_city || null) : null,
+        hq_state: effectiveHasPhysical ? cleanTwoChar(formData.hq_state) : null,
+        hq_postal_code: effectiveHasPhysical ? currentPostalCode : null,
+
+        // --- Steps 3-6 Defaults (The Fast-Track Bypass) ---
+        funding_stage: null,
+        funding_target_amount: null,
+        bylaws_resolutions_active: false,
+        it_groupware_platform: null,
+        it_mdm_status: 'NOT_ENFORCED',
+        it_mdm_vendor: null,
+        it_antivirus_status: 'INACTIVE',
+        it_backup_strategy: null,
+        hr_payroll_platform: null,
+        benefits_offered: [],
+        crm_system: 'NONE',
+        collaboration_tool: 'NONE',
+        automation_status: 'NONE'
+      };
+
+      if (supabaseUrl && supabaseAnonKey) {
+        const { error: insertError } = await supabase
+          .from('crm_questionnaire_staging')
+          .insert([dbPayload]);
+
+        if (insertError) throw new Error(`Database insert failed: ${insertError.message}`);
+      } else {
+        throw new Error('Supabase client credentials missing.');
+      }
+
+      clearFormData();
+      localStorage.removeItem('prism_onboarding_draft');
+      router.push('/onboarding/success');
+
+    } catch (err: unknown) {
+      console.error('FAST_TRACK_SUBMISSION_ERROR:', err);
+      const message = err instanceof Error ? err.message : 'Failed to transmit onboarding dataset.';
+      setValidationError(message);
+      setIsSubmitting(false); // Re-enable form on error
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError(null);
 
@@ -173,34 +258,35 @@ export default function StepTwoStructure() {
     const currentLine1 = (formData.hq_address_line_1 || formData.hq_address_line1 || '').trim();
     const currentPostalCode = (formData.hq_postal_code || formData.hq_zip || '').trim();
 
-    const isAddressBlank =
-      !currentLine1 &&
-      !formData.hq_city?.trim() &&
-      !currentPostalCode;
-
+    const isAddressBlank = !currentLine1 && !formData.hq_city?.trim() && !currentPostalCode;
     const effectiveHasPhysical = hasPhysicalHq && !isAddressBlank;
 
-    updateFormData({
-      step_completed: 2,
-      legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
-      registration_state: formData.registration_state || 'UNDECIDED',
-      formation_year: sanitizeFormationYear(formData.formation_year || ''),
-      ein_number: rawEinDigits.length === 9 ? formData.ein_number : 'Startup - Need EIN',
-      fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
-      employee_count_w2_ft: Math.min(99999, Math.max(0, formData.employee_count_w2_ft ?? 1)),
-      employee_count_w2_pt: Math.min(99999, Math.max(0, formData.employee_count_w2_pt ?? 0)),
-      contractor_count_1099: Math.min(99999, Math.max(0, formData.contractor_count_1099 ?? 0)),
-      has_physical_hq: effectiveHasPhysical,
-      is_virtual_hq_candidate: !effectiveHasPhysical,
-      hq_address_line_1: effectiveHasPhysical ? currentLine1 : '',
-      hq_city: effectiveHasPhysical ? (formData.hq_city || '') : '',
-      hq_state: effectiveHasPhysical ? (formData.hq_state || '') : '',
-      hq_postal_code: effectiveHasPhysical ? currentPostalCode : '',
-      status: 'ONBOARDING',
-      readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 35)
-    });
-
-    router.push('/onboarding/step-3');
+    if (isFastTrack) {
+      // ⚡ FAST-TRACK PATH: Bypass context update and push directly to DB & Success Page
+      await executeFastTrackSubmission(effectiveHasPhysical, currentLine1, currentPostalCode, rawEinDigits);
+    } else {
+      // 🔄 STANDARD PATH: Update context and continue to Step 3
+      updateFormData({
+        step_completed: 2,
+        legal_structure: formData.legal_structure || 'STARTUP_NOT_FORMED',
+        registration_state: formData.registration_state || 'UNDECIDED',
+        formation_year: sanitizeFormationYear(formData.formation_year || ''),
+        ein_number: rawEinDigits.length === 9 ? formData.ein_number : 'Startup - Need EIN',
+        fiscal_year_end_month: formData.fiscal_year_end_month || 'December',
+        employee_count_w2_ft: Math.min(99999, Math.max(0, formData.employee_count_w2_ft ?? 1)),
+        employee_count_w2_pt: Math.min(99999, Math.max(0, formData.employee_count_w2_pt ?? 0)),
+        contractor_count_1099: Math.min(99999, Math.max(0, formData.contractor_count_1099 ?? 0)),
+        has_physical_hq: effectiveHasPhysical,
+        is_virtual_hq_candidate: !effectiveHasPhysical,
+        hq_address_line_1: effectiveHasPhysical ? currentLine1 : '',
+        hq_city: effectiveHasPhysical ? (formData.hq_city || '') : '',
+        hq_state: effectiveHasPhysical ? (formData.hq_state || '') : '',
+        hq_postal_code: effectiveHasPhysical ? currentPostalCode : '',
+        status: 'ONBOARDING',
+        readiness_completion_pct: Math.max(formData.readiness_completion_pct || 15, 35)
+      });
+      router.push('/onboarding/step-3');
+    }
   };
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
@@ -506,13 +592,23 @@ export default function StepTwoStructure() {
                   ← Back to Step 1
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
-                >
-                  Continue to Step 3 →
-                </button>
+                {isFastTrack ? (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-8 py-3.5 bg-neutral-100 hover:bg-white text-black text-xs font-black uppercase tracking-[0.15em] rounded-xl transition-all shadow-[0_0_25px_rgba(255,255,255,0.25)] hover:shadow-[0_0_40px_rgba(255,255,255,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  >
+                    <span>⚡ Complete Onboarding Now</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-10 py-3.5 bg-[#C5A880] hover:bg-[#D4B990] text-[#050507] text-xs font-extrabold uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_25px_rgba(197,168,128,0.3)] hover:shadow-[0_0_35px_rgba(197,168,128,0.5)] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+                  >
+                    Continue to Step 3 →
+                  </button>
+                )}
               </div>
 
             </form>
