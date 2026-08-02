@@ -434,6 +434,7 @@ export default function StepOneGateway() {
                   </div>
 
                   <div className="flex flex-col gap-3 shrink-0 sm:min-w-[280px]">
+                    {/* PRIMARY CTA: Bold, High-Contrast, Glowing */}
                     <button
                       type="button"
                       onClick={() => handleIncentiveToggle(true)}
@@ -447,40 +448,23 @@ export default function StepOneGateway() {
                       {isSeekingIncentive && <span className="text-white text-sm font-black animate-bounce">✓</span>}
                     </button>
 
-                    <div className="flex flex-col gap-3 shrink-0 sm:min-w-[280px]">
-  {/* PRIMARY CTA: Bold, High-Contrast, Glowing */}
-  <button
-    type="button"
-    onClick={() => handleIncentiveToggle(true)}
-    className={`w-full py-3.5 px-5 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 border ${
-      isSeekingIncentive
-        ? 'bg-[#6B21A8] text-white border-[#A855F7] shadow-[0_0_30px_rgba(168,85,247,0.6)] ring-2 ring-white/60 scale-[1.02]'
-        : 'animate-purple-pulse font-bold'
-    }`}
-  >
-    <span>💎 Opt-In to Full Telemetry</span>
-    {isSeekingIncentive && <span className="text-white text-sm font-black animate-bounce">✓</span>}
-  </button>
-
-  {/* SECONDARY CTA: De-emphasized "Ghost" Style */}
-              <button
-                type="button"
-                onClick={() => handleIncentiveToggle(false)}
-                className={`w-full py-2 px-4 rounded-xl text-center transition-all cursor-pointer border ${
-                  !isSeekingIncentive
-                    ? 'bg-[#121215] text-neutral-300 border-neutral-700 shadow-none'
-                    : 'bg-transparent text-neutral-500 border-transparent hover:text-neutral-400'
-                }`}
-              >
-                <span className="block text-[11px] font-medium tracking-wide text-neutral-400">
-                  Express Baseline Intake
-                </span>
-                <span className="block text-[10px] font-normal tracking-normal text-neutral-600 mt-0.5">
-                  Bypass Extended Telemetry &amp; Rewards // Complete After Step 2
-                </span>
-              </button>
-            </div>
-
+                    {/* SECONDARY CTA: De-emphasized "Ghost" Style */}
+                    <button
+                      type="button"
+                      onClick={() => handleIncentiveToggle(false)}
+                      className={`w-full py-2 px-4 rounded-xl text-center transition-all cursor-pointer border ${
+                        !isSeekingIncentive
+                          ? 'bg-[#121215] text-neutral-300 border-neutral-700 shadow-none'
+                          : 'bg-transparent text-neutral-500 border-transparent hover:text-neutral-400'
+                      }`}
+                    >
+                      <span className="block text-[11px] font-medium tracking-wide text-neutral-400">
+                        Express Baseline Intake
+                      </span>
+                      <span className="block text-[10px] font-normal tracking-normal text-neutral-600 mt-0.5">
+                        Bypass Extended Telemetry &amp; Rewards // Complete After Step 2
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
