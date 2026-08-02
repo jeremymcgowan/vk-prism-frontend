@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { gapAnalysisDictionary } from '../constants/GapAnalysisDictionary'
+import { gapAnalysisDictionary } from '@/constants/GapAnalysisDictionary'
 import GapAnalysisLightbox from './GapAnalysisLightbox'
 
 interface CapitalReadinessScoreProps {

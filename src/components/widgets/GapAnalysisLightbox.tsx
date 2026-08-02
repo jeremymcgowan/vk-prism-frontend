@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { GapField } from '../constants/GapAnalysisDictionary' // Adjust path if needed
+import { GapField } from '@/constants/GapAnalysisDictionary'
 
 interface GapAnalysisLightboxProps {
   missingFields: GapField[]
